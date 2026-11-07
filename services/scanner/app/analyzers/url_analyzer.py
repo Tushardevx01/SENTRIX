@@ -7,7 +7,9 @@ from app.schemas.response import RawFinding
 SUSPICIOUS_KEYWORDS = {
     "login", "signin", "verify", "verification", "secure", "security",
     "account", "update", "banking", "authenticate", "paypal", "appleid",
-    "wallet", "billing", "recover", "passcode", "credential", "webscr"
+    "wallet", "billing", "recover", "passcode", "credential", "webscr",
+    "payment", "invoice", "refund", "kyc", "aadhaar", "debit", "creditcard",
+    "cvv", "otp", "claim", "airdrop", "lottery", "recruitment", "salary"
 }
 
 

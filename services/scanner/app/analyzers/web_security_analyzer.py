@@ -203,6 +203,32 @@ class WebSecurityAnalyzer:
                                 confidence=90.0,
                             ))
 
+                        # Server & Technology Information Disclosure
+                        server_header = resp_headers.get("server")
+                        if server_header:
+                            # Flag if server header leaks exact version numbers (e.g. Apache/2.4.41, nginx/1.18.0)
+                            has_version = any(char.isdigit() for char in server_header) and ("/" in server_header or " " in server_header)
+                            if has_version:
+                                findings.append(RawFinding(
+                                    category="WEB_SECURITY",
+                                    severity="LOW",
+                                    title="Server Header Leaks Exact Software Version",
+                                    description=f"The 'Server' response header discloses precise version information ('{server_header}'), assisting attacker exploit enumeration.",
+                                    evidence={"server": server_header},
+                                    confidence=95.0,
+                                ))
+
+                        powered_by = resp_headers.get("x-powered-by")
+                        if powered_by:
+                            findings.append(RawFinding(
+                                category="WEB_SECURITY",
+                                severity="LOW",
+                                title="X-Powered-By Header Reveals Application Framework",
+                                description=f"The 'X-Powered-By' header discloses the backend execution environment ('{powered_by}').",
+                                evidence={"xPoweredBy": powered_by},
+                                confidence=95.0,
+                            ))
+
                         # Bounded Streaming Body Read
                         is_html = any(safe_type in content_type for safe_type in SAFE_CONTENT_TYPES)
                         if is_html:
@@ -320,7 +346,71 @@ class WebSecurityAnalyzer:
                                 confidence=95.0,
                             ))
 
-            # 2. Hidden IFrame detection
+            # 2. Financial & Payment Data Harvesting Form Analysis
+            PAYMENT_FIELD_KEYWORDS = {"cvv", "cvc", "cardnumber", "cc-number", "card-number", "creditcard", "bankaccount", "accountnumber", "routingnumber", "ssn", "aadhaar", "pan-number"}
+            EXFILTRATION_PATTERNS = ["discord.com/api/webhooks", "api.telegram.org", "formspree.io", "webhook.site", "pipedream.net"]
+
+            for form in soup.find_all("form"):
+                action = form.get("action", "")
+                action_url = urljoin(metadata["finalUrl"], action).lower()
+                action_parsed = urlsplit(action_url)
+
+                # Check for third-party webhook exfiltration
+                for exfil in EXFILTRATION_PATTERNS:
+                    if exfil in action_url:
+                        findings.append(RawFinding(
+                            category="PHISHING_INDICATOR",
+                            severity="CRITICAL",
+                            title="Form Exfiltrates Data to Third-Party Webhook / Messaging API",
+                            description=f"Form action '{action_url}' directs submitted form data to third-party relay service '{exfil}'. Commonly used by phishing kits to harvest credentials.",
+                            evidence={"formAction": action_url, "exfiltrationTarget": exfil},
+                            confidence=99.0,
+                        ))
+
+                # Check for sensitive payment / personal identity inputs
+                inputs = form.find_all(["input", "select"])
+                harvested_fields = []
+                for inp in inputs:
+                    name_attr = (inp.get("name") or "").lower()
+                    id_attr = (inp.get("id") or "").lower()
+                    auto_attr = (inp.get("autocomplete") or "").lower()
+                    placeholder_attr = (inp.get("placeholder") or "").lower()
+                    combined_attrs = f"{name_attr} {id_attr} {auto_attr} {placeholder_attr}"
+
+                    for kw in PAYMENT_FIELD_KEYWORDS:
+                        if kw in combined_attrs:
+                            harvested_fields.append(kw)
+
+                if harvested_fields:
+                    findings.append(RawFinding(
+                        category="PHISHING_INDICATOR",
+                        severity="CRITICAL" if ("cvv" in harvested_fields or "cardnumber" in harvested_fields) else "HIGH",
+                        title="Payment / Financial Credential Harvesting Form Detected",
+                        description=f"Detected form collecting payment or sensitive identity markers ({', '.join(set(harvested_fields))}).",
+                        evidence={"detectedFields": list(set(harvested_fields)), "formAction": action_url},
+                        confidence=94.0,
+                    ))
+
+            # 3. Client-Side Meta Refresh Redirect Detection
+            meta_refresh = soup.find("meta", attrs={"http-equiv": lambda v: v and v.lower() == "refresh"})
+            if meta_refresh and meta_refresh.get("content"):
+                content_val = meta_refresh.get("content", "")
+                # Pattern: "0;url=http://..."
+                if "url=" in content_val.lower():
+                    refresh_target = content_val.lower().split("url=")[-1].strip("'\" ")
+                    refresh_url = urljoin(metadata["finalUrl"], refresh_target)
+                    refresh_parsed = urlsplit(refresh_url)
+                    if refresh_parsed.hostname and refresh_parsed.hostname != final_host:
+                        findings.append(RawFinding(
+                            category="URL_ANOMALY",
+                            severity="HIGH",
+                            title="Client-Side Meta Refresh Redirect to External Host",
+                            description=f"Page executes an automatic client-side redirect via <meta http-equiv='refresh'> to external host '{refresh_parsed.hostname}'.",
+                            evidence={"refreshTarget": refresh_url, "pageHost": final_host},
+                            confidence=92.0,
+                        ))
+
+            # 4. Hidden IFrame detection
             hidden_iframes = soup.find_all(
                 "iframe",
                 style=lambda val: val and ("display:none" in val.replace(" ", "") or "visibility:hidden" in val.replace(" ", ""))

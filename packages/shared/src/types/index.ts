@@ -136,7 +136,33 @@ export interface ICertificate {
   validUntil: string;
   fingerprint: string;
   hostnameMatched: boolean;
+  keyAlgorithm?: string;
+  keySize?: number;
+  signatureAlgorithm?: string;
+  hasSCTs?: boolean;
+  validityDays?: number;
+  rawDetails?: Record<string, unknown>;
   createdAt?: string;
+}
+
+export const UserRoleEnum = {
+  USER: 'user',
+  ANALYST: 'analyst',
+  ADMIN: 'admin',
+} as const;
+export type UserRole = (typeof UserRoleEnum)[keyof typeof UserRoleEnum];
+
+export interface IUser {
+  _id: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: IUser;
 }
 
 export interface IThreatReport {

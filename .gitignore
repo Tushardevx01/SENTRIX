@@ -19,6 +19,7 @@ lerna-debug.log*
 out/
 build/
 dist/
+*.tsbuildinfo
 
 # Python
 __pycache__/

@@ -9,6 +9,11 @@ export interface ICertificateDocument extends Document {
   validUntil: string;
   fingerprint: string;
   hostnameMatched: boolean;
+  keyAlgorithm?: string;
+  keySize?: number;
+  signatureAlgorithm?: string;
+  hasSCTs?: boolean;
+  validityDays?: number;
   rawDetails?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
@@ -52,6 +57,21 @@ const CertificateSchema = new Schema<ICertificateDocument>(
     hostnameMatched: {
       type: Boolean,
       required: true,
+    },
+    keyAlgorithm: {
+      type: String,
+    },
+    keySize: {
+      type: Number,
+    },
+    signatureAlgorithm: {
+      type: String,
+    },
+    hasSCTs: {
+      type: Boolean,
+    },
+    validityDays: {
+      type: Number,
     },
     rawDetails: {
       type: Schema.Types.Mixed,

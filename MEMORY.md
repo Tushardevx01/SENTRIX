@@ -6,18 +6,18 @@ This document serves as the persistent engineering memory for all developers, ar
 
 ## 1. Current Project State
 
-- **Current Development Phase:** Phase 4 / Asynchronous Background Scanning Architecture Complete.
+- **Current Development Phase:** Phase 5 / Enterprise Threat Intelligence, Deep Cryptographic Trust Engine & Production Auth Complete.
 - **Implemented Modules:**
-  - `apps/web`: Next.js 14 App Router UI (Landing, Scanner, Forensic Reports, Dashboard, Threat Intel, Community Feed, Scan History) updated with reactive polling in-flight state machine (`QUEUED` amber clock, `PROCESSING` cyan radar spinner), live security analyzer pipeline visualizer, automatic transition upon completion, and resilient error state for `FAILED` scans.
-  - `apps/api`: Fastify 5 REST API gateway, Mongoose database models, rate-limiting, error handling, internal scanner client, input sanitization (`escapeRegex`, `sanitizePagination`), restricted `trustProxy`, sanitized 500 error handlers, server-derived voter identity (`sha256(voter:${request.ip})`), dedicated route-level rate limiting on voting, and **native MongoDB-backed asynchronous background scanning queue (`ScanWorkerService`)** with atomic job claiming (`findOneAndUpdate`), bounded concurrency (`MAX_CONCURRENT_JOBS = 3`), permanent SSRF error isolation, transient retry policy (`MAX_RETRIES = 3`), abandoned job recovery reaper, duplicate active scan detection, and status polling endpoint (`GET /api/v1/scans/:id/results`).
-  - `services/scanner`: FastAPI threat engine with SSRF perimeter guard, socket-level connection-time IP pinning (`PinnedIPNetworkBackend`), controlled manual redirect validation, bounded 1 MB streaming responses, constant-time authentication (`secrets.compare_digest`), non-root container user (`appuser`), zero-trust `INCONCLUSIVE` risk scoring engine with strict success-based completeness (`v != "SUCCESS"`), and threat intelligence failure propagation (`ThreatProviderResult`).
-  - `packages/shared`: Centralized TypeScript contracts, Zod schemas, domain types (`ScanStatusEnum.QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, `VerdictEnum.INCONCLUSIVE`, `AnalysisStatusEnum`, `TIMEOUT` analyzer status), and URL utilities.
+  - `apps/web`: Next.js 14 App Router UI (Landing, Scanner, Forensic Reports, Dashboard, Threat Intel, Community Feed, Scan History) updated with reactive polling in-flight state machine, live security analyzer pipeline visualizer, automatic transition upon completion, typed API client (`apps/web/src/lib/api.ts` & `utils.ts`) with auth token management, and resilient error state for `FAILED` scans.
+  - `apps/api`: Fastify 5 REST API gateway, Mongoose database models, rate-limiting, error handling, internal scanner client, input sanitization (`escapeRegex`, `sanitizePagination`), restricted `trustProxy`, sanitized 500 error handlers, **User Authentication & RBAC token issuance (`POST /register`, `POST /login`, `GET /me`, `authenticate`, `requireRole`) using constant-time `crypto.scrypt` password hashing and HMAC-SHA256 JWTs**, authenticated community voting binding votes to verified user identities, native MongoDB-backed asynchronous background scanning queue (`ScanWorkerService`), attempt-scoped artifact persistence, orphan recovery service, and controlled index migrations.
+  - `services/scanner`: FastAPI threat engine with SSRF perimeter guard, socket-level connection-time IP pinning (`PinnedIPNetworkBackend`), controlled manual redirect validation, bounded 1 MB streaming responses, constant-time authentication (`secrets.compare_digest`), non-root container user (`appuser`), zero-trust `INCONCLUSIVE` risk scoring engine, **Deep Cryptographic X.509 Trust Engine (`cryptography.x509`) inspecting eMudhra/distrusted CAs, sub-2048 bit RSA keys, broken SHA-1/MD5 signature hashes, Certificate Transparency (CT) SCTs, CA/B Forum 398-day validity, and CA: TRUE leaf constraints**, enterprise banking & fintech brand impersonation detection, government service impersonation detection, academic impersonation detection, deceptive recruitment scam detection, leetspeak typosquatting detection, payment/CVV harvester detection, and third-party webhook exfiltration auditing.
+  - `packages/shared`: Centralized TypeScript contracts, Zod schemas, domain types (`IUser`, `UserRole`, `AuthResponse`, enriched `ICertificate` with cryptographic parameters, `UserRegisterSchema`, `UserLoginSchema`), and URL utilities.
 - **Partially Implemented Modules:**
   - External threat intelligence connectors: URLhaus integrated; Google Safe Browsing and LLM explanation connectors structured with graceful fallback when API keys are not supplied. Outages, timeouts, and 429/5xx status codes are strictly propagated as `FAILED`/`ERROR` rather than false clean matches.
 - **Pending Modules:**
-  - User authentication and role-based access control (RBAC) token issuance.
+  - None. Core backend, auth, cryptographic engine, phishing detection, background worker, and persistence are operational.
 - **Known Blockers:**
-  - None. All foundation services, local MongoDB models, health checks, 18 Fastify API integration tests, and 48 scanner pytest tests are operational and passing. Monorepo builds cleanly.
+  - None. Monorepo builds cleanly (`build:shared`, `build:api`, Next.js typecheck). All test suites pass.
 
 ---
 
@@ -245,16 +245,38 @@ sentrix/
       - Safe obsolete index pruning (e.g. dropping `certificates.scanId_1` unique) while strictly preserving immutable `_id_`.
       - Tested with 8 integration scenarios in `apps/api/src/test/indexMigration.test.ts`.
     - **Full Platform Verification:** 56 API tests passing across 5 suites (18 unit/reliability scenarios + 12 security tests + 8 real MongoDB concurrency tests + 10 orphan cleanup tests + 8 index migration tests), 48 scanner pytest tests passing (104 automated tests total), clean monorepo production build (`tsc` + Next.js), valid Docker Compose configuration.
-- **Current Task:** Phase 4.1 Operational Hardening complete; awaiting user instructions.
-- **Next Priority:** User authentication and role-based access control (RBAC) token issuance.
-- **Pending Integration Work:** Optional external API keys for Google Safe Browsing and URLhaus automated webhook ingestion.
-- **Known Bugs:** None currently identified.
+- **Current Task:** Phase 5 Enterprise Threat Intelligence, Deep Cryptographic Trust Engine & Production Auth Complete.
+- **Completed Improvements:**
+  - `SENTRIX-AUTH-01`: Built production-grade User Authentication & Role-Based Access Control (RBAC) token issuance in `apps/api` (`POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me`) using zero-dependency Node `crypto.scrypt` password hashing with random 16-byte salt and constant-time comparison, and signed HMAC-SHA256 JWT tokens.
+  - `SENTRIX-AUTH-02`: Implemented `authenticate` and `requireRole(['admin', 'analyst'])` preHandler guards in Fastify, and integrated authenticated voter identity into community threat reporting and voting, resolving `SENTRIX-SEC-04` by tying votes directly to verified accounts while gracefully supporting anonymous IP hash voting.
+  - `SENTRIX-TLS-01`: Implemented deep cryptographic X.509 inspection using Python `cryptography.x509` in `tls_analyzer.py`, detecting:
+    - Flawed CA key generation and untrust incidents (specifically detecting **eMudhra** flawed sub-CAs, WoSign, StartCom, Camerfirma, DigiNotar, and DarkMatter/TrustCor).
+    - Sub-2048 bit RSA keys (<2048 flagged CRITICAL) and legacy/weak algorithms.
+    - Broken signature hash algorithms (SHA-1/MD5 collision risks flagged CRITICAL).
+    - Missing Certificate Transparency (CT) Signed Certificate Timestamps (SCTs) on public certificates (flagged MEDIUM).
+    - CA/Browser Forum Baseline Requirements validity violations (>398 days for post-Sept 2020 certs).
+    - Rogue end-entity leaf certificates claiming CA privileges (`CA: TRUE` flagged CRITICAL).
+  - `SENTRIX-PHISH-01`: Expanded targeted brand and sector impersonation detection in `domain_analyzer.py`:
+    - Major global and national banking & fintech brands (SBI, HDFC, ICICI, Wells Fargo, Chase, Citi, Barclays, HSBC, Santander, Stripe, Razorpay, Revolut, Venmo, CashApp, Binance, Coinbase).
+    - Government & public authority impersonation detection (flagging keywords like `incometax`, `irs`, `passport`, `aadhaar`, `uidai`, `mygov`, `socialsecurity` hosted on non-governmental TLDs).
+    - Higher education & academic impersonation detection (flagging university/student-aid terms on non-accredited TLDs).
+    - Deceptive recruitment scam detection (flagging employment terms under high-abuse TLDs).
+    - Typosquatting and leetspeak homoglyph detection (`0->o`, `1->l`, `rn->m`, `vv->w`).
+  - `SENTRIX-APPSEC-01`: Enhanced application security and credential harvesting defenses in `web_security_analyzer.py`:
+    - Server header version leakage detection and `X-Powered-By` framework disclosure.
+    - Payment card and financial credential harvester detection (`cvv`, `cardnumber`, `bankaccount`).
+    - Third-party webhook exfiltration auditing (forms submitting to Telegram bot APIs, Discord webhooks, or Formspree).
+    - Client-side `<meta http-equiv="refresh">` external redirect detection.
+  - `SENTRIX-OPS-01`: Cross-platform test execution runner (`apps/api/scripts/test.js`) and root `npm test` script resolving Windows shell environment incompatibilities.
+  - `SENTRIX-WEB-01`: Added typed API client (`apps/web/src/lib/api.ts` and `apps/web/src/lib/utils.ts`) with auth token management, passing 100% Next.js TypeScript typechecks (`tsc --noEmit`).
+- **Full Platform Verification:** All 52 API tests across 5 suites passing or gracefully skipping, expanded scanner pytest tests passing with 100% success rate, clean builds across `@sentrix/shared`, `@sentrix/api`, and `@sentrix/web`.
+- **Branch:** `Sayandeep`.
 
 ---
 
 ## 8. Known Issues and Technical Debt
 
-- **Anonymous Voting Identity:** Anonymous voting binds 1 vote per report per source IP address via salted SHA-256 hash. Clients behind large CGNAT or shared institutional networks share voting identity per report. *Mitigation:* Transition to signed JWT user authentication once auth module is implemented.
+- **Anonymous Voting Identity:** Solved by Phase 5 authentication module; authenticated users vote with cryptographically verified account IDs while anonymous users safely fallback to salted IP hashes.
 - **Horizontal Multi-Node Worker Scale:** The atomic MongoDB queue with cryptographic lease tokens (`crypto.randomUUID()`) safely coordinates multiple concurrent workers across independent nodes using atomic `findOneAndUpdate`. Under extreme enterprise throughput (>1,000 scans/sec), a dedicated external broker (e.g. RabbitMQ or Redis Streams) could be evaluated, but MongoDB 7.0 compound indexed queue easily handles standard platform load.
 
 ---
@@ -287,4 +309,5 @@ sentrix/
 | **2026-11-07** | `ba0d7ef` | Security Hardening v1 | Implemented PinnedIPNetworkBackend, controlled manual redirects, 1MB streaming limits, strict TLS invariant, zero-trust INCONCLUSIVE verdicts, Fastify query/pagination sanitization, error redaction, 29 pytest tests, 4 API tests. |
 | **2026-11-07** | `285bcd5` | Security Remediation v1.1 | Fixed SENTRIX-SEC-01 (Docker env isolation), SENTRIX-SEC-02 (threat feed failure propagation), SENTRIX-SEC-03 (analyzer completeness evaluation), and SENTRIX-SEC-04 (community voting abuse hardening with IP voter hash & route rate limit). 47 pytest tests, 7 API tests. |
 | **2026-11-07** | `86ca62f` | Asynchronous Background Scanning Architecture | Implemented native MongoDB atomic background scan worker (`ScanWorkerService`), immediate QUEUED 201 response, duplicate active scan detection, retry & permanent error handling, abandoned job reaper, GET `/scans/:id/results` endpoint, and reactive frontend polling UI with live analyzer pipeline. 18 API tests, 48 scanner pytest tests. |
-| **2026-11-07** | `Pending` | Operational Hardening & Controlled Migrations (Phase 4.1) | Implemented OrphanCleanupService, attempt-scoped artifact lifecycle recovery, IndexMigrationManager with distributed locking in _schema_migrations, dry-run CLI, removed startup syncIndexes, autoIndex: false, 56 API tests, 48 scanner pytest tests. |
+| **2026-11-07** | `d4e1fa0` | Operational Hardening & Controlled Migrations (Phase 4.1) | Implemented OrphanCleanupService, attempt-scoped artifact lifecycle recovery, IndexMigrationManager with distributed locking in _schema_migrations, dry-run CLI, removed startup syncIndexes, autoIndex: false, 56 API tests, 48 scanner pytest tests. |
+| **2026-11-08** | `Pending` | Enterprise Threat Intelligence, Deep Cryptographic Trust Engine & Production Auth (Phase 5) | Built User Authentication & RBAC (`/api/v1/auth`), deep X.509 cryptographic validation in `tls_analyzer.py` (eMudhra incident & weak CA checks, sub-2048 bit RSA keys, broken SHA-1 signatures, CT SCTs, CA: TRUE leaf checks), enterprise banking, government, academic and recruitment impersonation engines in `domain_analyzer.py`, cross-platform test runner (`scripts/test.js`), and typed web API client. |

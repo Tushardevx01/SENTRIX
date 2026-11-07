@@ -9,6 +9,7 @@ import { reportsRoutes } from './modules/reports/index.js';
 import { threatsRoutes } from './modules/threats/index.js';
 import { communityRoutes } from './modules/community/index.js';
 import { dashboardRoutes } from './modules/dashboard/index.js';
+import { authRoutes } from './modules/auth/index.js';
 import { scanWorker } from './services/scanWorker.js';
 
 export function buildServer(): FastifyInstance {
@@ -87,6 +88,7 @@ export function buildServer(): FastifyInstance {
   });
 
   // API v1 Routes
+  app.register(authRoutes, { prefix: '/api/v1/auth' });
   app.register(scansRoutes, { prefix: '/api/v1/scans' });
   app.register(reportsRoutes, { prefix: '/api/v1/reports' });
   app.register(threatsRoutes, { prefix: '/api/v1/threats' });
