@@ -53,6 +53,22 @@ export const ThreatVoteCreateSchema = z.object({
 });
 export type ThreatVoteCreate = z.infer<typeof ThreatVoteCreateSchema>;
 
+export const UserRegisterSchema = z.object({
+  email: z.string().trim().email('Invalid email address format').max(255),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password must not exceed 128 characters'),
+  role: z.enum(['user', 'analyst', 'admin']).optional().default('user'),
+});
+export type UserRegister = z.infer<typeof UserRegisterSchema>;
+
+export const UserLoginSchema = z.object({
+  email: z.string().trim().email('Invalid email address format'),
+  password: z.string().min(1, 'Password is required'),
+});
+export type UserLogin = z.infer<typeof UserLoginSchema>;
+
 // ==========================================
 // Scanner Micro-Contract Interfaces
 // ==========================================

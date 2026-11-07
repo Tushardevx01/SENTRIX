@@ -1,13 +1,14 @@
 {
   "name": "@sentrix/api",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "NODE_ENV=test tsx --test src/test/**/*.test.ts",
+    "test": "node scripts/test.js",
     "migrate:indexes": "tsx src/scripts/migrateIndexes.ts",
     "migrate:indexes:dry-run": "tsx src/scripts/migrateIndexes.ts --dry-run"
   },

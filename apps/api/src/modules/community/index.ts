@@ -10,19 +10,24 @@ import {
 } from '@sentrix/shared';
 import { ThreatReportModel } from '../../models/ThreatReport.js';
 import { ThreatVoteModel } from '../../models/ThreatVote.js';
+import { optionalAuthenticate } from '../auth/middleware.js';
 
 /**
- * Derives a deterministic, server-controlled voter identity from client IP.
+ * Derives a deterministic, server-controlled voter identity.
+ * Prioritizes verified authenticated user identity; falls back to client IP hashing.
  * Mitigates client session identifier rotation and prevents voting fraud.
  */
-function deriveVoterIdentity(ip: string): string {
+function deriveVoterIdentity(ip: string, userSub?: string): string {
+  if (userSub) {
+    return crypto.createHash('sha256').update(`user:${userSub}`).digest('hex').slice(0, 32);
+  }
   const normalizedIp = ip || '127.0.0.1';
   return crypto.createHash('sha256').update(`voter:${normalizedIp}`).digest('hex').slice(0, 32);
 }
 
 export const communityRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // POST /api/v1/community/reports - Submit community threat report
-  app.post('/reports', async (request, reply) => {
+  app.post('/reports', { preHandler: [optionalAuthenticate] }, async (request, reply) => {
     const parseResult = ThreatReportCreateSchema.safeParse(request.body);
     if (!parseResult.success) {
       return reply.status(400).send({
@@ -35,6 +40,7 @@ export const communityRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     const { url, category, description, submitterEmail } = parseResult.data;
     const { normalizedUrl, normalizedDomain } = normalizeUrl(url);
     const urlHash = crypto.createHash('sha256').update(normalizedUrl).digest('hex');
+    const finalSubmitterEmail = request.user?.email || submitterEmail;
 
     // Check if report already exists for this URL
     let report = await ThreatReportModel.findOne({ urlHash });
@@ -55,7 +61,7 @@ export const communityRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
       description,
       status: ThreatReportStatusEnum.SUBMITTED,
       reportCount: 1,
-      submitterEmail,
+      submitterEmail: finalSubmitterEmail,
     });
 
     return reply.status(201).send({
@@ -65,8 +71,8 @@ export const communityRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
   });
 
   // GET /api/v1/community/reports - List community threat reports with vote counts
-  app.get('/reports', async (request, reply) => {
-    const voterId = deriveVoterIdentity(request.ip);
+  app.get('/reports', { preHandler: [optionalAuthenticate] }, async (request, reply) => {
+    const voterId = deriveVoterIdentity(request.ip, request.user?.sub);
 
     const reports = await ThreatReportModel.find()
       .sort({ createdAt: -1 })
@@ -125,6 +131,7 @@ export const communityRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
   app.post(
     '/reports/:id/vote',
     {
+      preHandler: [optionalAuthenticate],
       config: {
         rateLimit: {
           max: 20,
@@ -158,9 +165,9 @@ export const communityRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
 
       const { vote } = parseResult.data;
 
-      // SECURITY: Server-controlled voter identity derived from client IP.
-      // Arbitrary client-provided session identifiers are disregarded to enforce 1 vote per report per source IP.
-      const userId = deriveVoterIdentity(request.ip);
+      // SECURITY: Server-controlled voter identity derived from client IP or authenticated user ID.
+      // Arbitrary client-provided session identifiers are disregarded to enforce 1 vote per report per user or source IP.
+      const userId = deriveVoterIdentity(request.ip, request.user?.sub);
 
       const report = await ThreatReportModel.findById(id);
       if (!report) {

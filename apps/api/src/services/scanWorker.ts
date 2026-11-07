@@ -232,6 +232,7 @@ export class ScanWorkerService {
 
       // 5. Persist certificate tagged with this attempt's leaseToken
       if (scanResult.certificate) {
+        const raw = (scanResult.certificate.rawDetails || {}) as Record<string, any>;
         await CertificateModel.create({
           scanId: scan._id,
           leaseToken: scan.leaseToken,
@@ -241,7 +242,12 @@ export class ScanWorkerService {
           validUntil: scanResult.certificate.validUntil,
           fingerprint: scanResult.certificate.fingerprint,
           hostnameMatched: scanResult.certificate.hostnameMatched,
-          rawDetails: scanResult.certificate.rawDetails || {},
+          keyAlgorithm: raw.keyAlgorithm,
+          keySize: raw.keySize,
+          signatureAlgorithm: raw.signatureAlgorithm,
+          hasSCTs: raw.hasSCTs,
+          validityDays: raw.validityDays,
+          rawDetails: raw,
         });
       }
 

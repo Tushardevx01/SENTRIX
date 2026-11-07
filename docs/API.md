@@ -282,7 +282,71 @@ Base URL: `http://localhost:8000/api/v1`
 
 ---
 
-## 6. Dashboard Telemetry API
+## 7. Authentication & RBAC API
+
+### 7.1 Register User Account
+- **Method:** `POST`
+- **Path:** `/api/v1/auth/register`
+- **Request Body:**
+```json
+{
+  "email": "analyst@sentrix.io",
+  "password": "SecurePassword123!",
+  "role": "analyst"
+}
+```
+- **Response (201 Created):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "_id": "6aef0e8840d8291a1005a711",
+    "email": "analyst@sentrix.io",
+    "role": "analyst",
+    "createdAt": "2026-11-08T10:15:30.000Z"
+  }
+}
+```
+
+### 7.2 Authenticate / Login User
+- **Method:** `POST`
+- **Path:** `/api/v1/auth/login`
+- **Request Body:**
+```json
+{
+  "email": "analyst@sentrix.io",
+  "password": "SecurePassword123!"
+}
+```
+- **Response (200 OK):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "_id": "6aef0e8840d8291a1005a711",
+    "email": "analyst@sentrix.io",
+    "role": "analyst",
+    "createdAt": "2026-11-08T10:15:30.000Z"
+  }
+}
+```
+
+### 7.3 Get Current Authenticated Profile
+- **Method:** `GET`
+- **Path:** `/api/v1/auth/me`
+- **Headers:** `Authorization: Bearer <token>`
+- **Response (200 OK):**
+```json
+{
+  "user": {
+    "_id": "6aef0e8840d8291a1005a711",
+    "email": "analyst@sentrix.io",
+    "role": "analyst",
+    "createdAt": "2026-11-08T10:15:30.000Z"
+  }
+}
+```
+
 
 ### 6.1 Telemetry Metrics
 - **Method:** `GET`

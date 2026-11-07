@@ -2,9 +2,25 @@ import ssl
 import socket
 import hashlib
 from datetime import datetime, timezone
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Dict, Any
+from cryptography import x509
+from cryptography.hazmat.primitives.asymmetric import rsa, dsa, ec, ed25519
+from cryptography.x509.oid import ExtensionOID
 from app.schemas.response import RawFinding, CertificateInfo
 from app.safety.ssrf_guard import resolve_and_validate_hostname, SSRFSecurityException
+
+# Known untrusted, compromised, or high-risk Certificate Authorities
+# Includes eMudhra sub-CAs affected by flawed PRNG/key generation incidents,
+# as well as revoked/distrusted roots (WoSign, StartCom, Camerfirma, DigiNotar, DarkMatter/TrustCor, Symantec legacy)
+DISTRUSTED_CA_PATTERNS = [
+    ("emudhra", "eMudhra Subordinate CA / Flawed Key Generation Incident Risk", "HIGH"),
+    ("wosign", "WoSign (Distrusted by Major Root Stores)", "CRITICAL"),
+    ("startcom", "StartCom (Distrusted by Major Root Stores)", "CRITICAL"),
+    ("camerfirma", "AC Camerfirma (Revoked Root Trust)", "CRITICAL"),
+    ("diginotar", "DigiNotar (Compromised & Permanently Revoked CA)", "CRITICAL"),
+    ("trustcor", "TrustCor Systems (Distrusted Root Authority)", "HIGH"),
+    ("darkmatter", "DarkMatter / CyberPoint (Untrusted PKI Authority)", "HIGH"),
+]
 
 
 class TlsAnalyzer:
@@ -234,6 +250,184 @@ class TlsAnalyzer:
                         confidence=95.0,
                     ))
 
+        # 3. Deep Cryptographic & Certificate Authority Inspection via cryptography.x509
+        key_algorithm = "Unknown"
+        key_size = 0
+        signature_algorithm = "Unknown"
+        has_scts = False
+        is_ca = False
+        validity_days = 0
+        compromised_ca_risk = False
+
+        if der_cert:
+            try:
+                x509_cert = x509.load_der_x509_certificate(der_cert)
+
+                # Public Key Algorithm & Key Size Audit
+                pub_key = x509_cert.public_key()
+                if isinstance(pub_key, rsa.RSAPublicKey):
+                    key_algorithm = "RSA"
+                    key_size = pub_key.key_size
+                    if key_size < 2048:
+                        findings.append(RawFinding(
+                            category="TLS_SECURITY",
+                            severity="CRITICAL",
+                            title="Insecure Cryptographic Key Length (RSA < 2048 bits)",
+                            description=f"The certificate uses an insecure {key_size}-bit RSA key. Sub-2048 bit keys are vulnerable to mathematical factorization attacks and violate CA/B Forum guidelines.",
+                            evidence={"keyAlgorithm": "RSA", "keySize": key_size},
+                            confidence=98.0,
+                        ))
+                    elif key_size == 2048:
+                        findings.append(RawFinding(
+                            category="TLS_SECURITY",
+                            severity="INFO",
+                            title="Standard RSA 2048-bit Public Key",
+                            description="The certificate uses a standard 2048-bit RSA public key meeting baseline cryptographic requirements.",
+                            evidence={"keyAlgorithm": "RSA", "keySize": key_size},
+                            confidence=100.0,
+                        ))
+                    elif key_size >= 3072:
+                        findings.append(RawFinding(
+                            category="TLS_SECURITY",
+                            severity="INFO",
+                            title="High-Strength RSA Public Key",
+                            description=f"The certificate uses a high-assurance {key_size}-bit RSA key providing robust forward security.",
+                            evidence={"keyAlgorithm": "RSA", "keySize": key_size},
+                            confidence=100.0,
+                        ))
+                elif isinstance(pub_key, ec.EllipticCurvePublicKey):
+                    curve_name = pub_key.curve.name
+                    key_algorithm = f"ECDSA ({curve_name})"
+                    key_size = pub_key.key_size
+                    if key_size < 256:
+                        findings.append(RawFinding(
+                            category="TLS_SECURITY",
+                            severity="HIGH",
+                            title="Weak Elliptic Curve Key (< 256 bits)",
+                            description=f"The certificate uses a weak elliptic curve ({curve_name}) with {key_size} bits of security.",
+                            evidence={"curve": curve_name, "keySize": key_size},
+                            confidence=95.0,
+                        ))
+                    else:
+                        findings.append(RawFinding(
+                            category="TLS_SECURITY",
+                            severity="INFO",
+                            title="Modern Elliptic Curve (ECDSA) Key",
+                            description=f"The certificate uses a modern {key_size}-bit elliptic curve key ({curve_name}).",
+                            evidence={"curve": curve_name, "keySize": key_size},
+                            confidence=100.0,
+                        ))
+                elif isinstance(pub_key, ed25519.Ed25519PublicKey):
+                    key_algorithm = "Ed25519"
+                    key_size = 256
+                    findings.append(RawFinding(
+                        category="TLS_SECURITY",
+                        severity="INFO",
+                        title="High-Performance Ed25519 Public Key",
+                        description="The certificate utilizes Ed25519 modern Edwards-curve public key cryptography.",
+                        evidence={"keyAlgorithm": "Ed25519"},
+                        confidence=100.0,
+                    ))
+                elif isinstance(pub_key, dsa.DSAPublicKey):
+                    key_algorithm = "DSA"
+                    key_size = pub_key.key_size
+                    findings.append(RawFinding(
+                        category="TLS_SECURITY",
+                        severity="HIGH",
+                        title="Deprecated DSA Key Algorithm",
+                        description="The certificate uses the legacy DSA public key algorithm which is widely deprecated in TLS.",
+                        evidence={"keyAlgorithm": "DSA", "keySize": key_size},
+                        confidence=95.0,
+                    ))
+
+                # Signature Algorithm Analysis
+                try:
+                    signature_algorithm = x509_cert.signature_algorithm_oid._name or "Unknown"
+                except Exception:
+                    signature_algorithm = str(x509_cert.signature_algorithm_oid)
+
+                sig_lower = signature_algorithm.lower()
+                if "sha1" in sig_lower or "md5" in sig_lower or "md2" in sig_lower:
+                    findings.append(RawFinding(
+                        category="TLS_SECURITY",
+                        severity="CRITICAL",
+                        title="Cryptographically Broken Certificate Signature Algorithm",
+                        description=f"The certificate was signed using {signature_algorithm}. Collision attacks allow adversaries to forge fraudulent certificates sharing this hash.",
+                        evidence={"signatureAlgorithm": signature_algorithm},
+                        confidence=98.0,
+                    ))
+
+                # Certificate Transparency (CT) Signed Certificate Timestamps (SCTs)
+                try:
+                    x509_cert.extensions.get_extension_for_oid(ExtensionOID.PRECERT_SIGNED_CERTIFICATE_TIMESTAMPS)
+                    has_scts = True
+                except x509.ExtensionNotFound:
+                    has_scts = False
+
+                # If public certificate without SCTs and not self-signed
+                if not has_scts and issuer_str != subject_str and verification_error is None:
+                    findings.append(RawFinding(
+                        category="TLS_SECURITY",
+                        severity="MEDIUM",
+                        title="Missing Certificate Transparency (CT) Logging",
+                        description="The certificate lacks embedded Signed Certificate Timestamps (SCTs). Modern browsers require public certificates to be logged in public CT logs to detect unauthorized or rogue CA issuance.",
+                        evidence={"issuer": issuer_str, "hasSCTs": False},
+                        confidence=85.0,
+                    ))
+
+                # Basic Constraints Check (Leaf certificate cannot be CA)
+                try:
+                    bc_ext = x509_cert.extensions.get_extension_for_oid(ExtensionOID.BASIC_CONSTRAINTS)
+                    is_ca = bc_ext.value.ca
+                    if is_ca:
+                        findings.append(RawFinding(
+                            category="TLS_SECURITY",
+                            severity="CRITICAL",
+                            title="Leaf Certificate Configured as Certificate Authority (CA: TRUE)",
+                            description="The end-entity certificate has the Basic Constraints CA flag set to TRUE, presenting a severe risk where the holder could sign valid subordinate certificates for arbitrary domains.",
+                            evidence={"isCA": True},
+                            confidence=99.0,
+                        ))
+                except x509.ExtensionNotFound:
+                    is_ca = False
+
+                # CA/Browser Forum Validity Duration Check (Max 398 days for certs issued after Sept 1, 2020)
+                try:
+                    not_before = getattr(x509_cert, "not_valid_before_utc", None) or x509_cert.not_valid_before.replace(tzinfo=timezone.utc)
+                    not_after = getattr(x509_cert, "not_valid_after_utc", None) or x509_cert.not_valid_after.replace(tzinfo=timezone.utc)
+                    validity_days = (not_after - not_before).days
+                    baseline_cutoff = datetime(2020, 9, 1, tzinfo=timezone.utc)
+
+                    if not_before >= baseline_cutoff and validity_days > 398:
+                        findings.append(RawFinding(
+                            category="TLS_SECURITY",
+                            severity="MEDIUM",
+                            title="Non-Compliant Certificate Validity Duration (> 398 days)",
+                            description=f"The certificate validity spans {validity_days} days. CA/Browser Forum baseline requirements mandate a maximum duration of 398 days for certificates issued after September 1, 2020.",
+                            evidence={"validityDays": validity_days, "maxAllowed": 398},
+                            confidence=90.0,
+                        ))
+                except Exception:
+                    pass
+
+            except Exception:
+                # Fallback gracefully if cryptography parsing fails
+                pass
+
+        # 4. Compromised / Distrusted / High-Risk Certificate Authority Detection
+        issuer_lower = issuer_str.lower()
+        for ca_term, ca_name, severity in DISTRUSTED_CA_PATTERNS:
+            if ca_term in issuer_lower:
+                compromised_ca_risk = True
+                findings.append(RawFinding(
+                    category="TLS_SECURITY",
+                    severity=severity,
+                    title=f"Compromised / High-Risk Certificate Authority: {ca_name}",
+                    description=f"The certificate is issued by '{issuer_str}', matching known problematic CA authority '{ca_name}'. This poses an identity impersonation risk.",
+                    evidence={"issuer": issuer_str, "flaggedCA": ca_name, "pattern": ca_term},
+                    confidence=95.0,
+                ))
+
         cert_info = CertificateInfo(
             issuer=issuer_str,
             subject=subject_str,
@@ -245,6 +439,13 @@ class TlsAnalyzer:
                 "serialNumber": cert_dict.get("serialNumber"),
                 "subjectAltName": san_entries[:10],
                 "verified": (verification_error is None),
+                "keyAlgorithm": key_algorithm,
+                "keySize": key_size,
+                "signatureAlgorithm": signature_algorithm,
+                "hasSCTs": has_scts,
+                "isCa": is_ca,
+                "validityDays": validity_days,
+                "compromisedCaRisk": compromised_ca_risk,
             },
         )
 

@@ -109,3 +109,73 @@ def test_tls_connection_refused_or_failure():
         assert cert_info is None
         conn_errs = [f for f in findings if "Connection Failed" in f.title or "Port 443" in f.title]
         assert len(conn_errs) > 0
+
+
+def test_tls_detects_emudhra_and_distrusted_ca():
+    analyzer = TlsAnalyzer()
+
+    mock_cert = {
+        "subject": ((("commonName", "banking-portal.com"),),),
+        "issuer": ((("organizationName", "eMudhra Technologies Subordinate CA"),),),
+        "notBefore": "Jan 01 00:00:00 2026 GMT",
+        "notAfter": "Dec 31 00:00:00 2026 GMT",
+        "subjectAltName": (("DNS", "banking-portal.com"),),
+    }
+
+    mock_sock = create_mock_ssock(mock_cert)
+
+    with patch("socket.create_connection"), \
+         patch.object(ssl.SSLContext, "wrap_socket", return_value=mock_sock):
+        findings, cert_info = analyzer.analyze("banking-portal.com", target_ip="93.184.216.34")
+
+        assert cert_info is not None
+        assert cert_info.rawDetails.get("compromisedCaRisk") is True
+        ca_findings = [f for f in findings if "eMudhra" in f.title or "Compromised" in f.title]
+        assert len(ca_findings) > 0
+        assert ca_findings[0].severity in {"HIGH", "CRITICAL"}
+
+
+def test_tls_detects_weak_rsa_key_and_broken_signature():
+    from cryptography import x509
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives import hashes, serialization
+
+    # Generate real 1024-bit RSA cert with SHA-1 signature
+    priv = rsa.generate_private_key(public_exponent=65537, key_size=1024)
+    subject = x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "weak.example.com")])
+    now = datetime.now(timezone.utc)
+    builder = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(subject)
+        .public_key(priv.public_key())
+        .serial_number(12345)
+        .not_valid_before(now - timedelta(days=1))
+        .not_valid_after(now + timedelta(days=30))
+        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+    )
+    # Sign with SHA256 (modern cryptography library blocks signing with SHA-1 due to insecurity)
+    der_bytes = builder.sign(priv, hashes.SHA256()).public_bytes(serialization.Encoding.DER)
+
+    analyzer = TlsAnalyzer()
+    mock_cert = {
+        "subject": ((("commonName", "weak.example.com"),),),
+        "issuer": ((("commonName", "weak.example.com"),),),
+        "notBefore": (now - timedelta(days=1)).strftime("%b %d %H:%M:%S %Y GMT"),
+        "notAfter": (now + timedelta(days=30)).strftime("%b %d %H:%M:%S %Y GMT"),
+        "subjectAltName": (("DNS", "weak.example.com"),),
+    }
+    mock_sock = create_mock_ssock(mock_cert, der_bytes=der_bytes)
+
+    with patch("socket.create_connection"), \
+         patch.object(ssl.SSLContext, "wrap_socket", return_value=mock_sock):
+        findings, cert_info = analyzer.analyze("weak.example.com", target_ip="93.184.216.34")
+
+        assert cert_info is not None
+        assert cert_info.rawDetails["keySize"] == 1024
+        assert cert_info.rawDetails["isCa"] is True
+
+        titles = [f.title for f in findings]
+        assert any("RSA < 2048 bits" in t for t in titles)
+        assert any("Leaf Certificate Configured as Certificate Authority" in t for t in titles)
+
