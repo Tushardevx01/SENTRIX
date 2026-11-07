@@ -112,6 +112,34 @@ export async function startServer(): Promise<void> {
       host: '0.0.0.0',
     });
     app.log.info(`SENTRIX API server listening on ${address}`);
+
+    let isShuttingDown = false;
+    const shutdown = async (signal: string) => {
+      if (isShuttingDown) {
+        app.log.warn({ signal }, 'Forced shutdown requested by second signal');
+        process.exit(1);
+      }
+      isShuttingDown = true;
+      app.log.info({ signal }, 'Graceful shutdown initiated');
+
+      const forceTimer = setTimeout(() => {
+        app.log.error('Graceful shutdown timed out (10s); forcing exit');
+        process.exit(1);
+      }, 10_000);
+      forceTimer.unref();
+
+      try {
+        await app.close();
+        app.log.info('Server closed successfully');
+        process.exit(0);
+      } catch (err) {
+        app.log.error({ err }, 'Error during graceful shutdown');
+        process.exit(1);
+      }
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (err) {
     app.log.error(err);
     process.exit(1);

@@ -14,7 +14,9 @@
     "build:shared": "npm --workspace=@sentrix/shared run build",
     "build:api": "npm --workspace=@sentrix/api run build",
     "build:web": "npm --workspace=@sentrix/web run build",
-    "build": "npm run build:shared && npm run build:api && npm run build:web"
+    "build": "npm run build:shared && npm run build:api && npm run build:web",
+    "migrate:indexes": "npm --workspace=@sentrix/api run migrate:indexes",
+    "migrate:indexes:dry-run": "npm --workspace=@sentrix/api run migrate:indexes:dry-run"
   }
 }
 

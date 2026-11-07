@@ -42,6 +42,12 @@ SENTRIX is structured into four decoupled layers:
 
 ## 3. System Design Diagram
 
+### Asynchronous System Flow
+
+```
+Scan Request -> MongoDB Queue -> Worker Claims Job -> Unique Lease Token -> Python Scanner -> Attempt-Scoped Result Persistence -> Lease Ownership Validation -> Atomic Result Publication -> Scan COMPLETED
+```
+
 ```mermaid
 flowchart TD
     subgraph ClientLayer["Client Layer (Public)"]
@@ -104,19 +110,21 @@ flowchart TD
 2. **Client Validation:** Frontend validates syntax using Zod and sends `POST /api/v1/scans`.
 3. **Normalization & Deduplication:**
    - Fastify normalizes the URL (enforces scheme, standardizes host, strips default ports) and computes SHA-256 `urlHash`.
-   - Checks MongoDB for active duplicate scans (`status IN [QUEUED, PROCESSING]` within the last 60 seconds). If present, immediately returns existing `scanId` with `isDuplicate: true`.
+   - Checks MongoDB for active duplicate scans (`status IN [QUEUED, PROCESSING]`).
+   - Enforced by database-level partial unique index `{ urlHash: 1 }` with `{ status: { $in: ['QUEUED', 'PROCESSING'] } }`. If concurrent requests race, the second request catches MongoDB E11000 duplicate key error and safely returns the winning active scan with `isDuplicate: true`.
 4. **Queue Initialization:** Fastify inserts a `Scan` document in MongoDB with `status = "QUEUED"`, `retryCount = 0`, and immediately returns HTTP 201 `{ scanId, status: "QUEUED" }` to client without awaiting scanner completion.
 5. **Immediate Worker Signal:** Fastify fires `scanWorker.trigger()` to wake up the background worker event loop.
-6. **Atomic Job Claiming (FIFO):**
-   - Background worker executes an atomic MongoDB `findOneAndUpdate`:
+6. **Atomic Job Claiming & Cryptographic Lease Fencing:**
+   - Background worker executes an atomic MongoDB `findOneAndUpdate` issuing a unique `leaseToken = crypto.randomUUID()`:
      ```typescript
      ScanModel.findOneAndUpdate(
        { status: 'QUEUED', retryCount: { $lt: 3 } },
-       { $set: { status: 'PROCESSING', workerId: this.workerId, claimedAt: new Date() } },
+       { $set: { status: 'PROCESSING', workerId: this.workerId, claimedAt: new Date(), leaseToken } },
        { sort: { createdAt: 1 }, new: true }
      );
      ```
    - Bounded concurrency: at most 3 simultaneous active jobs per worker process.
+   - **Lease Fencing:** Before any persistent state mutation (findings insertion, status update, or error handling), the worker enforces lease ownership: `{ _id: scan._id, leaseToken: scan.leaseToken, status: ScanStatusEnum.PROCESSING }`. If a worker's lease expired or was revoked by the reaper, its update fails, inserted findings are rolled back, and it cannot corrupt a newly claimed worker's state.
 7. **Perimeter Verification:** Scanner resolves DNS and verifies that all IPs do not belong to loopback, private RFC 1918, or cloud metadata networks.
 8. **Analyzer Execution:**
    - `UrlAnalyzer` evaluates lexical structure, length, homoglyphs, and auth keywords.
@@ -125,16 +133,37 @@ flowchart TD
    - `WebSecurityAnalyzer` checks defensive headers and inspects DOM forms for credential theft.
    - `ReputationAnalyzer` checks open blacklist repositories.
 9. **Risk Calculation:** `RiskAggregationEngine` computes weighted score (0–100) and assigns verdict (`BENIGN`, `SUSPICIOUS`, `MALICIOUS`, or `INCONCLUSIVE`).
-10. **Idempotent Persistence & Completion:**
-    - Worker clears any prior findings or certificate for the scan ID (safe on retries).
-    - Bulk-inserts fresh `Finding` documents, creates `Certificate`, and updates `Scan` to `status = "COMPLETED"`, storing risk score, verdict, and completed timestamp.
+10. **Attempt-Scoped Result Persistence & Atomic Result Publication:**
+    - Worker enforces lease ownership before persisting: `{ _id: scan._id, leaseToken: scan.leaseToken, status: 'PROCESSING' }`.
+    - Pre-write attempt cleanup: deletes any prior findings or certificates created under *this specific attempt*: `{ scanId: scan._id, leaseToken: scan.leaseToken }`. Stale workers can never delete artifacts belonging to other workers.
+    - Persists fresh `Finding` and `Certificate` documents tagged with `leaseToken = scan.leaseToken`.
+    - Atomically publishes results using fenced condition:
+      ```typescript
+      ScanModel.findOneAndUpdate(
+        { _id: scan._id, leaseToken: scan.leaseToken, status: ScanStatusEnum.PROCESSING },
+        { $set: { status: ScanStatusEnum.COMPLETED, publishedLeaseToken: scan.leaseToken, ... } }
+      );
+      ```
+    - Fenced rollback: if atomic update returns null (lease was lost or reclaimed), the worker rolls back only its own attempt artifacts (`{ scanId: scan._id, leaseToken: scan.leaseToken }`) and aborts cleanly.
+    - Post-publication cleanup: upon successful completion, safely prunes older superseded attempts (`{ scanId: scan._id, leaseToken: { $ne: scan.leaseToken } }`). Reader endpoints query strictly by `leaseToken: scan.publishedLeaseToken` when `status === COMPLETED`.
 11. **Error & Retry Handling:**
     - Permanent security violations (HTTP 400 / SSRF) immediately mark scan `status = "FAILED"` with 0 retries.
     - Transient scanner network errors increment `retryCount` and re-queue (`status = "QUEUED"`) up to `MAX_RETRIES = 3`.
-12. **Abandoned Job Recovery Reaper:**
+    - Wrapped in database outage guards to prevent unhandled promise rejections if MongoDB disconnects.
+12. **Conditional Atomic Reaper:**
     - Background interval (every 15s) inspects scans stuck in `status = "PROCESSING"` longer than 60s timeout ceiling.
+    - Reclaims jobs atomically via `findOneAndUpdate({ _id, leaseToken, status: 'PROCESSING', claimedAt })`, preventing races with workers that completed right as the reaper ran.
     - If `retryCount < MAX_RETRIES`, re-queues to `QUEUED`; if exceeded, marks `FAILED`.
-13. **Reactive Presentation:** Next.js frontend polls `GET /api/v1/scans/:id/results` every 1.5 seconds, displaying live in-flight progress (amber clock for `QUEUED`, cyan radar spinner for `PROCESSING`, live analyzer matrix) and seamlessly transitions to full forensic visualization upon `COMPLETED`.
+13. **Orphan-Artifact Recovery & Cleanup (`OrphanCleanupService`):**
+    - Periodic background maintenance (every 5 minutes) and on-demand sweep evaluates candidate attempt artifacts older than the retention threshold (`retentionMs = 10 minutes`, guaranteeing 60s worker leases have expired).
+    - Attempts are evaluated strictly by `(scanId, leaseToken)`:
+      - **Published artifacts** (`scan.status === COMPLETED && scan.publishedLeaseToken === leaseToken`) are **strictly preserved**.
+      - **Active worker artifacts** (`scan.status === PROCESSING && scan.leaseToken === leaseToken`) are **strictly preserved**.
+      - **Untagged legacy records** (`leaseToken: null` or missing) are **strictly protected** and never deleted.
+      - **Superseded artifacts** on `COMPLETED` scans (`scan.publishedLeaseToken !== leaseToken`) and **abandoned artifacts** on `FAILED` or re-queued scans are safely purged.
+      - **Dangling artifacts** pointing to non-existent or deleted scans are purged.
+    - Bounded batch processing (`DEFAULT_CLEANUP_BATCH_SIZE = 50`), concurrency execution lock (`isRunning`), and database disconnection resilience ensure safe non-blocking execution.
+14. **Reactive Presentation & Dual-Phase Polling:** Next.js frontend polls lightweight status `GET /api/v1/scans/:id/results` every 1.5 seconds with transient network retry resilience. Upon terminal `COMPLETED` state, it fetches the full comprehensive report `GET /api/v1/reports/:id` once and renders the forensic visualizer.
 
 ```mermaid
 sequenceDiagram
@@ -202,24 +231,33 @@ sequenceDiagram
 
 ## 6. Database Design
 
-MongoDB 7.0 is the sole application database. Mongoose models are strictly housed in `apps/api/src/models/`.
+MongoDB 7.0 is the sole application database. Mongoose models are strictly housed in `apps/api/src/models/`. In production, automatic index synchronization (`autoIndex` and startup `syncIndexes()`) is explicitly disabled (`autoIndex: false` in `apps/api/src/plugins/db.ts`) to prevent blocking startup table locks and unpredictable schema churn. Database indexes and schema consistency are managed through controlled index migrations (`IndexMigrationManager` in `apps/api/src/migrations/indexMigration.ts`).
+
+The migration manager provides:
+- **Dry-run inspection mode** (`npm run migrate:indexes:dry-run`) to audit existing indexes, planned additions, planned drops, and duplicate conflicts without making any modifications.
+- **Distributed atomic lock management** via the `_schema_migrations` collection with a 5-minute timeout window to prevent concurrent migration executions across multi-instance clusters.
+- **Pre-flight data deduplication** that resolves duplicate active submissions before creating partial unique indexes.
+- **Safe obsolete index pruning** that explicitly drops legacy constraints (e.g. `certificates.scanId_1` unique) while enforcing an immutable safeguard that never drops `_id_`.
+- **Apply CLI command** (`npm run migrate:indexes`) for controlled maintenance and CI/CD deployment pipelines.
 
 ### Collections & Indexes
 
 1. **`scans`**:
-   - Fields: `submittedUrl`, `normalizedDomain`, `urlHash`, `status` (`QUEUED` | `PROCESSING` | `COMPLETED` | `FAILED`), `riskScore`, `verdict`, `confidence`, `analyzerStatuses`, `summary`, `retryCount`, `workerId`, `claimedAt`, `lastError`, `timeoutSeconds`, `errorMessage`, `completedAt`, timestamps.
+   - Fields: `submittedUrl`, `normalizedDomain`, `urlHash`, `status` (`QUEUED` | `PROCESSING` | `COMPLETED` | `FAILED`), `riskScore`, `verdict`, `confidence`, `analyzerStatuses`, `summary`, `retryCount`, `workerId`, `claimedAt`, `leaseToken`, `publishedLeaseToken`, `lastError`, `timeoutSeconds`, `errorMessage`, `completedAt`, timestamps.
    - Indexes:
      - `{ normalizedDomain: 1, createdAt: -1 }` (domain search index)
      - `{ status: 1, createdAt: 1 }` (FIFO atomic queue claim index)
      - `{ status: 1, claimedAt: 1 }` (abandoned job recovery reaper index)
      - `{ urlHash: 1, status: 1 }` (duplicate active scan submission check index)
+     - `{ urlHash: 1 }` (partial unique index where `status IN ['QUEUED', 'PROCESSING']` preventing race-condition duplicates)
+     - `{ publishedLeaseToken: 1 }` (published results lookup index)
      - `{ verdict: 1 }`, `{ createdAt: -1 }`.
 2. **`findings`**:
-   - Fields: `scanId`, `category`, `severity`, `title`, `description`, `evidence` (Mixed), `confidence`, timestamps.
-   - Indexes: `{ scanId: 1, severity: 1 }`, `{ category: 1 }`.
+   - Fields: `scanId`, `leaseToken`, `category`, `severity`, `title`, `description`, `evidence` (Mixed), `confidence`, timestamps.
+   - Indexes: `{ scanId: 1, severity: 1 }`, `{ scanId: 1, leaseToken: 1 }`, `{ category: 1 }`, `{ leaseToken: 1 }`.
 3. **`certificates`**:
-   - Fields: `scanId` (unique), `issuer`, `subject`, `validFrom`, `validUntil`, `fingerprint`, `hostnameMatched`, `rawDetails`.
-   - Indexes: `{ scanId: 1 }` (unique), `{ fingerprint: 1 }`.
+   - Fields: `scanId`, `leaseToken`, `issuer`, `subject`, `validFrom`, `validUntil`, `fingerprint`, `hostnameMatched`, `rawDetails`.
+   - Indexes: `{ scanId: 1, leaseToken: 1 }` (compound unique sparse index per worker attempt), `{ scanId: 1 }`, `{ fingerprint: 1 }`, `{ leaseToken: 1 }`.
 4. **`threatreports`**:
    - Fields: `submittedUrl`, `normalizedDomain`, `urlHash` (SHA-256), `category`, `description`, `status`, `reportCount`, `submitterEmail`, timestamps.
    - Indexes: `{ urlHash: 1 }`, `{ normalizedDomain: 1 }`, `{ status: 1 }`, `{ createdAt: -1 }`.

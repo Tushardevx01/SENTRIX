@@ -8,6 +8,7 @@ import {
 
 export interface IFindingDocument extends Document {
   scanId: Types.ObjectId;
+  leaseToken?: string;
   category: FindingCategory;
   severity: FindingSeverity;
   title: string;
@@ -24,6 +25,10 @@ const FindingSchema = new Schema<IFindingDocument>(
       type: Schema.Types.ObjectId,
       ref: 'Scan',
       required: true,
+      index: true,
+    },
+    leaseToken: {
+      type: String,
       index: true,
     },
     category: {
@@ -65,6 +70,7 @@ const FindingSchema = new Schema<IFindingDocument>(
 );
 
 FindingSchema.index({ scanId: 1, severity: 1 });
+FindingSchema.index({ scanId: 1, leaseToken: 1 });
 
 export const FindingModel =
   mongoose.models.Finding || mongoose.model<IFindingDocument>('Finding', FindingSchema);

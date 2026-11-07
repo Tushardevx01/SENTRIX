@@ -206,26 +206,46 @@ sentrix/
   - `POST /api/v1/community/reports/:id/vote`: User voting on community reports.
   - `GET /api/v1/dashboard/stats`: Telemetry KPIs and recent scans.
 - **Database Schema Constraints:**
-  - `CertificateSchema`: Unique index on `scanId`.
+  - `CertificateSchema`: Compound unique sparse index on `{ scanId: 1, leaseToken: 1 }`, index on `scanId` and `fingerprint`.
+  - `FindingSchema`: Compound index on `{ scanId: 1, leaseToken: 1 }`, `{ scanId: 1, severity: 1 }`, index on `category`.
   - `ThreatVoteSchema`: Unique compound index on `{ reportId: 1, userId: 1 }`.
   - `ThreatReportSchema`: Index on `urlHash` and `createdAt: -1`.
-  - `ScanSchema`: Index on `{ normalizedDomain: 1, createdAt: -1 }` and `status: 1`.
+  - `ScanSchema`: Index on `{ normalizedDomain: 1, createdAt: -1 }`, `{ status: 1, createdAt: 1 }`, `{ status: 1, claimedAt: 1 }`, partial unique index on `{ urlHash: 1 }` (where `status IN ['QUEUED', 'PROCESSING']`), index on `publishedLeaseToken`.
 
 ---
 
 ## 7. Current Development Progress
 
-- **Last Completed Task:** Asynchronous Background Scanning Architecture (MongoDB Atomic Queue):
-  - Created native `ScanWorkerService` (`apps/api/src/services/scanWorker.ts`) utilizing MongoDB's `findOneAndUpdate` for atomic, FIFO job claiming without Redis or BullMQ.
-  - Concurrency bounded at `MAX_CONCURRENT_JOBS = 3`.
-  - Added duplicate scan protection using SHA-256 `urlHash` in 60s active window.
-  - Added retry mechanism (`MAX_RETRIES = 3`) with differentiation between permanent failures (SSRF, invalid targets: immediately `FAILED` with 0 retries) and transient failures (re-queued to `QUEUED`).
-  - Added background abandoned job recovery reaper (`recoverAbandonedJobs`) running every 15s to reclaim stale jobs stuck in `PROCESSING` past 60s.
-  - Added dedicated polling endpoint `GET /api/v1/scans/:id/results` returning in-flight progress (`QUEUED`/`PROCESSING`), full results (`COMPLETED`), or failure reason (`FAILED`).
-  - Updated Next.js UI (`apps/web/src/app/reports/[id]/page.tsx`) with reactive 1.5s polling, live in-flight badge (amber clock / cyan radar spinner), live security analyzer pipeline visualizer, and error state for failed scans.
-  - Added 11 new integration tests in `apps/api/src/test/asyncScan.test.ts` (18 total API tests passing, 48 scanner pytest tests passing).
-  - Clean monorepo build across all workspaces (`@sentrix/shared`, `@sentrix/api`, `@sentrix/web`).
-- **Current Task:** Ready for final review and user authorization before commit.
+- **Last Completed Task:** Asynchronous Background Scanning Reliability Remediation & Attempt-Scoped Result Persistence:
+  - `SENTRIX-REL-01`: Cryptographically secure lease token (`leaseToken = crypto.randomUUID()`) and fenced state transitions (`{ _id, leaseToken, status: 'PROCESSING' }`) preventing zombie workers from corrupting active executions.
+  - `SENTRIX-REL-02`: Conditional atomic abandoned-job reaper (`findOneAndUpdate` matching `status: 'PROCESSING'`, `leaseToken`, and `claimedAt`), eliminating race conditions where completed scans were reverted back to `QUEUED`.
+  - `SENTRIX-REL-03`: Database-enforced duplicate submission prevention via partial unique index `{ urlHash: 1 }` on `status IN ['QUEUED', 'PROCESSING']` with MongoDB E11000 duplicate key handling.
+  - `SENTRIX-REL-04`: Graceful shutdown signal handling (`SIGTERM` and `SIGINT`) in Fastify, ensuring container stops drain active worker jobs within a bounded 5s window before process exit.
+  - `SENTRIX-REL-05`: Database outage resilience in `handleJobError` with `try/catch` wrapping, preventing unhandled promise rejections on database disconnection.
+  - `SENTRIX-REL-06`: Dual-phase frontend polling: switched in-flight polling from heavy 3-collection report route to lightweight `GET /api/v1/scans/:id/results` with transient network failure tolerance (3 retries).
+  - **Attempt-Scoped Result Persistence & Zombie Worker Safety:**
+    - Eliminated critical cleanup race where stale workers previously deleted findings/certificates by `scanId` alone.
+    - All persisted findings and certificates are tagged with `leaseToken: scan.leaseToken`.
+    - Pre-write attempt cleanup and failure rollback are strictly scoped to `{ scanId: scan._id, leaseToken: scan.leaseToken }`.
+    - Atomic result publication commits `publishedLeaseToken: scan.leaseToken` under `{ _id: scan._id, leaseToken: scan.leaseToken, status: 'PROCESSING' }`.
+    - Reader endpoints (`/api/v1/scans/:id/results` and `/api/v1/reports/:id`) filter strictly by `leaseToken: scan.publishedLeaseToken` on attempt-scoped scans with a safe fallback to untagged records (`$exists: false`) for legacy pre-migration scans.
+    - Post-publication superseded artifact pruning is insulated with `try/catch` so cleanup database errors never fail a completed scan or produce unhandled rejections.
+  - **Phase 4.1 Operational Hardening (Orphan Cleanup & Controlled Index Migrations):**
+    - **Reliable Orphan-Artifact Recovery (`OrphanCleanupService`):**
+      - Bounded background sweep (every 5 minutes) evaluating attempt-scoped artifacts `(scanId, leaseToken)` older than `retentionMs` (default 10 minutes, exceeding 60s worker leases).
+      - Strict preservation: published results (`scan.status === COMPLETED && scan.publishedLeaseToken === leaseToken`), active worker attempts (`scan.status === PROCESSING && scan.leaseToken === leaseToken`), and untagged legacy data (`leaseToken: null` or missing) are never deleted.
+      - Purges abandoned attempts (`FAILED` or re-queued scans), superseded attempts (`COMPLETED` scans with older lease tokens), and dangling artifacts pointing to missing scans.
+      - Execution concurrency guard (`isRunning`), bounded batching (`DEFAULT_CLEANUP_BATCH_SIZE = 50`), and database outage resilience.
+      - Tested with 10 comprehensive integration scenarios in `apps/api/src/test/orphanCleanup.test.ts`.
+    - **Controlled MongoDB Index Migrations (`IndexMigrationManager`):**
+      - Removed startup `syncIndexes()` from `apps/api/src/plugins/db.ts` and explicitly set `autoIndex: false` in connection options to prevent production startup table locks.
+      - Implemented explicit migration manager (`IndexMigrationManager` in `apps/api/src/migrations/indexMigration.ts`) with dry-run inspection mode (`npm run migrate:indexes:dry-run`) and apply execution (`npm run migrate:indexes`).
+      - Distributed atomic lock management in `_schema_migrations` with 5-minute timeout window.
+      - Pre-flight data deduplication for unique indexes (e.g. `urlHash_1_partial_active`).
+      - Safe obsolete index pruning (e.g. dropping `certificates.scanId_1` unique) while strictly preserving immutable `_id_`.
+      - Tested with 8 integration scenarios in `apps/api/src/test/indexMigration.test.ts`.
+    - **Full Platform Verification:** 56 API tests passing across 5 suites (18 unit/reliability scenarios + 12 security tests + 8 real MongoDB concurrency tests + 10 orphan cleanup tests + 8 index migration tests), 48 scanner pytest tests passing (104 automated tests total), clean monorepo production build (`tsc` + Next.js), valid Docker Compose configuration.
+- **Current Task:** Phase 4.1 Operational Hardening complete; awaiting user instructions.
 - **Next Priority:** User authentication and role-based access control (RBAC) token issuance.
 - **Pending Integration Work:** Optional external API keys for Google Safe Browsing and URLhaus automated webhook ingestion.
 - **Known Bugs:** None currently identified.
@@ -235,7 +255,7 @@ sentrix/
 ## 8. Known Issues and Technical Debt
 
 - **Anonymous Voting Identity:** Anonymous voting binds 1 vote per report per source IP address via salted SHA-256 hash. Clients behind large CGNAT or shared institutional networks share voting identity per report. *Mitigation:* Transition to signed JWT user authentication once auth module is implemented.
-- **Horizontal Multi-Node Worker Scale:** The atomic MongoDB queue handles multiple concurrent workers safely on single or multiple nodes using atomic `findOneAndUpdate`. Under extreme throughput (>1,000 scans/sec), a dedicated external broker (e.g. RabbitMQ or Redis Streams) could be evaluated, but MongoDB 7.0 compound indexed queue easily handles standard platform load.
+- **Horizontal Multi-Node Worker Scale:** The atomic MongoDB queue with cryptographic lease tokens (`crypto.randomUUID()`) safely coordinates multiple concurrent workers across independent nodes using atomic `findOneAndUpdate`. Under extreme enterprise throughput (>1,000 scans/sec), a dedicated external broker (e.g. RabbitMQ or Redis Streams) could be evaluated, but MongoDB 7.0 compound indexed queue easily handles standard platform load.
 
 ---
 
@@ -266,4 +286,5 @@ sentrix/
 | **2026-11-07** | `bd58628` | Architecture & Persistent Memory | Created root `ARCHITECTURE.md` and `MEMORY.md`, enforced single root `.env` loading across all services, organized `packages/shared` into `contracts`, `types`, and `utils`. |
 | **2026-11-07** | `ba0d7ef` | Security Hardening v1 | Implemented PinnedIPNetworkBackend, controlled manual redirects, 1MB streaming limits, strict TLS invariant, zero-trust INCONCLUSIVE verdicts, Fastify query/pagination sanitization, error redaction, 29 pytest tests, 4 API tests. |
 | **2026-11-07** | `285bcd5` | Security Remediation v1.1 | Fixed SENTRIX-SEC-01 (Docker env isolation), SENTRIX-SEC-02 (threat feed failure propagation), SENTRIX-SEC-03 (analyzer completeness evaluation), and SENTRIX-SEC-04 (community voting abuse hardening with IP voter hash & route rate limit). 47 pytest tests, 7 API tests. |
-| **2026-11-07** | `Pending` | Asynchronous Background Scanning Architecture | Implemented native MongoDB atomic background scan worker (`ScanWorkerService`), immediate QUEUED 201 response, duplicate active scan detection, retry & permanent error handling, abandoned job reaper, GET `/scans/:id/results` endpoint, and reactive frontend polling UI with live analyzer pipeline. 18 API tests, 48 scanner pytest tests. |
+| **2026-11-07** | `86ca62f` | Asynchronous Background Scanning Architecture | Implemented native MongoDB atomic background scan worker (`ScanWorkerService`), immediate QUEUED 201 response, duplicate active scan detection, retry & permanent error handling, abandoned job reaper, GET `/scans/:id/results` endpoint, and reactive frontend polling UI with live analyzer pipeline. 18 API tests, 48 scanner pytest tests. |
+| **2026-11-07** | `Pending` | Operational Hardening & Controlled Migrations (Phase 4.1) | Implemented OrphanCleanupService, attempt-scoped artifact lifecycle recovery, IndexMigrationManager with distributed locking in _schema_migrations, dry-run CLI, removed startup syncIndexes, autoIndex: false, 56 API tests, 48 scanner pytest tests. |

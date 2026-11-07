@@ -32,6 +32,8 @@ export interface IScanDocument extends Document {
   retryCount: number;
   workerId?: string;
   claimedAt?: Date;
+  leaseToken?: string;
+  publishedLeaseToken?: string;
   lastError?: string;
   timeoutSeconds?: number;
   errorMessage?: string;
@@ -57,7 +59,7 @@ const ScanSchema = new Schema<IScanDocument>(
     },
     urlHash: {
       type: String,
-      index: true,
+      trim: true,
     },
     status: {
       type: String,
@@ -130,6 +132,14 @@ const ScanSchema = new Schema<IScanDocument>(
       type: Date,
       index: true,
     },
+    leaseToken: {
+      type: String,
+      index: true,
+    },
+    publishedLeaseToken: {
+      type: String,
+      index: true,
+    },
     lastError: {
       type: String,
     },
@@ -151,5 +161,14 @@ ScanSchema.index({ createdAt: -1 });
 ScanSchema.index({ status: 1, createdAt: 1 }); // FIFO queue query index
 ScanSchema.index({ status: 1, claimedAt: 1 }); // Stale processing reaper index
 ScanSchema.index({ urlHash: 1, status: 1 }); // Duplicate active scan lookup
+ScanSchema.index(
+  { urlHash: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: { $in: ['QUEUED', 'PROCESSING'] },
+    },
+  }
+); // Prevent concurrent duplicate active scans in QUEUED/PROCESSING state
 
 export const ScanModel = mongoose.models.Scan || mongoose.model<IScanDocument>('Scan', ScanSchema);

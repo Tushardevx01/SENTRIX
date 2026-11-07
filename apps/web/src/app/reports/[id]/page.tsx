@@ -18,7 +18,7 @@ import {
   Info,
   HelpCircle,
 } from 'lucide-react';
-import { fetchScanReport } from '@/lib/api';
+import { fetchScanReport, fetchScanStatus } from '@/lib/api';
 import { RiskScoreGauge } from '@/components/ui/RiskScoreGauge';
 import { RiskBadge } from '@/components/ui/RiskBadge';
 import { FindingCard } from '@/components/ui/FindingCard';
@@ -40,29 +40,82 @@ export default function SecurityReportPage() {
 
     let isMounted = true;
     let pollTimer: NodeJS.Timeout | null = null;
+    let consecutiveFailures = 0;
 
     const poll = async () => {
       try {
-        const data = await fetchScanReport(id);
+        // 1. Lightweight status poll using dedicated results endpoint
+        const statusData = await fetchScanStatus(id);
         if (!isMounted) return;
 
-        setReport(data);
+        consecutiveFailures = 0; // Reset counter on success
+
+        const status = statusData?.status;
+        if (status === 'COMPLETED') {
+          // Fetch complete forensic report once scan is COMPLETED
+          const fullReport = await fetchScanReport(id);
+          if (!isMounted) return;
+          setReport(fullReport);
+          setLoading(false);
+          return; // Stop polling on terminal COMPLETED
+        }
+
+        if (status === 'FAILED') {
+          // Terminal FAILED state
+          setReport({
+            scan: {
+              _id: statusData.scanId,
+              submittedUrl: statusData.submittedUrl,
+              normalizedDomain: statusData.normalizedDomain,
+              status: 'FAILED',
+              retryCount: statusData.retryCount || 0,
+              errorMessage: statusData.error || 'Security inspection terminated',
+              createdAt: statusData.createdAt || new Date().toISOString(),
+              riskScore: 0,
+              verdict: 'INCONCLUSIVE',
+              confidence: 0,
+              analyzerStatuses: statusData.analyzerStatuses || {},
+            } as any,
+            findings: [],
+            certificate: null,
+            summary: { threatTypes: [], riskFactors: [] },
+          });
+          setLoading(false);
+          return; // Stop polling on terminal FAILED
+        }
+
+        // In-flight state: QUEUED or PROCESSING
+        setReport({
+          scan: {
+            _id: statusData.scanId,
+            submittedUrl: statusData.submittedUrl,
+            normalizedDomain: statusData.normalizedDomain,
+            status: statusData.status,
+            retryCount: statusData.retryCount || 0,
+            analyzerStatuses: statusData.analyzerStatuses,
+            createdAt: statusData.createdAt || new Date().toISOString(),
+            riskScore: 0,
+            verdict: 'BENIGN',
+            confidence: 0,
+          } as any,
+          findings: [],
+          certificate: null,
+          summary: { threatTypes: [], riskFactors: [] },
+        });
         setLoading(false);
 
-        // If scan is still queued or processing, schedule next poll tick
-        const status = data?.scan?.status;
-        if (
-          status === 'QUEUED' ||
-          status === 'PROCESSING' ||
-          status === 'PENDING' ||
-          status === 'IN_PROGRESS'
-        ) {
-          pollTimer = setTimeout(poll, 1500);
-        }
+        // Schedule next poll tick
+        pollTimer = setTimeout(poll, 1500);
       } catch (err: any) {
         if (!isMounted) return;
-        setError(err.message || 'Failed to load report');
-        setLoading(false);
+        consecutiveFailures++;
+        if (consecutiveFailures < 3) {
+          // Retry with slight backoff on transient network blip
+          pollTimer = setTimeout(poll, 2000);
+        } else {
+          setError(err.message || 'Failed to communicate with scanner service');
+          setLoading(false);
+        }
       }
     };
 

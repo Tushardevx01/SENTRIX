@@ -6,12 +6,18 @@ import { ScanModel, IScanDocument } from '../models/Scan.js';
 import { FindingModel } from '../models/Finding.js';
 import { CertificateModel } from '../models/Certificate.js';
 import { requestScannerAnalysis, ScannerClientError } from './scannerClient.js';
+import {
+  orphanCleanupService,
+  IOrphanCleanupOptions,
+  IOrphanCleanupReport,
+} from './orphanCleanup.js';
 
 export const MAX_CONCURRENT_JOBS = 3;
 export const MAX_RETRIES = 3;
 export const JOB_TIMEOUT_MS = 60_000; // 60 seconds
 export const POLL_INTERVAL_MS = 1_000; // 1 second
 export const REAPER_INTERVAL_MS = 15_000; // 15 seconds
+export const CLEANUP_INTERVAL_MS = 5 * 60_000; // 5 minutes
 
 export class ScanWorkerService {
   private workerId: string;
@@ -19,6 +25,7 @@ export class ScanWorkerService {
   private activeJobs = 0;
   private pollTimer: NodeJS.Timeout | null = null;
   private reaperTimer: NodeJS.Timeout | null = null;
+  private cleanupTimer: NodeJS.Timeout | null = null;
   private logger?: FastifyInstance['log'];
 
   constructor(workerId?: string) {
@@ -58,6 +65,13 @@ export class ScanWorkerService {
         this.logger?.error({ err }, 'Error in abandoned job reaper');
       });
     }, REAPER_INTERVAL_MS);
+
+    // Periodic orphan-artifact recovery and cleanup
+    this.cleanupTimer = setInterval(() => {
+      orphanCleanupService.runCleanup({}, this.logger).catch((err) => {
+        this.logger?.warn({ err: err.message }, 'Non-fatal error in background orphan artifact cleanup');
+      });
+    }, CLEANUP_INTERVAL_MS);
   }
 
   /**
@@ -74,6 +88,10 @@ export class ScanWorkerService {
       clearInterval(this.reaperTimer);
       this.reaperTimer = null;
     }
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
 
     this.logger?.info({ workerId: this.workerId }, 'Stopping scan worker; waiting for active jobs');
 
@@ -82,6 +100,13 @@ export class ScanWorkerService {
     while (this.activeJobs > 0 && Date.now() - start < 5000) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
+  }
+
+  /**
+   * Runs an explicit orphan-artifact recovery and cleanup cycle.
+   */
+  public async runOrphanCleanup(options?: IOrphanCleanupOptions): Promise<IOrphanCleanupReport> {
+    return orphanCleanupService.runCleanup(options, this.logger);
   }
 
   /**
@@ -131,9 +156,10 @@ export class ScanWorkerService {
   }
 
   /**
-   * Atomically claims the next QUEUED job from MongoDB using FIFO ordering.
+   * Atomically claims the next QUEUED job from MongoDB using FIFO ordering and issues a unique lease token.
    */
   public async claimNextJob(): Promise<IScanDocument | null> {
+    const leaseToken = crypto.randomUUID();
     return await ScanModel.findOneAndUpdate(
       {
         status: ScanStatusEnum.QUEUED,
@@ -144,6 +170,7 @@ export class ScanWorkerService {
           status: ScanStatusEnum.PROCESSING,
           workerId: this.workerId,
           claimedAt: new Date(),
+          leaseToken,
         },
       },
       {
@@ -154,7 +181,7 @@ export class ScanWorkerService {
   }
 
   /**
-   * Executes claimed scan job against the Python security engine and persists results idempotently.
+   * Executes claimed scan job against the Python security engine and persists results idempotently with lease fencing.
    */
   public async executeJob(scan: IScanDocument): Promise<void> {
     const scanId = scan._id.toString();
@@ -169,14 +196,30 @@ export class ScanWorkerService {
         deepScan: false,
       });
 
-      // 2. Idempotent cleanup of existing findings / certificate for retries
-      await FindingModel.deleteMany({ scanId: scan._id });
-      await CertificateModel.deleteOne({ scanId: scan._id });
+      // 2. Pre-write lease verification: ensure our lease is still active before mutating persistent state
+      const activeOwnership = await ScanModel.findOne({
+        _id: scan._id,
+        leaseToken: scan.leaseToken,
+        status: ScanStatusEnum.PROCESSING,
+      }).lean();
 
-      // 3. Persist new findings
+      if (!activeOwnership) {
+        this.logger?.warn(
+          { scanId, workerId: this.workerId, leaseToken: scan.leaseToken },
+          'Worker lease expired or revoked during scanner execution; discarding results'
+        );
+        return;
+      }
+
+      // 3. Attempt-scoped cleanup: remove any findings/certificate previously written by THIS attempt
+      await FindingModel.deleteMany({ scanId: scan._id, leaseToken: scan.leaseToken });
+      await CertificateModel.deleteMany({ scanId: scan._id, leaseToken: scan.leaseToken });
+
+      // 4. Persist new findings tagged with this attempt's leaseToken
       if (scanResult.findings && scanResult.findings.length > 0) {
         const findingDocs = scanResult.findings.map((f) => ({
           scanId: scan._id,
+          leaseToken: scan.leaseToken,
           category: f.category,
           severity: f.severity,
           title: f.title,
@@ -187,10 +230,11 @@ export class ScanWorkerService {
         await FindingModel.insertMany(findingDocs);
       }
 
-      // 4. Persist certificate if inspected
+      // 5. Persist certificate tagged with this attempt's leaseToken
       if (scanResult.certificate) {
         await CertificateModel.create({
           scanId: scan._id,
+          leaseToken: scan.leaseToken,
           issuer: scanResult.certificate.issuer,
           subject: scanResult.certificate.subject,
           validFrom: scanResult.certificate.validFrom,
@@ -201,22 +245,59 @@ export class ScanWorkerService {
         });
       }
 
-      // 5. Update Scan Document to COMPLETED
-      await ScanModel.findByIdAndUpdate(scan._id, {
-        $set: {
-          status: ScanStatusEnum.COMPLETED,
-          riskScore: scanResult.riskScore,
-          verdict: scanResult.verdict,
-          confidence: scanResult.confidence,
-          analysisStatus: scanResult.analysisStatus || 'COMPLETE',
-          analysisComplete:
-            scanResult.analysisComplete !== undefined ? scanResult.analysisComplete : true,
-          analyzerStatuses: scanResult.analyzerStatuses,
-          summary: scanResult.summary,
-          completedAt: new Date(),
-          errorMessage: undefined,
+      // 6. Fenced update: commit status to COMPLETED only if leaseToken and PROCESSING status still match
+      const updatedScan = await ScanModel.findOneAndUpdate(
+        {
+          _id: scan._id,
+          leaseToken: scan.leaseToken,
+          status: ScanStatusEnum.PROCESSING,
         },
-      });
+        {
+          $set: {
+            status: ScanStatusEnum.COMPLETED,
+            publishedLeaseToken: scan.leaseToken,
+            riskScore: scanResult.riskScore,
+            verdict: scanResult.verdict,
+            confidence: scanResult.confidence,
+            analysisStatus: scanResult.analysisStatus || 'COMPLETE',
+            analysisComplete:
+              scanResult.analysisComplete !== undefined ? scanResult.analysisComplete : true,
+            analyzerStatuses: scanResult.analyzerStatuses,
+            summary: scanResult.summary,
+            completedAt: new Date(),
+            errorMessage: undefined,
+          },
+        },
+        { new: true }
+      );
+
+      // If the conditional update failed, the lease was reclaimed before final write
+      if (!updatedScan) {
+        this.logger?.warn(
+          { scanId, workerId: this.workerId, leaseToken: scan.leaseToken },
+          'Worker lease lost prior to completion write; rolling back inserted findings for this attempt'
+        );
+        await FindingModel.deleteMany({ scanId: scan._id, leaseToken: scan.leaseToken });
+        await CertificateModel.deleteMany({ scanId: scan._id, leaseToken: scan.leaseToken });
+        return;
+      }
+
+      // 7. Post-publication: Clean up superseded artifacts from previous worker attempts
+      try {
+        await FindingModel.deleteMany({
+          scanId: scan._id,
+          leaseToken: { $ne: scan.leaseToken },
+        });
+        await CertificateModel.deleteMany({
+          scanId: scan._id,
+          leaseToken: { $ne: scan.leaseToken },
+        });
+      } catch (cleanupError: any) {
+        this.logger?.warn(
+          { scanId, error: cleanupError.message },
+          'Non-critical error pruning superseded artifacts after scan completion'
+        );
+      }
 
       this.logger?.info(
         { scanId, verdict: scanResult.verdict, score: scanResult.riskScore },
@@ -228,86 +309,141 @@ export class ScanWorkerService {
   }
 
   /**
-   * Handles scan execution failures with retry vs permanent failure differentiation.
+   * Handles scan execution failures with retry vs permanent failure differentiation and fenced mutation.
    */
   public async handleJobError(scan: IScanDocument, error: any): Promise<void> {
-    const isPermanent =
-      error instanceof ScannerClientError &&
-      (error.statusCode === 400 || error.message.includes('SSRF') || error.message.includes('Invalid'));
+    try {
+      const isPermanent =
+        error instanceof ScannerClientError &&
+        (error.statusCode === 400 || error.message.includes('SSRF') || error.message.includes('Invalid'));
 
-    const currentRetries = scan.retryCount || 0;
-    const canRetry = !isPermanent && currentRetries + 1 < MAX_RETRIES;
+      const currentRetries = scan.retryCount || 0;
+      const canRetry = !isPermanent && currentRetries + 1 < MAX_RETRIES;
 
-    if (canRetry) {
-      // Transient error: Re-queue with incremented retry count
-      await ScanModel.findByIdAndUpdate(scan._id, {
-        $set: {
-          status: ScanStatusEnum.QUEUED,
-          lastError: error.message || 'Transient scanner error',
-          claimedAt: undefined,
-          workerId: undefined,
-        },
-        $inc: { retryCount: 1 },
-      });
+      if (canRetry) {
+        // Transient error: Re-queue with incremented retry count under active lease
+        const res = await ScanModel.findOneAndUpdate(
+          {
+            _id: scan._id,
+            leaseToken: scan.leaseToken,
+            status: ScanStatusEnum.PROCESSING,
+          },
+          {
+            $set: {
+              status: ScanStatusEnum.QUEUED,
+              lastError: error.message || 'Transient scanner error',
+              claimedAt: undefined,
+              workerId: undefined,
+              leaseToken: undefined,
+            },
+            $inc: { retryCount: 1 },
+          }
+        );
 
-      this.logger?.warn(
-        { scanId: scan._id, retryCount: currentRetries + 1, error: error.message },
-        'Scan failed transiently; re-queued for retry'
-      );
-    } else {
-      // Permanent failure or max retries exceeded: Mark as FAILED
-      await ScanModel.findByIdAndUpdate(scan._id, {
-        $set: {
-          status: ScanStatusEnum.FAILED,
-          errorMessage: error.message || 'Scan execution failed unexpectedly',
-          completedAt: new Date(),
-        },
-        $inc: { retryCount: isPermanent ? 0 : 1 },
-      });
+        if (!res) {
+          this.logger?.warn(
+            { scanId: scan._id, workerId: this.workerId },
+            'Worker lease expired prior to error handling; ignoring stale failure transition'
+          );
+          return;
+        }
 
+        this.logger?.warn(
+          { scanId: scan._id, retryCount: currentRetries + 1, error: error.message },
+          'Scan failed transiently; re-queued for retry'
+        );
+      } else {
+        // Permanent failure or max retries exceeded: Mark as FAILED under active lease
+        const res = await ScanModel.findOneAndUpdate(
+          {
+            _id: scan._id,
+            leaseToken: scan.leaseToken,
+            status: ScanStatusEnum.PROCESSING,
+          },
+          {
+            $set: {
+              status: ScanStatusEnum.FAILED,
+              errorMessage: error.message || 'Scan execution failed unexpectedly',
+              completedAt: new Date(),
+            },
+            $inc: { retryCount: isPermanent ? 0 : 1 },
+          }
+        );
+
+        if (!res) {
+          this.logger?.warn(
+            { scanId: scan._id, workerId: this.workerId },
+            'Worker lease expired prior to failure handling; ignoring stale failure transition'
+          );
+          return;
+        }
+
+        this.logger?.error(
+          { scanId: scan._id, isPermanent, error: error.message },
+          'Scan failed permanently'
+        );
+      }
+    } catch (dbError: any) {
       this.logger?.error(
-        { scanId: scan._id, isPermanent, error: error.message },
-        'Scan failed permanently'
+        { scanId: scan._id, dbError: dbError.message },
+        'Database error during scan job error handling; state preserved for future recovery'
       );
     }
   }
 
   /**
-   * Recovers jobs stuck in PROCESSING longer than JOB_TIMEOUT_MS.
+   * Recovers jobs stuck in PROCESSING longer than JOB_TIMEOUT_MS using conditional atomic reclamation.
    */
   public async recoverAbandonedJobs(timeoutMs: number = JOB_TIMEOUT_MS): Promise<number> {
     const cutoff = new Date(Date.now() - timeoutMs);
 
     const abandonedJobs = await ScanModel.find({
       status: ScanStatusEnum.PROCESSING,
-      claimedAt: { $lt: cutoff },
+      $or: [{ claimedAt: { $lt: cutoff } }, { claimedAt: { $exists: false } }, { claimedAt: null }],
     }).limit(10);
 
+    let recoveredCount = 0;
     for (const job of abandonedJobs) {
-      if ((job.retryCount || 0) + 1 < MAX_RETRIES) {
-        await ScanModel.findByIdAndUpdate(job._id, {
+      const canRetry = (job.retryCount || 0) + 1 < MAX_RETRIES;
+
+      const condition: Record<string, any> = {
+        _id: job._id,
+        status: ScanStatusEnum.PROCESSING,
+      };
+      if (job.leaseToken) {
+        condition.leaseToken = job.leaseToken;
+      }
+      if (job.claimedAt) {
+        condition.claimedAt = job.claimedAt;
+      }
+
+      const res = await ScanModel.findOneAndUpdate(
+        condition,
+        {
           $set: {
-            status: ScanStatusEnum.QUEUED,
-            lastError: 'Job processing timed out; re-queued by recovery reaper',
+            status: canRetry ? ScanStatusEnum.QUEUED : ScanStatusEnum.FAILED,
+            lastError: canRetry ? 'Job processing timed out; re-queued by recovery reaper' : undefined,
+            errorMessage: !canRetry ? 'Scan processing exceeded maximum timeout ceiling' : undefined,
             claimedAt: undefined,
             workerId: undefined,
+            leaseToken: undefined,
+            completedAt: !canRetry ? new Date() : undefined,
           },
-          $inc: { retryCount: 1 },
-        });
-        this.logger?.warn({ scanId: job._id }, 'Recovered abandoned scan job back to QUEUED');
-      } else {
-        await ScanModel.findByIdAndUpdate(job._id, {
-          $set: {
-            status: ScanStatusEnum.FAILED,
-            errorMessage: 'Scan processing exceeded maximum timeout ceiling',
-            completedAt: new Date(),
-          },
-        });
-        this.logger?.error({ scanId: job._id }, 'Abandoned scan exceeded max retries; marked as FAILED');
+          $inc: { retryCount: canRetry ? 1 : 0 },
+        }
+      );
+
+      if (res) {
+        recoveredCount++;
+        if (canRetry) {
+          this.logger?.warn({ scanId: job._id }, 'Recovered abandoned scan job back to QUEUED');
+        } else {
+          this.logger?.error({ scanId: job._id }, 'Abandoned scan exceeded max retries; marked as FAILED');
+        }
       }
     }
 
-    return abandonedJobs.length;
+    return recoveredCount;
   }
 }
 

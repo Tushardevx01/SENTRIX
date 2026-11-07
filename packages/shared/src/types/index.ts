@@ -105,6 +105,8 @@ export interface IScan {
   retryCount?: number;
   workerId?: string;
   claimedAt?: string;
+  leaseToken?: string;
+  publishedLeaseToken?: string;
   errorMessage?: string;
   summary?: any;
   createdAt: string;
@@ -114,6 +116,7 @@ export interface IScan {
 export interface IFinding {
   _id: string;
   scanId: string;
+  leaseToken?: string;
   category: FindingCategory;
   severity: FindingSeverity;
   title: string;
@@ -126,6 +129,7 @@ export interface IFinding {
 export interface ICertificate {
   _id: string;
   scanId: string;
+  leaseToken?: string;
   issuer: string;
   subject: string;
   validFrom: string;

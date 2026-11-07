@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface ICertificateDocument extends Document {
   scanId: Types.ObjectId;
+  leaseToken?: string;
   issuer: string;
   subject: string;
   validFrom: string;
@@ -19,7 +20,10 @@ const CertificateSchema = new Schema<ICertificateDocument>(
       type: Schema.Types.ObjectId,
       ref: 'Scan',
       required: true,
-      unique: true,
+      index: true,
+    },
+    leaseToken: {
+      type: String,
       index: true,
     },
     issuer: {
@@ -58,6 +62,8 @@ const CertificateSchema = new Schema<ICertificateDocument>(
     timestamps: true,
   }
 );
+
+CertificateSchema.index({ scanId: 1, leaseToken: 1 }, { unique: true, sparse: true });
 
 export const CertificateModel =
   mongoose.models.Certificate || mongoose.model<ICertificateDocument>('Certificate', CertificateSchema);

@@ -7,7 +7,9 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "NODE_ENV=test tsx --test src/test/**/*.test.ts"
+    "test": "NODE_ENV=test tsx --test src/test/**/*.test.ts",
+    "migrate:indexes": "tsx src/scripts/migrateIndexes.ts",
+    "migrate:indexes:dry-run": "tsx src/scripts/migrateIndexes.ts --dry-run"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",

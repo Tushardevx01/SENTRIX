@@ -24,10 +24,28 @@ export const reportsRoutes: FastifyPluginAsync = async (app: FastifyInstance) =>
       });
     }
 
-    const [findings, certificate] = await Promise.all([
-      FindingModel.find({ scanId: id }).sort({ createdAt: -1 }).lean(),
-      CertificateModel.findOne({ scanId: id }).lean(),
-    ]);
+    let findings: any[] = [];
+    let certificate: any = null;
+
+    if (scan.status === 'COMPLETED') {
+      const filter: Record<string, any> = { scanId: id };
+      if (scan.publishedLeaseToken) {
+        filter.leaseToken = scan.publishedLeaseToken;
+      } else {
+        // Legacy scan fallback: match untagged records or records matching scan.leaseToken,
+        // but exclude records tagged with another worker's attempt token
+        filter.$or = [
+          { leaseToken: { $exists: false } },
+          { leaseToken: null },
+          ...(scan.leaseToken ? [{ leaseToken: scan.leaseToken }] : []),
+        ];
+      }
+
+      [findings, certificate] = await Promise.all([
+        FindingModel.find(filter).sort({ createdAt: -1 }).lean(),
+        CertificateModel.findOne(filter).lean(),
+      ]);
+    }
 
     return reply.send({
       scan,

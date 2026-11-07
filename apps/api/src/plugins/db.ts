@@ -7,6 +7,7 @@ export async function initDatabase(app: FastifyInstance): Promise<void> {
     mongoose.set('strictQuery', true);
     await mongoose.connect(env.MONGODB_URI, {
       serverSelectionTimeoutMS: 5000,
+      autoIndex: false, // In production, indexes are managed explicitly via controlled migration CLI
     });
     app.log.info({ uri: env.MONGODB_URI.replace(/\/\/.*@/, '//***@') }, 'MongoDB connected successfully');
   } catch (error) {
