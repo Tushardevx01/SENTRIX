@@ -1,13 +1,15 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
+import crypto from 'node:crypto';
+import mongoose from 'mongoose';
 import { UrlScanRequestSchema, normalizeUrl, ScanStatusEnum } from '@sentrix/shared';
-import { ScanModel } from '../../models/Scan.js';
+import { ScanModel, IScanDocument } from '../../models/Scan.js';
 import { FindingModel } from '../../models/Finding.js';
 import { CertificateModel } from '../../models/Certificate.js';
-import { requestScannerAnalysis, ScannerClientError } from '../../services/scannerClient.js';
+import { scanWorker } from '../../services/scanWorker.js';
 import { escapeRegex, sanitizePagination } from '../../utils/sanitize.js';
 
 export const scansRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
-  // POST /api/v1/scans - Submit & execute URL threat scan
+  // POST /api/v1/scans - Queue URL threat scan for asynchronous background execution
   app.post('/', async (request, reply) => {
     const parseResult = UrlScanRequestSchema.safeParse(request.body);
     if (!parseResult.success) {
@@ -18,103 +20,52 @@ export const scansRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       });
     }
 
-    const { url, deepScan } = parseResult.data;
+    const { url } = parseResult.data;
     const { normalizedUrl, normalizedDomain } = normalizeUrl(url);
+    const urlHash = crypto.createHash('sha256').update(normalizedUrl).digest('hex');
 
-    // 1. Create Scan record in MongoDB
+    // Duplicate submission protection: reuse recently queued/processing scan
+    const activeScan = (await ScanModel.findOne({
+      urlHash,
+      status: { $in: [ScanStatusEnum.QUEUED, ScanStatusEnum.PROCESSING] },
+      createdAt: { $gte: new Date(Date.now() - 60_000) },
+    }).lean()) as IScanDocument | null;
+
+    if (activeScan) {
+      return reply.status(200).send({
+        scanId: activeScan._id,
+        status: activeScan.status,
+        submittedUrl: activeScan.submittedUrl,
+        normalizedDomain: activeScan.normalizedDomain,
+        createdAt: activeScan.createdAt,
+        message: 'Active threat scan already queued or processing for this URL.',
+        isDuplicate: true,
+      });
+    }
+
+    // Create new scan record in QUEUED status
     const scan = await ScanModel.create({
       submittedUrl: normalizedUrl,
       normalizedDomain,
-      status: ScanStatusEnum.IN_PROGRESS,
+      urlHash,
+      status: ScanStatusEnum.QUEUED,
+      riskScore: 0,
+      verdict: 'BENIGN',
+      confidence: 0,
+      retryCount: 0,
     });
 
-    try {
-      // 2. Delegate to internal Python Security Scanner
-      const scanResult = await requestScannerAnalysis({
-        scanId: scan._id.toString(),
-        url: normalizedUrl,
-        normalizedDomain,
-        deepScan: Boolean(deepScan),
-      });
+    // Notify background worker to immediately pick up the job
+    scanWorker.trigger();
 
-      // 3. Persist Findings
-      if (scanResult.findings && scanResult.findings.length > 0) {
-        const findingDocs = scanResult.findings.map((f) => ({
-          scanId: scan._id,
-          category: f.category,
-          severity: f.severity,
-          title: f.title,
-          description: f.description,
-          evidence: f.evidence || {},
-          confidence: f.confidence,
-        }));
-        await FindingModel.insertMany(findingDocs);
-      }
-
-      // 4. Persist Certificate if inspected
-      if (scanResult.certificate) {
-        await CertificateModel.findOneAndUpdate(
-          { scanId: scan._id },
-          {
-            scanId: scan._id,
-            issuer: scanResult.certificate.issuer,
-            subject: scanResult.certificate.subject,
-            validFrom: scanResult.certificate.validFrom,
-            validUntil: scanResult.certificate.validUntil,
-            fingerprint: scanResult.certificate.fingerprint,
-            hostnameMatched: scanResult.certificate.hostnameMatched,
-            rawDetails: scanResult.certificate.rawDetails || {},
-          },
-          { upsert: true, new: true }
-        );
-      }
-
-      // 5. Update Scan Document
-      scan.status = ScanStatusEnum.COMPLETED;
-      scan.riskScore = scanResult.riskScore;
-      scan.verdict = scanResult.verdict;
-      scan.confidence = scanResult.confidence;
-      scan.analysisStatus = scanResult.analysisStatus || 'COMPLETE';
-      scan.analysisComplete = scanResult.analysisComplete !== undefined ? scanResult.analysisComplete : true;
-      scan.analyzerStatuses = scanResult.analyzerStatuses;
-      scan.summary = scanResult.summary;
-      scan.completedAt = new Date();
-      await scan.save();
-
-      return reply.status(201).send({
-        scanId: scan._id,
-        status: scan.status,
-        riskScore: scan.riskScore,
-        verdict: scan.verdict,
-        confidence: scan.confidence,
-        analysisStatus: scan.analysisStatus,
-        analysisComplete: scan.analysisComplete,
-        submittedUrl: scan.submittedUrl,
-        normalizedDomain: scan.normalizedDomain,
-        completedAt: scan.completedAt,
-        summary: scan.summary,
-      });
-    } catch (error: any) {
-      scan.status = ScanStatusEnum.FAILED;
-      scan.errorMessage = error.message || 'Unknown scanner error';
-      scan.completedAt = new Date();
-      await scan.save();
-
-      if (error instanceof ScannerClientError) {
-        return reply.status(error.statusCode).send({
-          error: error.statusCode === 400 ? 'SSRF_VIOLATION' : 'SCAN_FAILED',
-          message: error.message,
-          details: error.details,
-          scanId: scan._id,
-        });
-      }
-
-      return reply.status(500).send({
-        error: 'INTERNAL_ERROR',
-        message: 'Scan execution failed unexpectedly',
-        scanId: scan._id,
-      });
-    }
+    return reply.status(201).send({
+      scanId: scan._id,
+      status: scan.status,
+      submittedUrl: scan.submittedUrl,
+      normalizedDomain: scan.normalizedDomain,
+      createdAt: scan.createdAt,
+      message: 'Scan successfully queued for verification.',
+    });
   });
 
   // GET /api/v1/scans - List recent scans
@@ -144,13 +95,78 @@ export const scansRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     });
   });
 
-  // GET /api/v1/scans/:id - Get specific scan status
+  // GET /api/v1/scans/:id - Get scan status and metadata
   app.get('/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const scan = await ScanModel.findById(id).lean();
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return reply.status(400).send({ error: 'VALIDATION_ERROR', message: 'Invalid scan ID format' });
+    }
+
+    const scan = (await ScanModel.findById(id).lean()) as IScanDocument | null;
     if (!scan) {
       return reply.status(404).send({ error: 'NOT_FOUND', message: 'Scan not found' });
     }
     return reply.send(scan);
+  });
+
+  // GET /api/v1/scans/:id/results - Fetch completed scan results (findings, cert, summary)
+  app.get('/:id/results', async (request, reply) => {
+    const { id } = request.params as { id: string };
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return reply.status(400).send({ error: 'VALIDATION_ERROR', message: 'Invalid scan ID format' });
+    }
+
+    const scan = (await ScanModel.findById(id).lean()) as IScanDocument | null;
+    if (!scan) {
+      return reply.status(404).send({ error: 'NOT_FOUND', message: 'Scan not found' });
+    }
+
+    if (scan.status === ScanStatusEnum.COMPLETED) {
+      const [findings, certificate] = await Promise.all([
+        FindingModel.find({ scanId: id }).sort({ createdAt: -1 }).lean(),
+        CertificateModel.findOne({ scanId: id }).lean(),
+      ]);
+
+      return reply.send({
+        scanId: scan._id,
+        status: scan.status,
+        submittedUrl: scan.submittedUrl,
+        normalizedDomain: scan.normalizedDomain,
+        verdict: scan.verdict,
+        riskScore: scan.riskScore,
+        confidence: scan.confidence,
+        analysisStatus: scan.analysisStatus,
+        analysisComplete: scan.analysisComplete,
+        analyzerStatuses: scan.analyzerStatuses,
+        findings,
+        certificate,
+        summary: scan.summary,
+        completedAt: scan.completedAt,
+      });
+    }
+
+    if (scan.status === ScanStatusEnum.FAILED) {
+      return reply.status(200).send({
+        scanId: scan._id,
+        status: scan.status,
+        submittedUrl: scan.submittedUrl,
+        normalizedDomain: scan.normalizedDomain,
+        error: scan.errorMessage || 'Scan execution failed',
+        completedAt: scan.completedAt,
+      });
+    }
+
+    // Scan is still QUEUED or PROCESSING
+    return reply.status(200).send({
+      scanId: scan._id,
+      status: scan.status,
+      submittedUrl: scan.submittedUrl,
+      normalizedDomain: scan.normalizedDomain,
+      analyzerStatuses: scan.analyzerStatuses,
+      message: 'Scan is currently in progress',
+      createdAt: scan.createdAt,
+    });
   });
 };

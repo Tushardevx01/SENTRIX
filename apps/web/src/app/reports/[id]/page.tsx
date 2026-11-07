@@ -39,22 +39,38 @@ export default function SecurityReportPage() {
     if (!id) return;
 
     let isMounted = true;
-    fetchScanReport(id)
-      .then((data) => {
-        if (isMounted) {
-          setReport(data);
-          setLoading(false);
+    let pollTimer: NodeJS.Timeout | null = null;
+
+    const poll = async () => {
+      try {
+        const data = await fetchScanReport(id);
+        if (!isMounted) return;
+
+        setReport(data);
+        setLoading(false);
+
+        // If scan is still queued or processing, schedule next poll tick
+        const status = data?.scan?.status;
+        if (
+          status === 'QUEUED' ||
+          status === 'PROCESSING' ||
+          status === 'PENDING' ||
+          status === 'IN_PROGRESS'
+        ) {
+          pollTimer = setTimeout(poll, 1500);
         }
-      })
-      .catch((err) => {
-        if (isMounted) {
-          setError(err.message || 'Failed to load report');
-          setLoading(false);
-        }
-      });
+      } catch (err: any) {
+        if (!isMounted) return;
+        setError(err.message || 'Failed to load report');
+        setLoading(false);
+      }
+    };
+
+    poll();
 
     return () => {
       isMounted = false;
+      if (pollTimer) clearTimeout(pollTimer);
     };
   }, [id]);
 
@@ -73,6 +89,163 @@ export default function SecurityReportPage() {
   }
 
   const { scan, findings, certificate, summary } = report;
+
+  // In-flight state: Scan is QUEUED or PROCESSING
+  const isInFlight =
+    scan.status === 'QUEUED' ||
+    scan.status === 'PROCESSING' ||
+    scan.status === 'PENDING' ||
+    scan.status === 'IN_PROGRESS';
+
+  if (isInFlight) {
+    return (
+      <div className="space-y-8 py-6 max-w-4xl mx-auto">
+        <div className="flex items-center justify-between">
+          <Link
+            href="/scanner"
+            className="inline-flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to Scanner
+          </Link>
+          <span className="text-xs font-mono text-slate-500">
+            Scan ID: <span className="text-slate-300">{scan._id}</span>
+          </span>
+        </div>
+
+        {/* Live Processing Card */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-8 shadow-2xl space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold tracking-wider uppercase border ${
+                    scan.status === 'QUEUED'
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                      : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 animate-pulse'
+                  }`}
+                >
+                  <Activity className="w-3.5 h-3.5 animate-spin" />
+                  {scan.status === 'QUEUED' ? 'Job Queued' : 'Analysis In Progress'}
+                </span>
+                <span className="text-xs font-mono text-slate-500">Live Polling (1.5s)</span>
+              </div>
+              <h1 className="text-xl font-bold text-white font-mono break-all">
+                {scan.submittedUrl}
+              </h1>
+              <p className="text-xs font-mono text-slate-400 mt-1">
+                Domain: <span className="text-slate-200">{scan.normalizedDomain}</span>
+              </p>
+            </div>
+            <div className="text-right sm:border-l sm:border-slate-800 sm:pl-6">
+              <span className="text-xs font-mono text-slate-500 block">Queue Retries</span>
+              <span className="text-sm font-mono text-slate-300 font-bold">
+                {scan.retryCount || 0} / 3
+              </span>
+            </div>
+          </div>
+
+          <div className="p-4 bg-slate-950/70 border border-slate-800/80 rounded-lg text-xs font-mono text-slate-300 space-y-2">
+            <div className="flex items-center gap-2 text-cyan-400 font-semibold">
+              <Clock className="w-4 h-4" />
+              <span>
+                {scan.status === 'QUEUED'
+                  ? 'Scan job is queued in MongoDB; background worker claiming shortly...'
+                  : 'Worker active: executing SSRF check, TLS handshake, DOM security analysis, and reputation lookups...'}
+              </span>
+            </div>
+            <p className="text-slate-500 text-[11px]">
+              This page updates automatically upon completion without requiring manual refresh.
+            </p>
+          </div>
+
+          {/* Real-time Analyzer Pipeline Execution Matrix */}
+          {scan.analyzerStatuses && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-slate-400">
+                Security Pipeline Engine Matrix
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs font-mono">
+                {Object.entries(scan.analyzerStatuses).map(([key, status]) => (
+                  <div
+                    key={key}
+                    className="p-3 bg-slate-950/70 border border-slate-800 rounded-lg flex items-center justify-between"
+                  >
+                    <span className="text-slate-300 truncate capitalize">
+                      {key.replace('Analyzer', '')}
+                    </span>
+                    <span
+                      className={
+                        status === 'SUCCESS'
+                          ? 'text-emerald-400 flex items-center gap-1 font-bold'
+                          : status === 'FAILED'
+                          ? 'text-red-400 flex items-center gap-1 font-bold'
+                          : status === 'TIMEOUT'
+                          ? 'text-amber-400 flex items-center gap-1 font-bold'
+                          : 'text-slate-500 flex items-center gap-1'
+                      }
+                    >
+                      {status === 'SUCCESS' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                      {status === 'FAILED' && <XCircle className="w-3.5 h-3.5" />}
+                      {status === 'TIMEOUT' && <Clock className="w-3.5 h-3.5" />}
+                      {status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Failed state
+  if (scan.status === 'FAILED') {
+    return (
+      <div className="space-y-8 py-6 max-w-3xl mx-auto">
+        <div className="flex items-center justify-between">
+          <Link
+            href="/scanner"
+            className="inline-flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to Scanner
+          </Link>
+          <span className="text-xs font-mono text-slate-500">
+            Scan ID: <span className="text-slate-300">{scan._id}</span>
+          </span>
+        </div>
+
+        <div className="bg-red-950/20 border border-red-900/60 rounded-xl p-8 shadow-xl space-y-4">
+          <div className="flex items-center gap-3">
+            <XCircle className="w-7 h-7 text-red-400 shrink-0" />
+            <div>
+              <h1 className="text-lg font-bold text-red-200">Security Inspection Terminated</h1>
+              <p className="text-xs font-mono text-red-400 mt-0.5">
+                The threat verification pipeline encountered an unrecoverable failure or security boundary violation.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-4 bg-slate-950/80 border border-red-900/40 rounded-lg font-mono text-xs text-red-300">
+            <span className="text-slate-500 block mb-1">Failure Reason:</span>
+            <p className="font-semibold">{scan.errorMessage || 'Unknown execution error'}</p>
+          </div>
+
+          <div className="pt-2">
+            <Link
+              href="/scanner"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-mono rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Return to Scanner
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 py-4">

@@ -9,6 +9,7 @@ import { reportsRoutes } from './modules/reports/index.js';
 import { threatsRoutes } from './modules/threats/index.js';
 import { communityRoutes } from './modules/community/index.js';
 import { dashboardRoutes } from './modules/dashboard/index.js';
+import { scanWorker } from './services/scanWorker.js';
 
 export function buildServer(): FastifyInstance {
   const app = fastify({
@@ -100,6 +101,12 @@ export async function startServer(): Promise<void> {
 
   try {
     await initDatabase(app);
+    scanWorker.start(app.log);
+
+    app.addHook('onClose', async () => {
+      await scanWorker.stop();
+    });
+
     const address = await app.listen({
       port: env.PORT,
       host: '0.0.0.0',

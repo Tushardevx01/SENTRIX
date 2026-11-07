@@ -49,8 +49,10 @@ flowchart TD
         Web["Next.js Web UI<br/>(Port 3000)"]
     end
 
-    subgraph GatewayLayer["Gateway & Persistence Layer"]
+    subgraph GatewayLayer["Gateway, Queue & Worker Layer"]
         API["Fastify API Gateway<br/>(Port 8000)"]
+        Worker["ScanWorkerService<br/>(Atomic MongoDB Queue)"]
+        Reaper["Abandoned Job Recovery Reaper<br/>(Timeout Detection)"]
         DB[("MongoDB 7.0<br/>(Port 27017)")]
     end
 
@@ -74,41 +76,65 @@ flowchart TD
         GSB["Google Safe Browsing API"]
     end
 
-    User -->|"1. Submits URL / Views Reports"| Web
-    Web -->|"2. HTTPS / JSON REST API"| API
-    API -->|"3. Persists Initial Scan & Reads Records"| DB
-    API -->|"4. Internal HTTP POST (X-Scanner-Secret)"| Guard
-    Guard -->|"5. Approved Public Targets Only"| Scanner
+    User -->|"1. Submits URL"| Web
+    Web -->|"2. POST /api/v1/scans"| API
+    API -->|"3. Creates Scan (status: QUEUED)"| DB
+    API -->|"4. Returns immediate 201 { scanId, status: QUEUED }"| Web
+    API -.->|"5. Event Trigger / Polling Tick"| Worker
+    Worker -->|"6. Atomic Claim (status: PROCESSING, workerId)"| DB
+    Reaper -.->|"Reclaims Stale PROCESSING Jobs (>60s)"| DB
+    Worker -->|"7. POST /api/v1/analyze (X-Scanner-Secret)"| Guard
+    Guard -->|"8. Approved Public Targets Only"| Scanner
     Scanner --> A1 & A2 & A3 & A4 & A5
-    A5 -.->|"6. Optional Threat Feeds"| URLhaus & GSB
+    A5 -.->|"9. External Feeds"| URLhaus & GSB
     A1 & A2 & A3 & A4 & A5 --> Scoring
-    Scoring -->|"7. Returns Structured Findings & Risk Score"| API
-    API -->|"8. Persists Findings & Completed Report"| DB
-    API -->|"9. Returns Completed Security Report"| Web
+    Scoring -->|"10. Structured AnalysisResponse"| Worker
+    Worker -->|"11. Idempotent Persist (Findings, Cert, COMPLETED)"| DB
+    Web -->|"12. Reactive Polling (GET /scans/:id/results)"| API
+    API -->|"13. In-flight Status or Completed Results"| Web
 ```
 
 ---
 
 ## 4. Core Scan Workflow
 
-### Scan Lifecycle Sequence
+### Asynchronous Scan Lifecycle Sequence
 
 1. **Submission:** User enters target URL in Next.js frontend (`/scanner` or `/`).
 2. **Client Validation:** Frontend validates syntax using Zod and sends `POST /api/v1/scans`.
-3. **Normalization:** Fastify normalizes the URL (enforces scheme, standardizes host, strips default ports).
-4. **Initialization:** Fastify creates a `Scan` document in MongoDB with status `IN_PROGRESS`.
-5. **Delegation:** Fastify transmits analysis payload to Python scanner with `X-Scanner-Secret`.
-6. **Perimeter Verification:** Scanner resolves DNS and verifies that all IPs do not belong to loopback, private RFC 1918, or cloud metadata networks.
-7. **Analyzer Execution:**
+3. **Normalization & Deduplication:**
+   - Fastify normalizes the URL (enforces scheme, standardizes host, strips default ports) and computes SHA-256 `urlHash`.
+   - Checks MongoDB for active duplicate scans (`status IN [QUEUED, PROCESSING]` within the last 60 seconds). If present, immediately returns existing `scanId` with `isDuplicate: true`.
+4. **Queue Initialization:** Fastify inserts a `Scan` document in MongoDB with `status = "QUEUED"`, `retryCount = 0`, and immediately returns HTTP 201 `{ scanId, status: "QUEUED" }` to client without awaiting scanner completion.
+5. **Immediate Worker Signal:** Fastify fires `scanWorker.trigger()` to wake up the background worker event loop.
+6. **Atomic Job Claiming (FIFO):**
+   - Background worker executes an atomic MongoDB `findOneAndUpdate`:
+     ```typescript
+     ScanModel.findOneAndUpdate(
+       { status: 'QUEUED', retryCount: { $lt: 3 } },
+       { $set: { status: 'PROCESSING', workerId: this.workerId, claimedAt: new Date() } },
+       { sort: { createdAt: 1 }, new: true }
+     );
+     ```
+   - Bounded concurrency: at most 3 simultaneous active jobs per worker process.
+7. **Perimeter Verification:** Scanner resolves DNS and verifies that all IPs do not belong to loopback, private RFC 1918, or cloud metadata networks.
+8. **Analyzer Execution:**
    - `UrlAnalyzer` evaluates lexical structure, length, homoglyphs, and auth keywords.
    - `DomainAnalyzer` extracts taxonomy and evaluates brand impersonation.
    - `TlsAnalyzer` establishes direct TLS handshake, extracts cert chain, checks expiration and host matching.
    - `WebSecurityAnalyzer` checks defensive headers and inspects DOM forms for credential theft.
    - `ReputationAnalyzer` checks open blacklist repositories.
-8. **Risk Calculation:** `RiskAggregationEngine` computes weighted score (0–100) and assigns verdict (`BENIGN`, `SUSPICIOUS`, `MALICIOUS`).
-9. **Result Ingestion:** Scanner responds to Fastify with `AnalysisResponse`.
-10. **Persistence:** Fastify bulk-inserts `Finding` documents, upserts `Certificate`, and marks `Scan` as `COMPLETED`.
-11. **Presentation:** Frontend receives scan metadata, queries `/api/v1/reports/:id`, and renders forensic visualizer.
+9. **Risk Calculation:** `RiskAggregationEngine` computes weighted score (0–100) and assigns verdict (`BENIGN`, `SUSPICIOUS`, `MALICIOUS`, or `INCONCLUSIVE`).
+10. **Idempotent Persistence & Completion:**
+    - Worker clears any prior findings or certificate for the scan ID (safe on retries).
+    - Bulk-inserts fresh `Finding` documents, creates `Certificate`, and updates `Scan` to `status = "COMPLETED"`, storing risk score, verdict, and completed timestamp.
+11. **Error & Retry Handling:**
+    - Permanent security violations (HTTP 400 / SSRF) immediately mark scan `status = "FAILED"` with 0 retries.
+    - Transient scanner network errors increment `retryCount` and re-queue (`status = "QUEUED"`) up to `MAX_RETRIES = 3`.
+12. **Abandoned Job Recovery Reaper:**
+    - Background interval (every 15s) inspects scans stuck in `status = "PROCESSING"` longer than 60s timeout ceiling.
+    - If `retryCount < MAX_RETRIES`, re-queues to `QUEUED`; if exceeded, marks `FAILED`.
+13. **Reactive Presentation:** Next.js frontend polls `GET /api/v1/scans/:id/results` every 1.5 seconds, displaying live in-flight progress (amber clock for `QUEUED`, cyan radar spinner for `PROCESSING`, live analyzer matrix) and seamlessly transitions to full forensic visualization upon `COMPLETED`.
 
 ```mermaid
 sequenceDiagram
@@ -116,37 +142,43 @@ sequenceDiagram
     actor User as User / Analyst
     participant Web as Next.js Web UI
     participant API as Fastify API
-    participant DB as MongoDB
+    participant DB as MongoDB (Atomic Queue)
+    participant Worker as Fastify Scan Worker
     participant Scanner as Python Scanner Engine
 
     User->>Web: Enter URL (e.g., https://paypal-security.xyz/login)
-    Web->>API: POST /api/v1/scans { url, deepScan }
-    API->>API: Normalize URL & validate syntax (Zod)
-    API->>DB: Insert Scan record (status: IN_PROGRESS)
-    API->>Scanner: POST /api/v1/analyze (Header: X-Scanner-Secret)
+    Web->>API: POST /api/v1/scans { url }
+    API->>API: Normalize URL & compute sha256(url)
+    API->>DB: Check active duplicate (status: QUEUED/PROCESSING)
+    API->>DB: Insert Scan record (status: QUEUED, retryCount: 0)
+    API->>Worker: trigger() [Wake up worker]
+    API-->>Web: 201 Created { scanId, status: "QUEUED" } (Immediate return)
+    
+    Web->>Web: Start 1.5s reactive polling loop
+    Web->>API: GET /api/v1/scans/:id/results
+    API-->>Web: 200 OK { status: "QUEUED", message: "in progress" }
+
+    Worker->>DB: findOneAndUpdate({ status: "QUEUED" }, { $set: { status: "PROCESSING", workerId } })
+    DB-->>Worker: Claimed Scan Job
+    Worker->>Scanner: POST /api/v1/analyze (Header: X-Scanner-Secret)
 
     rect rgb(20, 25, 45)
         Note over Scanner: Perimeter Defense Check
         Scanner->>Scanner: validate_url_safety(): Check DNS, loopback & private subnets
-        alt Target violates SSRF policy
-            Scanner-->>API: 400 Bad Request (SSRF_VIOLATION)
-            API->>DB: Update Scan (status: FAILED, error: SSRF_VIOLATION)
-            API-->>Web: 400 Bad Request with forensic warning
-        end
         Note over Scanner: Multi-Vector Analyzer Pipeline
         Scanner->>Scanner: Run Url, Domain, Tls, WebSecurity & Reputation Analyzers
         Scanner->>Scanner: RiskAggregationEngine.evaluate()
     end
 
-    Scanner-->>API: 200 OK (AnalysisResponse)
-    API->>DB: Bulk insert Findings
-    API->>DB: Upsert Certificate record
-    API->>DB: Update Scan (status: COMPLETED, riskScore, verdict, completedAt)
-    API-->>Web: 201 Created (Scan metadata)
-    Web->>API: GET /api/v1/reports/:id
-    API->>DB: Fetch Scan, Findings, and Certificate
+    Scanner-->>Worker: 200 OK (AnalysisResponse)
+    Worker->>DB: Idempotent delete prior findings & cert
+    Worker->>DB: Bulk insert Findings & Certificate
+    Worker->>DB: Update Scan (status: "COMPLETED", riskScore, verdict, completedAt)
+
+    Web->>API: GET /api/v1/scans/:id/results
+    API->>DB: Fetch Scan, Findings, Certificate
     DB-->>API: Document records
-    API-->>Web: 200 OK (Full Forensic Security Report)
+    API-->>Web: 200 OK { status: "COMPLETED", findings, certificate, summary }
     Web-->>User: Render Risk Score Gauge, Findings Tree & TLS Card
 ```
 
@@ -175,8 +207,13 @@ MongoDB 7.0 is the sole application database. Mongoose models are strictly house
 ### Collections & Indexes
 
 1. **`scans`**:
-   - Fields: `submittedUrl`, `normalizedDomain`, `status`, `riskScore`, `verdict`, `confidence`, `analyzerStatuses`, `summary`, `errorMessage`, `completedAt`, timestamps.
-   - Indexes: `{ normalizedDomain: 1, createdAt: -1 }`, `{ status: 1 }`, `{ verdict: 1 }`, `{ createdAt: -1 }`.
+   - Fields: `submittedUrl`, `normalizedDomain`, `urlHash`, `status` (`QUEUED` | `PROCESSING` | `COMPLETED` | `FAILED`), `riskScore`, `verdict`, `confidence`, `analyzerStatuses`, `summary`, `retryCount`, `workerId`, `claimedAt`, `lastError`, `timeoutSeconds`, `errorMessage`, `completedAt`, timestamps.
+   - Indexes:
+     - `{ normalizedDomain: 1, createdAt: -1 }` (domain search index)
+     - `{ status: 1, createdAt: 1 }` (FIFO atomic queue claim index)
+     - `{ status: 1, claimedAt: 1 }` (abandoned job recovery reaper index)
+     - `{ urlHash: 1, status: 1 }` (duplicate active scan submission check index)
+     - `{ verdict: 1 }`, `{ createdAt: -1 }`.
 2. **`findings`**:
    - Fields: `scanId`, `category`, `severity`, `title`, `description`, `evidence` (Mixed), `confidence`, timestamps.
    - Indexes: `{ scanId: 1, severity: 1 }`, `{ category: 1 }`.
@@ -202,9 +239,10 @@ MongoDB 7.0 is the sole application database. Mongoose models are strictly house
 | Endpoint | Method | Responsibility |
 | :--- | :--- | :--- |
 | `/health` | `GET` | Health status and MongoDB connection state. |
-| `/api/v1/scans` | `POST` | Submits URL, dispatches to scanner, saves results, returns initial scan verdict. |
+| `/api/v1/scans` | `POST` | Enqueues URL, creates `QUEUED` scan, awakens worker, returns immediate 201 (or existing 200 on duplicate). |
 | `/api/v1/scans` | `GET` | Lists recent scans with pagination and domain filtering. |
 | `/api/v1/scans/:id` | `GET` | Retrieves scan status and metadata. |
+| `/api/v1/scans/:id/results` | `GET` | Polls scan status: returns in-flight status (`QUEUED`/`PROCESSING`), completed results (`COMPLETED`), or failure reason (`FAILED`). |
 | `/api/v1/reports/:id` | `GET` | Retrieves comprehensive report: scan, findings, certificate, and summary. |
 | `/api/v1/threats` | `GET` | Retrieves verified malicious/suspicious domains and community alerts. |
 | `/api/v1/community/reports` | `POST` | Submits a community threat report. |

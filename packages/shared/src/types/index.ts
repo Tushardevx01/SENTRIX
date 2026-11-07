@@ -3,10 +3,13 @@
 // ==========================================
 
 export const ScanStatusEnum = {
-  PENDING: 'PENDING',
-  IN_PROGRESS: 'IN_PROGRESS',
+  QUEUED: 'QUEUED',
+  PROCESSING: 'PROCESSING',
   COMPLETED: 'COMPLETED',
   FAILED: 'FAILED',
+  // Backward compatibility aliases
+  PENDING: 'PENDING',
+  IN_PROGRESS: 'IN_PROGRESS',
 } as const;
 export type ScanStatus = (typeof ScanStatusEnum)[keyof typeof ScanStatusEnum];
 
@@ -91,6 +94,7 @@ export interface IScan {
   _id: string;
   submittedUrl: string;
   normalizedDomain: string;
+  urlHash?: string;
   status: ScanStatus;
   riskScore: number;
   verdict: Verdict;
@@ -98,6 +102,11 @@ export interface IScan {
   analysisStatus?: AnalysisStatus;
   analysisComplete?: boolean;
   analyzerStatuses: AnalyzerStatusMap;
+  retryCount?: number;
+  workerId?: string;
+  claimedAt?: string;
+  errorMessage?: string;
+  summary?: any;
   createdAt: string;
   completedAt?: string;
 }

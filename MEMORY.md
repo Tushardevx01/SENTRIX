@@ -6,19 +6,18 @@ This document serves as the persistent engineering memory for all developers, ar
 
 ## 1. Current Project State
 
-- **Current Development Phase:** Phase 3.1 / Security Remediation v1.1 Complete.
+- **Current Development Phase:** Phase 4 / Asynchronous Background Scanning Architecture Complete.
 - **Implemented Modules:**
-  - `apps/web`: Next.js 14 App Router UI (Landing, Scanner, Forensic Reports, Dashboard, Threat Intel, Community Feed, Scan History) updated with `INCONCLUSIVE` visual badges, gauges, and partial analysis warning banners.
-  - `apps/api`: Fastify 5 REST API gateway, Mongoose database models, rate-limiting, error handling, internal scanner client, input sanitization (`escapeRegex`, `sanitizePagination`), restricted `trustProxy`, sanitized 500 error handlers, server-derived voter identity (`sha256(voter:${request.ip})`), and dedicated route-level rate limiting on voting.
+  - `apps/web`: Next.js 14 App Router UI (Landing, Scanner, Forensic Reports, Dashboard, Threat Intel, Community Feed, Scan History) updated with reactive polling in-flight state machine (`QUEUED` amber clock, `PROCESSING` cyan radar spinner), live security analyzer pipeline visualizer, automatic transition upon completion, and resilient error state for `FAILED` scans.
+  - `apps/api`: Fastify 5 REST API gateway, Mongoose database models, rate-limiting, error handling, internal scanner client, input sanitization (`escapeRegex`, `sanitizePagination`), restricted `trustProxy`, sanitized 500 error handlers, server-derived voter identity (`sha256(voter:${request.ip})`), dedicated route-level rate limiting on voting, and **native MongoDB-backed asynchronous background scanning queue (`ScanWorkerService`)** with atomic job claiming (`findOneAndUpdate`), bounded concurrency (`MAX_CONCURRENT_JOBS = 3`), permanent SSRF error isolation, transient retry policy (`MAX_RETRIES = 3`), abandoned job recovery reaper, duplicate active scan detection, and status polling endpoint (`GET /api/v1/scans/:id/results`).
   - `services/scanner`: FastAPI threat engine with SSRF perimeter guard, socket-level connection-time IP pinning (`PinnedIPNetworkBackend`), controlled manual redirect validation, bounded 1 MB streaming responses, constant-time authentication (`secrets.compare_digest`), non-root container user (`appuser`), zero-trust `INCONCLUSIVE` risk scoring engine with strict success-based completeness (`v != "SUCCESS"`), and threat intelligence failure propagation (`ThreatProviderResult`).
-  - `packages/shared`: Centralized TypeScript contracts, Zod schemas, domain types (`VerdictEnum.INCONCLUSIVE`, `AnalysisStatusEnum`, `TIMEOUT` analyzer status), and URL utilities.
+  - `packages/shared`: Centralized TypeScript contracts, Zod schemas, domain types (`ScanStatusEnum.QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, `VerdictEnum.INCONCLUSIVE`, `AnalysisStatusEnum`, `TIMEOUT` analyzer status), and URL utilities.
 - **Partially Implemented Modules:**
   - External threat intelligence connectors: URLhaus integrated; Google Safe Browsing and LLM explanation connectors structured with graceful fallback when API keys are not supplied. Outages, timeouts, and 429/5xx status codes are strictly propagated as `FAILED`/`ERROR` rather than false clean matches.
 - **Pending Modules:**
-  - Background asynchronous task queue (BullMQ/Redis) for decoupled asynchronous deep scans.
   - User authentication and role-based access control (RBAC) token issuance.
 - **Known Blockers:**
-  - None. All foundation services, local MongoDB, health checks, 7 Fastify security integration tests, and 48 scanner pytest tests are operational and passing.
+  - None. All foundation services, local MongoDB models, health checks, 18 Fastify API integration tests, and 48 scanner pytest tests are operational and passing. Monorepo builds cleanly.
 
 ---
 
@@ -216,14 +215,18 @@ sentrix/
 
 ## 7. Current Development Progress
 
-- **Last Completed Task:** Security Remediation v1.1: Fixed all 4 audit findings from `SECURITY-VERIFICATION-AUDIT-v1.md`.
-  - `SENTRIX-SEC-01`: Docker Compose environment isolation (removed blanket `env_file`, preventing `MONGODB_URI` from leaking into scanner or web container).
-  - `SENTRIX-SEC-02`: External threat feed failure propagation (`ThreatProviderResult` returning `MATCH`, `NO_MATCH`, `ERROR`, `SKIPPED`; network/upstream errors produce `FAILED` status and report unreachable feeds rather than masking as clean matches).
-  - `SENTRIX-SEC-03`: Success-based analyzer completeness evaluation in `RiskAggregationEngine` (`v != "SUCCESS"` forces `PARTIAL`/`FAILED` and `INCONCLUSIVE`).
-  - `SENTRIX-SEC-04`: Community voting abuse controls (server-controlled voter identity derived from client IP `sha256(voter:${request.ip})`, MongoDB unique index deduplication, route-level rate limiting returning HTTP 429).
-  - Added 19 new regression tests (total 48 scanner pytest tests + 7 Fastify security tests). Full monorepo build passing.
-- **Current Task:** Ready for review and user authorization before commit.
-- **Next Priority:** Background asynchronous task queue (BullMQ/Redis) for decoupled asynchronous deep scans.
+- **Last Completed Task:** Asynchronous Background Scanning Architecture (MongoDB Atomic Queue):
+  - Created native `ScanWorkerService` (`apps/api/src/services/scanWorker.ts`) utilizing MongoDB's `findOneAndUpdate` for atomic, FIFO job claiming without Redis or BullMQ.
+  - Concurrency bounded at `MAX_CONCURRENT_JOBS = 3`.
+  - Added duplicate scan protection using SHA-256 `urlHash` in 60s active window.
+  - Added retry mechanism (`MAX_RETRIES = 3`) with differentiation between permanent failures (SSRF, invalid targets: immediately `FAILED` with 0 retries) and transient failures (re-queued to `QUEUED`).
+  - Added background abandoned job recovery reaper (`recoverAbandonedJobs`) running every 15s to reclaim stale jobs stuck in `PROCESSING` past 60s.
+  - Added dedicated polling endpoint `GET /api/v1/scans/:id/results` returning in-flight progress (`QUEUED`/`PROCESSING`), full results (`COMPLETED`), or failure reason (`FAILED`).
+  - Updated Next.js UI (`apps/web/src/app/reports/[id]/page.tsx`) with reactive 1.5s polling, live in-flight badge (amber clock / cyan radar spinner), live security analyzer pipeline visualizer, and error state for failed scans.
+  - Added 11 new integration tests in `apps/api/src/test/asyncScan.test.ts` (18 total API tests passing, 48 scanner pytest tests passing).
+  - Clean monorepo build across all workspaces (`@sentrix/shared`, `@sentrix/api`, `@sentrix/web`).
+- **Current Task:** Ready for final review and user authorization before commit.
+- **Next Priority:** User authentication and role-based access control (RBAC) token issuance.
 - **Pending Integration Work:** Optional external API keys for Google Safe Browsing and URLhaus automated webhook ingestion.
 - **Known Bugs:** None currently identified.
 
@@ -231,8 +234,8 @@ sentrix/
 
 ## 8. Known Issues and Technical Debt
 
-- **Synchronous Scan Execution:** Scans currently execute synchronously over internal HTTP. For deep scans involving multiple network hops, request latency can exceed 3 seconds. *Mitigation:* Interfaces in `@sentrix/shared` and Fastify are designed to transition to asynchronous polling/WebSockets without breaking frontend contracts.
 - **Anonymous Voting Identity:** Anonymous voting binds 1 vote per report per source IP address via salted SHA-256 hash. Clients behind large CGNAT or shared institutional networks share voting identity per report. *Mitigation:* Transition to signed JWT user authentication once auth module is implemented.
+- **Horizontal Multi-Node Worker Scale:** The atomic MongoDB queue handles multiple concurrent workers safely on single or multiple nodes using atomic `findOneAndUpdate`. Under extreme throughput (>1,000 scans/sec), a dedicated external broker (e.g. RabbitMQ or Redis Streams) could be evaluated, but MongoDB 7.0 compound indexed queue easily handles standard platform load.
 
 ---
 
@@ -262,4 +265,5 @@ sentrix/
 | **2026-11-07** | `cc12d88` | Standardized on npm Workspaces | Migrated workspace configuration to standard `npm` workspaces, generated `package-lock.json`, updated Dockerfiles. |
 | **2026-11-07** | `bd58628` | Architecture & Persistent Memory | Created root `ARCHITECTURE.md` and `MEMORY.md`, enforced single root `.env` loading across all services, organized `packages/shared` into `contracts`, `types`, and `utils`. |
 | **2026-11-07** | `ba0d7ef` | Security Hardening v1 | Implemented PinnedIPNetworkBackend, controlled manual redirects, 1MB streaming limits, strict TLS invariant, zero-trust INCONCLUSIVE verdicts, Fastify query/pagination sanitization, error redaction, 29 pytest tests, 4 API tests. |
-| **2026-11-07** | `Pending` | Security Remediation v1.1 | Fixed SENTRIX-SEC-01 (Docker env isolation), SENTRIX-SEC-02 (threat feed failure propagation), SENTRIX-SEC-03 (analyzer completeness evaluation), and SENTRIX-SEC-04 (community voting abuse hardening with IP voter hash & route rate limit). 47 pytest tests, 7 API tests. |
+| **2026-11-07** | `285bcd5` | Security Remediation v1.1 | Fixed SENTRIX-SEC-01 (Docker env isolation), SENTRIX-SEC-02 (threat feed failure propagation), SENTRIX-SEC-03 (analyzer completeness evaluation), and SENTRIX-SEC-04 (community voting abuse hardening with IP voter hash & route rate limit). 47 pytest tests, 7 API tests. |
+| **2026-11-07** | `Pending` | Asynchronous Background Scanning Architecture | Implemented native MongoDB atomic background scan worker (`ScanWorkerService`), immediate QUEUED 201 response, duplicate active scan detection, retry & permanent error handling, abandoned job reaper, GET `/scans/:id/results` endpoint, and reactive frontend polling UI with live analyzer pipeline. 18 API tests, 48 scanner pytest tests. |

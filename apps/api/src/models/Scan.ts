@@ -12,6 +12,7 @@ import {
 export interface IScanDocument extends Document {
   submittedUrl: string;
   normalizedDomain: string;
+  urlHash?: string;
   status: ScanStatus;
   riskScore: number;
   verdict: Verdict;
@@ -28,6 +29,11 @@ export interface IScanDocument extends Document {
     inconclusiveReasons?: string[];
     isTruncated?: boolean;
   };
+  retryCount: number;
+  workerId?: string;
+  claimedAt?: Date;
+  lastError?: string;
+  timeoutSeconds?: number;
   errorMessage?: string;
   completedAt?: Date;
   createdAt: Date;
@@ -49,10 +55,14 @@ const ScanSchema = new Schema<IScanDocument>(
       trim: true,
       index: true,
     },
+    urlHash: {
+      type: String,
+      index: true,
+    },
     status: {
       type: String,
       enum: Object.values(ScanStatusEnum),
-      default: ScanStatusEnum.PENDING,
+      default: ScanStatusEnum.QUEUED,
       index: true,
     },
     riskScore: {
@@ -106,6 +116,27 @@ const ScanSchema = new Schema<IScanDocument>(
     errorMessage: {
       type: String,
     },
+    retryCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+      index: true,
+    },
+    workerId: {
+      type: String,
+      index: true,
+    },
+    claimedAt: {
+      type: Date,
+      index: true,
+    },
+    lastError: {
+      type: String,
+    },
+    timeoutSeconds: {
+      type: Number,
+      default: 60,
+    },
     completedAt: {
       type: Date,
     },
@@ -117,5 +148,8 @@ const ScanSchema = new Schema<IScanDocument>(
 
 ScanSchema.index({ normalizedDomain: 1, createdAt: -1 });
 ScanSchema.index({ createdAt: -1 });
+ScanSchema.index({ status: 1, createdAt: 1 }); // FIFO queue query index
+ScanSchema.index({ status: 1, claimedAt: 1 }); // Stale processing reaper index
+ScanSchema.index({ urlHash: 1, status: 1 }); // Duplicate active scan lookup
 
 export const ScanModel = mongoose.models.Scan || mongoose.model<IScanDocument>('Scan', ScanSchema);
