@@ -4,7 +4,7 @@ This document details the defensive boundaries, adversary models, and mitigation
 
 ---
 
-## 1. Adversary Model
+## 1.  Adversary Model
 
 Because SENTRIX accepts arbitrary, untrusted URLs from external users and initiates network probes to inspect them, the scanner is a prime target for adversarial manipulation:
 1. **SSRF Exploitation:** Attackers attempting to use the scanner as an intranet proxy or proxy into cloud metadata endpoints (e.g., AWS EC2 metadata `169.254.169.254`, Google Cloud metadata `metadata.google.internal`, or private subnets).
