@@ -12,7 +12,7 @@ SENTRIX is an intelligent website threat detection and trust intelligence platfo
 - **TLS/SSL Cryptographic Auditing:** Extracts X.509 certificate chains, verifies hostnames, checks expiration dates, and identifies self-signed root authorities.
 - **Web Security Misconfiguration Assessment:** Flags missing defensive headers (`HSTS`, `CSP`, `X-Frame-Options`, `X-Content-Type-Options`) and hidden exploit iframes.
 - **Perimeter SSRF Defense:** Strictly enforces RFC 1918 private IP blocking, loopback defense, and cloud metadata protection (`169.254.169.254`, `metadata.google.internal`).
-- **Explainable Risk Scoring:** Transparent 0–100 threat scoring engine mapping findings to `BENIGN`, `SUSPICIOUS`, and `MALICIOUS` classifications with associated MITRE ATT&CK tactics.
+- **Explainable Risk Scoring & Zero-Trust Verdicts:** Transparent 0–100 threat scoring engine mapping findings to `BENIGN`, `SUSPICIOUS`, `MALICIOUS`, and `INCONCLUSIVE` classifications with associated MITRE ATT&CK tactics. Unreachable or failing analyzers never default to benign.
 - **Collaborative Community Threat Intelligence:** Submit community reports, search global threat indexes, and vote on threat alerts.
 
 ---
@@ -25,7 +25,7 @@ SENTRIX is an intelligent website threat detection and trust intelligence platfo
 | **Backend** | Node.js, Fastify 5, TypeScript, Mongoose ODM, `@fastify/rate-limit`, `@fastify/cors` |
 | **Scanner Engine** | Python 3.15, FastAPI, Pydantic v2, `httpx`, `BeautifulSoup4`, `cryptography`, `tldextract` |
 | **Database** | MongoDB 7.0 with compound and unique indexes |
-| **Infrastructure** | Docker, Docker Compose, Podman rootless compatibility |
+| **Infrastructure** | Docker, Docker Compose, Podman rootless compatibility, single root `.env` policy |
 
 ---
 
@@ -71,27 +71,19 @@ sentrix/
 - Python 3.11+
 - Docker or Podman
 
-### 2. Environment Configuration
-Create actual local `.env` files for each component (note: all `.env` files are in `.gitignore`):
+### 2. Single Root Environment Configuration
+SENTRIX operates strictly with **one centralized root `/.env` file** (which is ignored by `.gitignore`). Never create nested or per-service `.env` files.
 
-**`apps/web/.env`**:
+Root `/.env`:
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-**`apps/api/.env`**:
-```bash
-PORT=8000
 NODE_ENV=development
+PORT=8000
+API_PORT=8000
+SCANNER_PORT=8001
+CORS_ORIGIN=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:8000
 MONGODB_URI=mongodb://localhost:27017/sentrix
 SCANNER_INTERNAL_URL=http://localhost:8001
-SCANNER_API_SECRET=your_generated_64_char_hex_secret
-CORS_ORIGIN=http://localhost:3000
-```
-
-**`services/scanner/.env`**:
-```bash
-PORT=8001
 SCANNER_API_SECRET=your_generated_64_char_hex_secret
 GOOGLE_SAFE_BROWSING_API_KEY=
 URLHAUS_ENABLED=true

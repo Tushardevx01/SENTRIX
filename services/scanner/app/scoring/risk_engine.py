@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from app.schemas.response import RawFinding
 
 SEVERITY_WEIGHTS = {
@@ -11,38 +11,90 @@ SEVERITY_WEIGHTS = {
 
 
 class RiskAggregationEngine:
-    """Computes transparent, explainable threat scores and classification verdicts."""
+    """
+    Computes explainable, evidence-based threat risk scores,
+    analysis completeness ratings, and zero-trust classification verdicts.
+    """
 
-    def evaluate(self, findings: List[RawFinding]) -> Tuple[int, str, int, List[str], List[str]]:
+    def evaluate(
+        self,
+        findings: List[RawFinding],
+        analyzer_statuses: Dict[str, str]
+    ) -> Tuple[int, str, int, str, bool, List[str], List[str], List[str]]:
         raw_score = 0
         risk_factors: List[str] = []
         threat_types_set = set()
+        inconclusive_reasons: List[str] = []
 
         confidence_sum = 0.0
         counted_findings = 0
 
         for f in findings:
-            weight = SEVERITY_WEIGHTS.get(f.severity.upper(), 0)
+            sev = f.severity.upper()
+            weight = SEVERITY_WEIGHTS.get(sev, 0)
             raw_score += weight
             confidence_sum += f.confidence
             counted_findings += 1
 
-            if f.severity.upper() in {"CRITICAL", "HIGH", "MEDIUM"}:
-                risk_factors.append(f"{f.title} ({f.severity})")
+            if sev in {"CRITICAL", "HIGH", "MEDIUM"}:
+                risk_factors.append(f"{f.title} ({sev})")
                 threat_types_set.add(f.category)
 
-        # Cap score at 100
+        # Cap risk score between 0 and 100
         risk_score = min(100, max(0, raw_score))
 
-        # Assign verdict
+        # Determine Analyzer Execution Completeness
+        failed_analyzers = [k for k, v in analyzer_statuses.items() if v in ("FAILED", "TIMEOUT")]
+        success_analyzers = [k for k, v in analyzer_statuses.items() if v == "SUCCESS"]
+
+        if not failed_analyzers:
+            analysis_status = "COMPLETE"
+            analysis_complete = True
+        elif success_analyzers:
+            analysis_status = "PARTIAL"
+            analysis_complete = False
+            inconclusive_reasons.append(
+                f"Partial inspection: {len(failed_analyzers)} analyzer(s) failed or timed out ({', '.join(failed_analyzers)})."
+            )
+        else:
+            analysis_status = "FAILED"
+            analysis_complete = False
+            inconclusive_reasons.append("Critical failure: All network security analyzers failed or were unreachable.")
+
+        # Assign Verdict (Zero-Trust Rules: Incomplete results must NEVER be classified as confidently BENIGN)
         if risk_score >= 70:
             verdict = "MALICIOUS"
         elif risk_score >= 26:
             verdict = "SUSPICIOUS"
         else:
-            verdict = "BENIGN"
+            # Score is low (0 - 25)
+            if analysis_status == "COMPLETE":
+                verdict = "BENIGN"
+            else:
+                # Missing or failed analyzer results must NEVER be taken as proof of safety!
+                verdict = "INCONCLUSIVE"
+                inconclusive_reasons.append("Low risk score cannot be confirmed as BENIGN due to incomplete analyzer execution.")
 
-        confidence = int(round(confidence_sum / max(1, counted_findings))) if counted_findings else 75
-        confidence = min(99, max(50, confidence))
+        # Calculate Confidence with penalties for missing/failed analyzers
+        if counted_findings > 0:
+            base_confidence = confidence_sum / counted_findings
+        else:
+            base_confidence = 92.0 if analysis_status == "COMPLETE" else 50.0
 
-        return risk_score, verdict, confidence, list(threat_types_set), risk_factors
+        if analysis_status == "COMPLETE":
+            confidence = int(round(min(99, max(60, base_confidence))))
+        elif analysis_status == "PARTIAL":
+            confidence = int(round(min(65, max(40, base_confidence * 0.7))))
+        else:
+            confidence = int(round(min(40, max(20, base_confidence * 0.4))))
+
+        return (
+            risk_score,
+            verdict,
+            confidence,
+            analysis_status,
+            analysis_complete,
+            list(threat_types_set),
+            risk_factors,
+            inconclusive_reasons,
+        )

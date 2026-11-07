@@ -3,12 +3,12 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Copy workspace configurations
-COPY package.json ./
+COPY package.json package-lock.json* ./
 COPY packages/shared ./packages/shared
 COPY apps/web ./apps/web
 
 # Install dependencies using npm and build shared and web
-RUN npm install
+RUN npm ci || npm install
 RUN npm --workspace=@sentrix/shared run build
 RUN npm --workspace=@sentrix/web run build
 

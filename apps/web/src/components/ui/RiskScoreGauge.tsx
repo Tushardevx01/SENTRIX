@@ -23,7 +23,10 @@ export const RiskScoreGauge: React.FC<RiskScoreGaugeProps> = ({
   let strokeColor = '#10B981'; // Green
   let glowColor = 'rgba(16, 185, 129, 0.3)';
 
-  if (verdict === VerdictEnum.MALICIOUS || score >= 70) {
+  if (verdict === VerdictEnum.INCONCLUSIVE) {
+    strokeColor = '#94A3B8'; // Slate/Zinc
+    glowColor = 'rgba(148, 163, 184, 0.25)';
+  } else if (verdict === VerdictEnum.MALICIOUS || score >= 70) {
     strokeColor = '#EF4444'; // Red
     glowColor = 'rgba(239, 68, 68, 0.4)';
   } else if (verdict === VerdictEnum.SUSPICIOUS || score > 25) {

@@ -38,7 +38,18 @@ def test_risk_aggregation_scoring():
             evidence={}
         )
     ]
-    score, verdict, confidence, threats, risk_factors = engine.evaluate(findings)
+    statuses = {
+        "urlAnalyzer": "SUCCESS",
+        "domainAnalyzer": "SUCCESS",
+        "tlsAnalyzer": "SUCCESS",
+        "webSecurityAnalyzer": "SUCCESS",
+        "reputationAnalyzer": "SUCCESS",
+    }
+    score, verdict, confidence, analysis_status, is_complete, threats, risk_factors, reasons = engine.evaluate(
+        findings, statuses
+    )
     assert score >= 65
     assert verdict in {"SUSPICIOUS", "MALICIOUS"}
     assert len(risk_factors) == 2
+    assert is_complete is True
+    assert analysis_status == "COMPLETE"

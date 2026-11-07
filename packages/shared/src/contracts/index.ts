@@ -6,6 +6,7 @@ import {
   type FindingSeverity,
   type Verdict,
   type AnalyzerStatusMap,
+  type AnalysisStatus,
 } from '../types/index.js';
 
 // ==========================================
@@ -91,6 +92,8 @@ export interface ScannerAnalysisResponse {
   riskScore: number;
   verdict: Verdict;
   confidence: number;
+  analysisStatus?: AnalysisStatus;
+  analysisComplete?: boolean;
   analyzerStatuses: AnalyzerStatusMap;
   findings: RawFinding[];
   certificate?: CertificateInfo | null;
@@ -100,5 +103,7 @@ export interface ScannerAnalysisResponse {
     mitreTactics?: string[];
     redirectChain?: string[];
     responseTimeMs?: number;
+    inconclusiveReasons?: string[];
+    isTruncated?: boolean;
   };
 }

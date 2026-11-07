@@ -43,14 +43,18 @@ export async function requestScannerAnalysis(
         throw new ScannerClientError(
           errorBody.message || 'Target URL rejected due to security policy (SSRF / restricted network)',
           400,
-          errorBody
+          { reason: errorBody.message || 'Restricted target' }
         );
       }
 
+      if (response.status === 401) {
+        throw new ScannerClientError('Internal scanner authentication failure', 500);
+      }
+
       throw new ScannerClientError(
-        `Scanner service returned HTTP ${response.status}: ${JSON.stringify(errorBody)}`,
-        response.status === 401 ? 500 : response.status,
-        errorBody
+        `Scanner engine failed with HTTP ${response.status}`,
+        response.status >= 400 && response.status < 500 ? response.status : 502,
+        { status: response.status }
       );
     }
 
@@ -60,10 +64,12 @@ export async function requestScannerAnalysis(
     if (error instanceof ScannerClientError) {
       throw error;
     }
+    if (error?.name === 'TimeoutError') {
+      throw new ScannerClientError('Scanner analysis request timed out', 504);
+    }
     throw new ScannerClientError(
-      `Unable to communicate with internal scanner engine: ${error?.message || error}`,
-      503,
-      { originalError: String(error) }
+      'Unable to communicate with internal scanner engine',
+      503
     );
   }
 }

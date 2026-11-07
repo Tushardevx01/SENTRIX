@@ -15,6 +15,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Run as non-privileged security user
+RUN useradd -u 10001 -m -s /bin/sh appuser && chown -R appuser:appuser /app
+USER appuser
+
 EXPOSE 8001
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \

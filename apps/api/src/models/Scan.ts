@@ -1,5 +1,13 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { ScanStatusEnum, VerdictEnum, type ScanStatus, type Verdict, type AnalyzerStatusMap } from '@sentrix/shared';
+import {
+  ScanStatusEnum,
+  VerdictEnum,
+  AnalysisStatusEnum,
+  type ScanStatus,
+  type Verdict,
+  type AnalysisStatus,
+  type AnalyzerStatusMap,
+} from '@sentrix/shared';
 
 export interface IScanDocument extends Document {
   submittedUrl: string;
@@ -8,6 +16,8 @@ export interface IScanDocument extends Document {
   riskScore: number;
   verdict: Verdict;
   confidence: number;
+  analysisStatus: AnalysisStatus;
+  analysisComplete: boolean;
   analyzerStatuses: AnalyzerStatusMap;
   summary?: {
     threatTypes: string[];
@@ -15,6 +25,8 @@ export interface IScanDocument extends Document {
     mitreTactics?: string[];
     redirectChain?: string[];
     responseTimeMs?: number;
+    inconclusiveReasons?: string[];
+    isTruncated?: boolean;
   };
   errorMessage?: string;
   completedAt?: Date;
@@ -61,6 +73,16 @@ const ScanSchema = new Schema<IScanDocument>(
       min: 0,
       max: 100,
     },
+    analysisStatus: {
+      type: String,
+      enum: Object.values(AnalysisStatusEnum),
+      default: AnalysisStatusEnum.COMPLETE,
+      index: true,
+    },
+    analysisComplete: {
+      type: Boolean,
+      default: true,
+    },
     analyzerStatuses: {
       type: Map,
       of: String,
@@ -78,6 +100,8 @@ const ScanSchema = new Schema<IScanDocument>(
       mitreTactics: { type: [String], default: [] },
       redirectChain: { type: [String], default: [] },
       responseTimeMs: { type: Number },
+      inconclusiveReasons: { type: [String], default: [] },
+      isTruncated: { type: Boolean, default: false },
     },
     errorMessage: {
       type: String,

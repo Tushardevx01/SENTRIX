@@ -1,5 +1,8 @@
 import time
-from typing import Dict, Optional
+import secrets
+import asyncio
+import socket
+from typing import Dict, Optional, List
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, Header, HTTPException, status
 from fastapi.responses import JSONResponse
@@ -8,7 +11,6 @@ from app.config import settings
 from app.schemas.request import AnalysisRequest
 from app.schemas.response import (
     AnalysisResponse,
-    AnalyzerStatuses,
     ScanSummary,
 )
 from app.safety.ssrf_guard import validate_url_safety, SSRFSecurityException
@@ -24,7 +26,6 @@ START_TIME = time.time()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup validation
     if not settings.SCANNER_API_SECRET:
         raise RuntimeError("SCANNER_API_SECRET must be configured in environment.")
     yield
@@ -41,7 +42,7 @@ app = FastAPI(
 def verify_internal_secret(
     x_scanner_secret: Optional[str] = Header(None, alias="X-Scanner-Secret", description="Internal authentication secret")
 ):
-    if not x_scanner_secret or x_scanner_secret != settings.SCANNER_API_SECRET:
+    if not x_scanner_secret or not secrets.compare_digest(x_scanner_secret, settings.SCANNER_API_SECRET):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing internal scanner authorization secret.",
@@ -85,7 +86,7 @@ async def health_check():
     tags=["Analysis"],
 )
 async def run_threat_analysis(request: AnalysisRequest):
-    # Step 1: Pre-flight SSRF & Network Safety Validation
+    # Step 1: Strict Pre-flight SSRF & Network Safety Validation
     target_host, resolved_ips = validate_url_safety(request.url)
     primary_ip = resolved_ips[0] if resolved_ips else None
 
@@ -106,41 +107,54 @@ async def run_threat_analysis(request: AnalysisRequest):
         "reputationAnalyzer": "PENDING",
     }
 
-    # 1. URL Analysis
+    # 1. URL Analysis (Lexical heuristics)
     try:
         url_findings = url_analyzer.analyze(request.url, request.normalizedDomain)
         all_findings.extend(url_findings)
         statuses["urlAnalyzer"] = "SUCCESS"
-    except Exception as e:
+    except Exception:
         statuses["urlAnalyzer"] = "FAILED"
 
-    # 2. Domain Analysis
+    # 2. Domain Analysis (TLD risk, brand impersonation)
     try:
         domain_findings = domain_analyzer.analyze(request.normalizedDomain)
         all_findings.extend(domain_findings)
         statuses["domainAnalyzer"] = "SUCCESS"
-    except Exception as e:
+    except Exception:
         statuses["domainAnalyzer"] = "FAILED"
 
-    # 3. TLS / SSL Analysis
+    # 3. TLS / SSL Analysis (Strict TLS connection with pinned IP)
     certificate_info = None
     try:
-        tls_findings, certificate_info = tls_analyzer.analyze(request.normalizedDomain)
+        tls_findings, certificate_info = tls_analyzer.analyze(
+            request.normalizedDomain,
+            target_ip=primary_ip
+        )
         all_findings.extend(tls_findings)
         statuses["tlsAnalyzer"] = "SUCCESS"
-    except Exception as e:
+    except (socket.timeout, TimeoutError, asyncio.TimeoutError):
+        statuses["tlsAnalyzer"] = "TIMEOUT"
+    except Exception:
         statuses["tlsAnalyzer"] = "FAILED"
 
-    # 4. Web Security & DOM Analysis
-    redirect_chain = []
+    # 4. Web Security & DOM Analysis (Controlled redirects, connection-time IP pinning, streaming read)
+    redirect_chain = [request.url]
     response_time_ms = None
+    is_truncated = False
     try:
-        web_findings, web_meta = await web_analyzer.analyze(request.url, request.normalizedDomain)
+        web_findings, web_meta = await web_analyzer.analyze(
+            request.url,
+            request.normalizedDomain,
+            pinned_ip=primary_ip
+        )
         all_findings.extend(web_findings)
-        redirect_chain = web_meta.get("redirectChain", [])
+        redirect_chain = web_meta.get("redirectChain", [request.url])
         response_time_ms = web_meta.get("responseTimeMs")
+        is_truncated = web_meta.get("isTruncated", False)
         statuses["webSecurityAnalyzer"] = "SUCCESS"
-    except Exception as e:
+    except (asyncio.TimeoutError, TimeoutError):
+        statuses["webSecurityAnalyzer"] = "TIMEOUT"
+    except Exception:
         statuses["webSecurityAnalyzer"] = "FAILED"
 
     # 5. Reputation & Blacklist Intelligence
@@ -148,11 +162,22 @@ async def run_threat_analysis(request: AnalysisRequest):
         rep_findings = await reputation_analyzer.analyze(request.url, request.normalizedDomain)
         all_findings.extend(rep_findings)
         statuses["reputationAnalyzer"] = "SUCCESS"
-    except Exception as e:
+    except (asyncio.TimeoutError, TimeoutError):
+        statuses["reputationAnalyzer"] = "TIMEOUT"
+    except Exception:
         statuses["reputationAnalyzer"] = "FAILED"
 
-    # Step 3: Compute Aggregated Risk Score and Verdict
-    score, verdict, confidence, threat_types, risk_factors = risk_engine.evaluate(all_findings)
+    # Step 3: Compute Aggregated Risk Score, Completeness, and Verdict
+    (
+        score,
+        verdict,
+        confidence,
+        analysis_status,
+        analysis_complete,
+        threat_types,
+        risk_factors,
+        inconclusive_reasons,
+    ) = risk_engine.evaluate(all_findings, statuses)
 
     return AnalysisResponse(
         scanId=request.scanId,
@@ -162,14 +187,18 @@ async def run_threat_analysis(request: AnalysisRequest):
         riskScore=score,
         verdict=verdict,
         confidence=confidence,
+        analysisStatus=analysis_status,
+        analysisComplete=analysis_complete,
         analyzerStatuses=statuses,
         findings=all_findings,
         certificate=certificate_info,
         summary=ScanSummary(
             threatTypes=threat_types,
             riskFactors=risk_factors,
-            mitreTactics=["Reconnaissance", "Initial Access", "Credential Access"] if verdict != "BENIGN" else [],
+            mitreTactics=["Reconnaissance", "Initial Access", "Credential Access"] if verdict in ("MALICIOUS", "SUSPICIOUS") else [],
             redirectChain=redirect_chain,
             responseTimeMs=response_time_ms,
+            isTruncated=is_truncated,
+            inconclusiveReasons=inconclusive_reasons,
         )
     )

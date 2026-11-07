@@ -223,16 +223,27 @@ MongoDB 7.0 is the sole application database. Mongoose models are strictly house
 
 ## 8. Security Architecture
 
-1. **SSRF Prevention:** `validate_url_safety()` resolves destination hostnames and checks every resolved IP against blacklisted CIDRs:
-   - Loopback: `127.0.0.0/8`, `::1/128`
-   - Private RFC 1918: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`
-   - Cloud Metadata Services: `169.254.0.0/16`, `metadata.google.internal`
-   - IPv6 link-local and unique local: `fe80::/10`, `fc00::/7`
-2. **DNS Rebinding Defense:** The Python scanner operates within a sandboxed container network with no routes to host intranet or the database layer.
-3. **Redirect Protection:** Outbound HTTP clients restrict follow-redirects to a maximum of 5 hops with a hard 5.0-second timeout.
-4. **Rate Limiting:** Fastify enforces a rate limit of 120 requests/minute per IP address.
-5. **Secret Management:** Single root `.env` configuration. The scanner internal port (`8001`) is never exposed publicly to the host. Fastify communicates with the scanner via a 256-bit pre-shared key (`X-Scanner-Secret`).
-6. **Body Limit Safeguards:** Response body reads for DOM parsing are truncated at 250,000 bytes to prevent decompression and memory exhaustion attacks.
+1. **SSRF Perimeter Defense & Safe DNS Resolution:**
+   - Pre-flight DNS resolution validates destination hostnames via `socket.getaddrinfo`, inspecting all returned A and AAAA records against blacklisted CIDRs (Loopback `127.0.0.0/8`, `::1/128`, RFC 1918 `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, Link-Local & Cloud Metadata `169.254.0.0/16`, `fe80::/10`, Unique Local `fc00::/7`, IPv4-mapped IPv6 `::ffff:...`, and carrier-grade NAT).
+   - Rejects non-http(s) schemes, non-standard ports, and embedded user credentials (`user:pass@`). Fails closed on DNS errors.
+2. **Socket-Level Connection-Time IP Pinning (Anti-TOCTOU Rebinding):**
+   - Implements `PinnedIPNetworkBackend` on top of `httpcore.AnyIOBackend` to intercept `connect_tcp`.
+   - Forces the underlying socket connection directly to the pre-validated IP address while propagating `server_hostname` to `start_tls`, eliminating Time-Of-Check to Time-Of-Use DNS rebinding while fully preserving TLS SNI and certificate validation.
+3. **Controlled Redirect Validation Loop:**
+   - Automatic HTTP client redirect following is disabled (`follow_redirects=False`).
+   - The scanner executes an explicit redirect loop (max 5 hops) with loop detection via `seen_urls`. Every redirect destination is validated against SSRF rules before initiating the subsequent TCP connection.
+4. **Strict TLS Cryptographic Integrity:**
+   - Mandatory certificate verification (`verify=True`, `CERT_REQUIRED`, `check_hostname=True`) on all web requests.
+   - Broken certificates, expired certs, and hostname mismatches are forensically inspected and classified with CRITICAL/HIGH findings without insecure fallback bypasses.
+5. **Bounded Streaming HTTP Body Reads:**
+   - Streaming consumption reads response bytes via `stream_resp.aiter_bytes(chunk_size=16384)` with a strict 1 MB (1,048,576 byte) ceiling.
+   - Reading terminates immediately upon reaching the limit, sets `isTruncated = True`, and generates a forensic finding to prevent memory exhaustion and decompression bombs. DOM parsing is restricted strictly to verified HTML content types.
+6. **Fastify API Hardening & Information Leakage Prevention:**
+   - Input sanitization: `escapeRegex()` escapes all special characters in domain and threat search parameters; `sanitizePagination()` clamps pagination bounds (`skip >= 0`, `limit <= 100`).
+   - Central error handling: Redacts internal 500 error messages, hiding database strings, credentials, and stack traces from client responses while logging correlation IDs internally.
+   - Proxy security: Configures restricted `trustProxy` CIDRs to prevent spoofing of IP headers for rate-limiting.
+7. **Constant-Time Secret Authentication:**
+   - Python scanner enforces `X-Scanner-Secret` pre-shared key validation using `secrets.compare_digest` to prevent timing side-channel attacks.
 
 ---
 
@@ -241,20 +252,21 @@ MongoDB 7.0 is the sole application database. Mongoose models are strictly house
 ### Heuristic Scoring Formula
 - Base risk score = `0`
 - Weighted severity contributions:
-  - `CRITICAL`: +40 (e.g., brand impersonation, credential form posting externally, active blacklist match)
-  - `HIGH`: +25 (e.g., direct IP in URL, high-risk TLD, self-signed certificate, insecure form over HTTP)
+  - `CRITICAL`: +40 (e.g., brand impersonation, credential form posting externally, active blacklist match, expired TLS)
+  - `HIGH`: +25 (e.g., direct IP in URL, self-signed certificate, hostname mismatch, insecure form over HTTP)
   - `MEDIUM`: +12 (e.g., punycode homoglyph, excessive subdomain depth, multiple redirect hops)
-  - `LOW`: +5 (e.g., missing HSTS, missing CSP, missing nosniff header)
+  - `LOW`: +5 (e.g., missing HSTS, missing CSP, missing nosniff header, body truncation)
   - `INFO`: +0 (informational taxonomy findings)
 - Risk score is clamped between `0` and `100`.
 
-### Verdict Classification
-- `0 – 25`: **`BENIGN`** (Trusted destination, valid TLS, zero high-severity indicators)
+### Verdict Classification & Zero-Trust Inconclusive State
+- `0 – 25`: **`BENIGN`** (Trusted destination, valid TLS, complete inspection, zero high-severity indicators)
 - `26 – 69`: **`SUSPICIOUS`** (Elevated risk, multiple anomalies, or missing cryptographic trust)
 - `70 – 100`: **`MALICIOUS`** (High confidence phishing, credential harvesting, or verified malware)
+- **`INCONCLUSIVE`**: Assigned when analyzers fail, time out, or target is unreachable, and risk score is < 26.
 
 > [!IMPORTANT]
-> **Evidence-Based Verdicts:** Missing or failed analyzer results are NEVER treated as proof that a website is safe. When an analyzer fails or a site is unreachable, the system records degraded confidence and explicit warning findings rather than defaulting to benign.
+> **Zero-Trust Invariant:** Missing or failed analyzer results are NEVER treated as proof that a website is safe. When an analyzer fails or a site is unreachable, the system assigns `analysisStatus = "PARTIAL"` or `"FAILED"`, marks `verdict = "INCONCLUSIVE"`, penalizes confidence ratings, and records explicit `inconclusiveReasons`. The frontend displays a dedicated warning banner to alert analysts to incomplete inspection data.
 
 ---
 

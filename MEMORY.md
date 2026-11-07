@@ -6,19 +6,19 @@ This document serves as the persistent engineering memory for all developers, ar
 
 ## 1. Current Project State
 
-- **Current Development Phase:** Phase 2 / Foundation Complete & Architectural Baseline Established.
+- **Current Development Phase:** Phase 3 / Security Hardening v1 Complete.
 - **Implemented Modules:**
-  - `apps/web`: Next.js 14 App Router UI (Landing, Scanner, Forensic Reports, Dashboard, Threat Intel, Community Feed, Scan History).
-  - `apps/api`: Fastify 5 REST API gateway, Mongoose database models, rate-limiting, error handling, internal scanner client, and telemetry aggregation.
-  - `services/scanner`: FastAPI threat engine with SSRF perimeter guard, multi-vector heuristic analyzers (URL, Domain, TLS, Web Security, Reputation), and 0–100 risk scoring engine.
-  - `packages/shared`: Centralized TypeScript contracts, Zod schemas, domain types, and URL utilities.
+  - `apps/web`: Next.js 14 App Router UI (Landing, Scanner, Forensic Reports, Dashboard, Threat Intel, Community Feed, Scan History) updated with `INCONCLUSIVE` visual badges, gauges, and partial analysis warning banners.
+  - `apps/api`: Fastify 5 REST API gateway, Mongoose database models, rate-limiting, error handling, internal scanner client, input sanitization (`escapeRegex`, `sanitizePagination`), restricted `trustProxy`, and sanitized 500 error handlers.
+  - `services/scanner`: FastAPI threat engine with SSRF perimeter guard, socket-level connection-time IP pinning (`PinnedIPNetworkBackend`), controlled manual redirect validation, bounded 1 MB streaming responses, constant-time authentication (`secrets.compare_digest`), non-root container user (`appuser`), and zero-trust `INCONCLUSIVE` risk scoring engine.
+  - `packages/shared`: Centralized TypeScript contracts, Zod schemas, domain types (`VerdictEnum.INCONCLUSIVE`, `AnalysisStatusEnum`, `TIMEOUT` analyzer status), and URL utilities.
 - **Partially Implemented Modules:**
   - External threat intelligence connectors: URLhaus integrated; Google Safe Browsing and LLM explanation connectors structured with graceful fallback when API keys are not supplied.
 - **Pending Modules:**
   - Background asynchronous task queue (BullMQ/Redis) for decoupled asynchronous deep scans.
   - User authentication and role-based access control (RBAC) token issuance.
 - **Known Blockers:**
-  - None. All foundation services, local MongoDB, health checks, and test suites are operational.
+  - None. All foundation services, local MongoDB, health checks, Fastify unit tests, and 29 scanner pytest tests are operational and passing.
 
 ---
 
@@ -216,9 +216,9 @@ sentrix/
 
 ## 7. Current Development Progress
 
-- **Last Completed Task:** Established root-level `ARCHITECTURE.md` and `MEMORY.md`, enforced single root `.env` policy, reorganized `packages/shared/src/` into `types`, `contracts`, `utils`, and unified monorepo on `npm` workspaces.
-- **Current Task:** Verification of documentation synchronization and codebase baseline.
-- **Next Priority:** Implement asynchronous scan queue worker (e.g., BullMQ) for long-running deep scans and optional LLM forensic explanation connectors.
+- **Last Completed Task:** Security Hardening v1: Implemented socket-level connection-time IP pinning (`PinnedIPNetworkBackend`) preventing TOCTOU DNS rebinding, controlled redirect validation loop (max 5 hops, SSRF checks per hop), bounded 1 MB streaming HTTP reads with `isTruncated` tracking, strict TLS validation (`verify=True`, forensic classification of expired/self-signed/mismatched certs), zero-trust `INCONCLUSIVE` verdict model, Fastify regex query escaping and pagination sanitization, redacted 500 error messages, constant-time secret comparison via `secrets.compare_digest`, non-root container user (`appuser`), full test coverage (29 scanner pytest tests + 4 Fastify security tests), and frontend compatibility.
+- **Current Task:** Final verification, status reporting, and deliverable documentation.
+- **Next Priority:** Implement asynchronous scan queue worker (e.g., BullMQ/Redis) for decoupled asynchronous deep scans.
 - **Pending Integration Work:** Optional external API keys for Google Safe Browsing and URLhaus automated webhook ingestion.
 - **Known Bugs:** None currently identified.
 
@@ -256,3 +256,4 @@ sentrix/
 | **2026-11-07** | `60bfe51` | Platform Initialization | Complete modular cybersecurity platform initial commit with Next.js, Fastify, FastAPI, and MongoDB. |
 | **2026-11-07** | `cc12d88` | Standardized on npm Workspaces | Migrated workspace configuration to standard `npm` workspaces, generated `package-lock.json`, updated Dockerfiles. |
 | **2026-11-07** | `bd58628` | Architecture & Persistent Memory | Created root `ARCHITECTURE.md` and `MEMORY.md`, enforced single root `.env` loading across all services, organized `packages/shared` into `contracts`, `types`, and `utils`. |
+| **2026-11-07** | `Pending` | Security Hardening v1 | Implemented PinnedIPNetworkBackend, controlled manual redirects, 1MB streaming limits, strict TLS invariant, zero-trust INCONCLUSIVE verdicts, Fastify query/pagination sanitization, error redaction, 29 pytest tests, 4 API tests. |

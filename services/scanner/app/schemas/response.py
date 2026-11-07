@@ -35,6 +35,8 @@ class ScanSummary(BaseModel):
     mitreTactics: List[str] = Field(default_factory=list)
     redirectChain: List[str] = Field(default_factory=list)
     responseTimeMs: Optional[float] = None
+    isTruncated: bool = False
+    inconclusiveReasons: List[str] = Field(default_factory=list)
 
 
 class AnalysisResponse(BaseModel):
@@ -43,8 +45,10 @@ class AnalysisResponse(BaseModel):
     normalizedDomain: str
     ipAddress: Optional[str] = None
     riskScore: int = Field(..., ge=0, le=100)
-    verdict: str = Field(..., description="BENIGN, SUSPICIOUS, MALICIOUS")
+    verdict: str = Field(..., description="BENIGN, SUSPICIOUS, MALICIOUS, INCONCLUSIVE")
     confidence: int = Field(..., ge=0, le=100)
+    analysisStatus: str = Field(default="COMPLETE", description="COMPLETE, PARTIAL, FAILED")
+    analysisComplete: bool = Field(default=True)
     analyzerStatuses: Dict[str, str]
     findings: List[RawFinding]
     certificate: Optional[CertificateInfo] = None

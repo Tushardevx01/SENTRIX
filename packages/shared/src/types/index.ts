@@ -14,8 +14,16 @@ export const VerdictEnum = {
   BENIGN: 'BENIGN',
   SUSPICIOUS: 'SUSPICIOUS',
   MALICIOUS: 'MALICIOUS',
+  INCONCLUSIVE: 'INCONCLUSIVE',
 } as const;
 export type Verdict = (typeof VerdictEnum)[keyof typeof VerdictEnum];
+
+export const AnalysisStatusEnum = {
+  COMPLETE: 'COMPLETE',
+  PARTIAL: 'PARTIAL',
+  FAILED: 'FAILED',
+} as const;
+export type AnalysisStatus = (typeof AnalysisStatusEnum)[keyof typeof AnalysisStatusEnum];
 
 export const FindingCategoryEnum = {
   URL_ANOMALY: 'URL_ANOMALY',
@@ -71,11 +79,11 @@ export const RiskThresholds = {
 // ==========================================
 
 export interface AnalyzerStatusMap {
-  urlAnalyzer: 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'PENDING';
-  domainAnalyzer: 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'PENDING';
-  tlsAnalyzer: 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'PENDING';
-  webSecurityAnalyzer: 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'PENDING';
-  reputationAnalyzer: 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'PENDING';
+  urlAnalyzer: 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'TIMEOUT' | 'PENDING';
+  domainAnalyzer: 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'TIMEOUT' | 'PENDING';
+  tlsAnalyzer: 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'TIMEOUT' | 'PENDING';
+  webSecurityAnalyzer: 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'TIMEOUT' | 'PENDING';
+  reputationAnalyzer: 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'TIMEOUT' | 'PENDING';
   [key: string]: string;
 }
 
@@ -87,6 +95,8 @@ export interface IScan {
   riskScore: number;
   verdict: Verdict;
   confidence: number;
+  analysisStatus?: AnalysisStatus;
+  analysisComplete?: boolean;
   analyzerStatuses: AnalyzerStatusMap;
   createdAt: string;
   completedAt?: string;
@@ -157,5 +167,7 @@ export interface ScanReportDetail {
     riskFactors: string[];
     redirectChain?: string[];
     responseTimeMs?: number;
+    inconclusiveReasons?: string[];
+    isTruncated?: boolean;
   };
 }

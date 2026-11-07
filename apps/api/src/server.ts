@@ -25,7 +25,7 @@ export function buildServer(): FastifyInstance {
             }
           : undefined,
     },
-    trustProxy: true,
+    trustProxy: ['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '::1', 'fc00::/7'],
   });
 
   // CORS Configuration
@@ -45,13 +45,22 @@ export function buildServer(): FastifyInstance {
     }),
   });
 
-  // Centralized Error Handling
+  // Centralized Error Handling (sanitized against information leakage)
   app.setErrorHandler((error: FastifyError, request, reply) => {
-    app.log.error(error);
+    app.log.error({ err: error, reqId: request.id }, 'Request handling error');
     const statusCode = error.statusCode || 500;
+
+    if (statusCode >= 500) {
+      return reply.status(statusCode).send({
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'An unexpected internal server error occurred',
+        statusCode,
+      });
+    }
+
     return reply.status(statusCode).send({
-      error: error.name || 'INTERNAL_SERVER_ERROR',
-      message: error.message || 'An unexpected server error occurred',
+      error: error.name || 'BAD_REQUEST',
+      message: error.message || 'The request could not be processed',
       statusCode,
     });
   });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, AlertTriangle, ShieldAlert, AlertCircle } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, ShieldAlert, AlertCircle, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VerdictEnum, type Verdict, FindingSeverityEnum, type FindingSeverity } from '@sentrix/shared';
 
@@ -26,6 +26,11 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({ verdict, severity, size = 
         label: 'MALICIOUS / HIGH THREAT',
         bg: 'bg-red-950/60 border-red-500/50 text-red-400 shadow-glow-red',
         icon: ShieldAlert,
+      },
+      [VerdictEnum.INCONCLUSIVE]: {
+        label: 'INCONCLUSIVE / PARTIAL DATA',
+        bg: 'bg-zinc-900/90 border-zinc-500/50 text-zinc-300',
+        icon: HelpCircle,
       },
     }[verdict] || {
       label: verdict,

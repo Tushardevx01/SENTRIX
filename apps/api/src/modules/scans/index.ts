@@ -4,6 +4,7 @@ import { ScanModel } from '../../models/Scan.js';
 import { FindingModel } from '../../models/Finding.js';
 import { CertificateModel } from '../../models/Certificate.js';
 import { requestScannerAnalysis, ScannerClientError } from '../../services/scannerClient.js';
+import { escapeRegex, sanitizePagination } from '../../utils/sanitize.js';
 
 export const scansRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // POST /api/v1/scans - Submit & execute URL threat scan
@@ -73,6 +74,8 @@ export const scansRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       scan.riskScore = scanResult.riskScore;
       scan.verdict = scanResult.verdict;
       scan.confidence = scanResult.confidence;
+      scan.analysisStatus = scanResult.analysisStatus || 'COMPLETE';
+      scan.analysisComplete = scanResult.analysisComplete !== undefined ? scanResult.analysisComplete : true;
       scan.analyzerStatuses = scanResult.analyzerStatuses;
       scan.summary = scanResult.summary;
       scan.completedAt = new Date();
@@ -84,6 +87,8 @@ export const scansRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         riskScore: scan.riskScore,
         verdict: scan.verdict,
         confidence: scan.confidence,
+        analysisStatus: scan.analysisStatus,
+        analysisComplete: scan.analysisComplete,
         submittedUrl: scan.submittedUrl,
         normalizedDomain: scan.normalizedDomain,
         completedAt: scan.completedAt,
@@ -97,7 +102,7 @@ export const scansRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
       if (error instanceof ScannerClientError) {
         return reply.status(error.statusCode).send({
-          error: 'SCAN_FAILED',
+          error: error.statusCode === 400 ? 'SSRF_VIOLATION' : 'SCAN_FAILED',
           message: error.message,
           details: error.details,
           scanId: scan._id,
@@ -114,16 +119,21 @@ export const scansRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
   // GET /api/v1/scans - List recent scans
   app.get('/', async (request, reply) => {
-    const { limit = '20', skip = '0', domain } = request.query as Record<string, string>;
+    const { limit, skip, domain } = request.query as Record<string, string>;
+    const { skip: safeSkip, limit: safeLimit } = sanitizePagination(skip, limit, 100, 20);
+
     const query: Record<string, any> = {};
-    if (domain) {
-      query.normalizedDomain = { $regex: domain, $options: 'i' };
+    if (domain && typeof domain === 'string') {
+      const sanitizedDomain = escapeRegex(domain.trim().slice(0, 100));
+      if (sanitizedDomain) {
+        query.normalizedDomain = { $regex: sanitizedDomain, $options: 'i' };
+      }
     }
 
     const scans = await ScanModel.find(query)
       .sort({ createdAt: -1 })
-      .skip(Number(skip) || 0)
-      .limit(Math.min(100, Number(limit) || 20))
+      .skip(safeSkip)
+      .limit(safeLimit)
       .lean();
 
     const total = await ScanModel.countDocuments(query);

@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   XCircle,
   Share2,
+  Info,
+  HelpCircle,
 } from 'lucide-react';
 import { fetchScanReport } from '@/lib/api';
 import { RiskScoreGauge } from '@/components/ui/RiskScoreGauge';
@@ -131,6 +133,38 @@ export default function SecurityReportPage() {
         </div>
       </div>
 
+      {/* Inconclusive / Partial Analysis Notice */}
+      {(scan.verdict === 'INCONCLUSIVE' || scan.analysisComplete === false || scan.analysisStatus === 'PARTIAL') && (
+        <div className="bg-amber-950/40 border border-amber-600/50 rounded-xl p-4 text-amber-200">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold font-mono text-amber-300">
+                Inconclusive / Partial Inspection Notice
+              </h3>
+              <p className="text-xs text-amber-200/90 leading-relaxed">
+                One or more security analyzers could not complete inspection (e.g. host unreachable, connection timeout, or TLS handshake refusal). In accordance with zero-trust security policy, absence of findings does <strong>NOT</strong> prove the target is benign.
+              </p>
+              {summary?.inconclusiveReasons && summary.inconclusiveReasons.length > 0 && (
+                <ul className="list-disc list-inside text-xs text-amber-300/80 mt-2 space-y-0.5 font-mono">
+                  {summary.inconclusiveReasons.map((reason, idx) => (
+                    <li key={idx}>{reason}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Response Truncation Notice */}
+      {summary?.isTruncated && (
+        <div className="bg-slate-900/60 border border-slate-700 rounded-lg px-4 py-2.5 text-xs font-mono text-slate-300 flex items-center gap-2">
+          <Info className="w-4 h-4 text-sky-400 shrink-0" />
+          <span>HTTP response body exceeded 1 MB streaming limit and was safely truncated during analysis.</span>
+        </div>
+      )}
+
       {/* Analyzer Pipeline Execution Matrix */}
       {scan.analyzerStatuses && (
         <div className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-4">
@@ -152,11 +186,14 @@ export default function SecurityReportPage() {
                       ? 'text-emerald-400 flex items-center gap-1'
                       : status === 'FAILED'
                       ? 'text-red-400 flex items-center gap-1'
+                      : status === 'TIMEOUT'
+                      ? 'text-amber-400 flex items-center gap-1'
                       : 'text-slate-500'
                   }
                 >
                   {status === 'SUCCESS' && <CheckCircle2 className="w-3.5 h-3.5" />}
                   {status === 'FAILED' && <XCircle className="w-3.5 h-3.5" />}
+                  {status === 'TIMEOUT' && <Clock className="w-3.5 h-3.5" />}
                   {status}
                 </span>
               </div>
