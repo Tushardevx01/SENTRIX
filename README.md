@@ -67,7 +67,7 @@ sentrix/
 ## Quick Start Guide
 
 ### 1. Prerequisites
-- Node.js (v20+ or v22+) & `pnpm` (`npm install -g pnpm`)
+- Node.js (v20+ or v22+) & `npm`
 - Python 3.11+
 - Docker or Podman
 
@@ -101,9 +101,9 @@ LLM_API_KEY=
 ### 3. Build & Run Locally
 
 ```bash
-# 1. Install root & packages dependencies
-pnpm install
-pnpm --filter @sentrix/shared build
+# 1. Install root & workspaces dependencies using npm
+npm install
+npm --workspace=@sentrix/shared run build
 
 # 2. Setup Python Virtual Environment
 cd services/scanner
@@ -115,10 +115,10 @@ cd ../..
 # 3. Start MongoDB
 docker run -d --name sentrix-mongo -p 27017:27017 mongo:7.0
 
-# 4. Start Services (separate terminals or dev scripts)
-pnpm dev:scanner   # Starts FastAPI on :8001
-pnpm dev:api       # Starts Fastify on :8000
-pnpm dev:web       # Starts Next.js on :3000
+# 4. Start Services (separate terminals or npm run scripts)
+npm run dev:scanner   # Starts FastAPI on :8001
+npm run dev:api       # Starts Fastify on :8000
+npm run dev:web       # Starts Next.js on :3000
 ```
 
 ### 4. Or Run with Docker Compose
@@ -141,9 +141,11 @@ cd services/scanner
 
 Run TypeScript compilation checks:
 ```bash
-pnpm --filter @sentrix/shared build
-pnpm --filter @sentrix/api build
-pnpm --filter @sentrix/web build
+npm --workspace=@sentrix/shared run build
+npm --workspace=@sentrix/api run build
+npm --workspace=@sentrix/web run build
+# Or build all with one command:
+npm run build
 ```
 
 ---

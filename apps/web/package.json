@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
-    "@sentrix/shared": "workspace:*",
+    "@sentrix/shared": "*",
     "clsx": "^2.1.1",
     "lucide-react": "^0.453.0",
     "next": "14.2.15",

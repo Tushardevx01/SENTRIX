@@ -7,7 +7,7 @@ This guide explains how to set up, build, test, and run the complete SENTRIX cyb
 ## 1. Prerequisites
 
 - **Node.js:** v20.x, v22.x, or v26.x
-- **pnpm:** v9.x, v10.x, or v11.x (`corepack enable && corepack prepare pnpm@latest --activate`)
+- **npm:** v10.x or v11.x
 - **Python:** 3.11, 3.12, or 3.15
 - **Docker / Podman:** Required for running containerized MongoDB and multi-service deployment.
 
@@ -71,8 +71,8 @@ LLM_API_KEY=
 ### 4.1 Install Node & Workspace Dependencies
 From the repository root:
 ```bash
-pnpm install
-pnpm --filter @sentrix/shared build
+npm install
+npm --workspace=@sentrix/shared run build
 ```
 
 ### 4.2 Set Up Python Scanner Environment
@@ -101,14 +101,16 @@ cd services/scanner
 
 **Terminal 2 — Fastify API Gateway:**
 ```bash
-cd apps/api
-pnpm dev
+npm --workspace=@sentrix/api run dev
+# or:
+# cd apps/api && npm run dev
 ```
 
 **Terminal 3 — Next.js Frontend:**
 ```bash
-cd apps/web
-pnpm dev
+npm --workspace=@sentrix/web run dev
+# or:
+# cd apps/web && npm run dev
 ```
 
 Visit `http://localhost:3000` in your browser.
@@ -125,9 +127,11 @@ cd services/scanner
 
 ### TypeScript Builds
 ```bash
-pnpm --filter @sentrix/shared build
-pnpm --filter @sentrix/api build
-pnpm --filter @sentrix/web build
+npm --workspace=@sentrix/shared run build
+npm --workspace=@sentrix/api run build
+npm --workspace=@sentrix/web run build
+# Or build all with one command:
+npm run build
 ```
 
 ---

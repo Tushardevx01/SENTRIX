@@ -2,18 +2,15 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Enable pnpm
-RUN corepack enable && corepack prepare pnpm@11.21.0 --activate
-
 # Copy workspace configurations
-COPY package.json pnpm-workspace.yaml ./
+COPY package.json ./
 COPY packages/shared ./packages/shared
 COPY apps/web ./apps/web
 
-# Install dependencies and build shared and web
-RUN pnpm install --frozen-lockfile=false
-RUN pnpm --filter @sentrix/shared build
-RUN pnpm --filter @sentrix/web build
+# Install dependencies using npm and build shared and web
+RUN npm install
+RUN npm --workspace=@sentrix/shared run build
+RUN npm --workspace=@sentrix/web run build
 
 WORKDIR /app/apps/web
 
