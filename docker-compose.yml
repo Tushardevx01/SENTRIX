@@ -1,0 +1,98 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: sentrix-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - internal_net
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/test --quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  scanner:
+    build:
+      context: ./services/scanner
+      dockerfile: Dockerfile
+    container_name: sentrix-scanner
+    restart: unless-stopped
+    env_file:
+      - ./services/scanner/.env
+    # STRICT RULE: Scanner API is NOT mapped to host ports; internal communication only
+    expose:
+      - "8001"
+    networks:
+      - internal_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: sentrix-api
+    restart: unless-stopped
+    env_file:
+      - ./apps/api/.env
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/sentrix
+      - SCANNER_INTERNAL_URL=http://scanner:8001
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    networks:
+      - internal_net
+      - public_net
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      scanner:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: sentrix-web
+    restart: unless-stopped
+    env_file:
+      - ./apps/web/.env
+    ports:
+      - "3000:3000"
+    networks:
+      - public_net
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  internal_net:
+    driver: bridge
+  public_net:
+    driver: bridge

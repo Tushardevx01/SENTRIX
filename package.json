@@ -1,0 +1,16 @@
+{
+  "name": "sentrix-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SENTRIX: Intelligent Website Threat Detection & Trust Intelligence Platform",
+  "scripts": {
+    "dev:web": "pnpm --filter @sentrix/web dev",
+    "dev:api": "pnpm --filter @sentrix/api dev",
+    "dev:scanner": "cd services/scanner && python3 -m uvicorn app.main:app --reload --port 8001",
+    "build:shared": "pnpm --filter @sentrix/shared build",
+    "build:api": "pnpm --filter @sentrix/api build",
+    "build:web": "pnpm --filter @sentrix/web build",
+    "build": "pnpm --filter @sentrix/shared build && pnpm --filter @sentrix/api build && pnpm --filter @sentrix/web build"
+  },
+  "packageManager": "pnpm@11.21.0"
+}
