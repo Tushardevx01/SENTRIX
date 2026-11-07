@@ -23,7 +23,7 @@ services:
     container_name: sentrix-scanner
     restart: unless-stopped
     env_file:
-      - ./services/scanner/.env
+      - ./.env
     # STRICT RULE: Scanner API is NOT mapped to host ports; internal communication only
     expose:
       - "8001"
@@ -43,7 +43,7 @@ services:
     container_name: sentrix-api
     restart: unless-stopped
     env_file:
-      - ./apps/api/.env
+      - ./.env
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/sentrix
       - SCANNER_INTERNAL_URL=http://scanner:8001
@@ -72,7 +72,7 @@ services:
     container_name: sentrix-web
     restart: unless-stopped
     env_file:
-      - ./apps/web/.env
+      - ./.env
     ports:
       - "3000:3000"
     networks:

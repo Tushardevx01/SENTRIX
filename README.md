@@ -152,11 +152,11 @@ npm run build
 
 ## Documentation
 
-- [System Architecture](file:///home/tushardevx01/Documents/SENTRIX/docs/ARCHITECTURE.md)
+- [System Architecture](file:///home/tushardevx01/Documents/SENTRIX/ARCHITECTURE.md)
+- [Persistent Engineering Memory](file:///home/tushardevx01/Documents/SENTRIX/MEMORY.md)
 - [API Reference](file:///home/tushardevx01/Documents/SENTRIX/docs/API.md)
 - [Threat Model & SSRF Defense](file:///home/tushardevx01/Documents/SENTRIX/docs/THREAT-MODEL.md)
 - [Database Schema & Indexes](file:///home/tushardevx01/Documents/SENTRIX/docs/DATABASE.md)
-- [Development Guide](file:///home/tushardevx01/Documents/SENTRIX/docs/DEVELOPMENT.md)
 
 ---
 
