@@ -40,6 +40,7 @@ export function buildServer(): FastifyInstance {
     max: 120,
     timeWindow: '1 minute',
     errorResponseBuilder: () => ({
+      statusCode: 429,
       error: 'RATE_LIMIT_EXCEEDED',
       message: 'Too many requests. Please slow down your requests.',
     }),
@@ -48,7 +49,7 @@ export function buildServer(): FastifyInstance {
   // Centralized Error Handling (sanitized against information leakage)
   app.setErrorHandler((error: FastifyError, request, reply) => {
     app.log.error({ err: error, reqId: request.id }, 'Request handling error');
-    const statusCode = error.statusCode || 500;
+    const statusCode = error.statusCode || (error as any).status || 500;
 
     if (statusCode >= 500) {
       return reply.status(statusCode).send({
@@ -59,7 +60,7 @@ export function buildServer(): FastifyInstance {
     }
 
     return reply.status(statusCode).send({
-      error: error.name || 'BAD_REQUEST',
+      error: (error as any).error || error.name || 'BAD_REQUEST',
       message: error.message || 'The request could not be processed',
       statusCode,
     });

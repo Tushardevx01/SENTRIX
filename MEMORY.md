@@ -6,19 +6,19 @@ This document serves as the persistent engineering memory for all developers, ar
 
 ## 1. Current Project State
 
-- **Current Development Phase:** Phase 3 / Security Hardening v1 Complete.
+- **Current Development Phase:** Phase 3.1 / Security Remediation v1.1 Complete.
 - **Implemented Modules:**
   - `apps/web`: Next.js 14 App Router UI (Landing, Scanner, Forensic Reports, Dashboard, Threat Intel, Community Feed, Scan History) updated with `INCONCLUSIVE` visual badges, gauges, and partial analysis warning banners.
-  - `apps/api`: Fastify 5 REST API gateway, Mongoose database models, rate-limiting, error handling, internal scanner client, input sanitization (`escapeRegex`, `sanitizePagination`), restricted `trustProxy`, and sanitized 500 error handlers.
-  - `services/scanner`: FastAPI threat engine with SSRF perimeter guard, socket-level connection-time IP pinning (`PinnedIPNetworkBackend`), controlled manual redirect validation, bounded 1 MB streaming responses, constant-time authentication (`secrets.compare_digest`), non-root container user (`appuser`), and zero-trust `INCONCLUSIVE` risk scoring engine.
+  - `apps/api`: Fastify 5 REST API gateway, Mongoose database models, rate-limiting, error handling, internal scanner client, input sanitization (`escapeRegex`, `sanitizePagination`), restricted `trustProxy`, sanitized 500 error handlers, server-derived voter identity (`sha256(voter:${request.ip})`), and dedicated route-level rate limiting on voting.
+  - `services/scanner`: FastAPI threat engine with SSRF perimeter guard, socket-level connection-time IP pinning (`PinnedIPNetworkBackend`), controlled manual redirect validation, bounded 1 MB streaming responses, constant-time authentication (`secrets.compare_digest`), non-root container user (`appuser`), zero-trust `INCONCLUSIVE` risk scoring engine with strict success-based completeness (`v != "SUCCESS"`), and threat intelligence failure propagation (`ThreatProviderResult`).
   - `packages/shared`: Centralized TypeScript contracts, Zod schemas, domain types (`VerdictEnum.INCONCLUSIVE`, `AnalysisStatusEnum`, `TIMEOUT` analyzer status), and URL utilities.
 - **Partially Implemented Modules:**
-  - External threat intelligence connectors: URLhaus integrated; Google Safe Browsing and LLM explanation connectors structured with graceful fallback when API keys are not supplied.
+  - External threat intelligence connectors: URLhaus integrated; Google Safe Browsing and LLM explanation connectors structured with graceful fallback when API keys are not supplied. Outages, timeouts, and 429/5xx status codes are strictly propagated as `FAILED`/`ERROR` rather than false clean matches.
 - **Pending Modules:**
   - Background asynchronous task queue (BullMQ/Redis) for decoupled asynchronous deep scans.
   - User authentication and role-based access control (RBAC) token issuance.
 - **Known Blockers:**
-  - None. All foundation services, local MongoDB, health checks, Fastify unit tests, and 29 scanner pytest tests are operational and passing.
+  - None. All foundation services, local MongoDB, health checks, 7 Fastify security integration tests, and 48 scanner pytest tests are operational and passing.
 
 ---
 
@@ -216,9 +216,14 @@ sentrix/
 
 ## 7. Current Development Progress
 
-- **Last Completed Task:** Security Hardening v1: Implemented socket-level connection-time IP pinning (`PinnedIPNetworkBackend`) preventing TOCTOU DNS rebinding, controlled redirect validation loop (max 5 hops, SSRF checks per hop), bounded 1 MB streaming HTTP reads with `isTruncated` tracking, strict TLS validation (`verify=True`, forensic classification of expired/self-signed/mismatched certs), zero-trust `INCONCLUSIVE` verdict model, Fastify regex query escaping and pagination sanitization, redacted 500 error messages, constant-time secret comparison via `secrets.compare_digest`, non-root container user (`appuser`), full test coverage (29 scanner pytest tests + 4 Fastify security tests), and frontend compatibility.
-- **Current Task:** Final verification, status reporting, and deliverable documentation.
-- **Next Priority:** Implement asynchronous scan queue worker (e.g., BullMQ/Redis) for decoupled asynchronous deep scans.
+- **Last Completed Task:** Security Remediation v1.1: Fixed all 4 audit findings from `SECURITY-VERIFICATION-AUDIT-v1.md`.
+  - `SENTRIX-SEC-01`: Docker Compose environment isolation (removed blanket `env_file`, preventing `MONGODB_URI` from leaking into scanner or web container).
+  - `SENTRIX-SEC-02`: External threat feed failure propagation (`ThreatProviderResult` returning `MATCH`, `NO_MATCH`, `ERROR`, `SKIPPED`; network/upstream errors produce `FAILED` status and report unreachable feeds rather than masking as clean matches).
+  - `SENTRIX-SEC-03`: Success-based analyzer completeness evaluation in `RiskAggregationEngine` (`v != "SUCCESS"` forces `PARTIAL`/`FAILED` and `INCONCLUSIVE`).
+  - `SENTRIX-SEC-04`: Community voting abuse controls (server-controlled voter identity derived from client IP `sha256(voter:${request.ip})`, MongoDB unique index deduplication, route-level rate limiting returning HTTP 429).
+  - Added 19 new regression tests (total 48 scanner pytest tests + 7 Fastify security tests). Full monorepo build passing.
+- **Current Task:** Ready for review and user authorization before commit.
+- **Next Priority:** Background asynchronous task queue (BullMQ/Redis) for decoupled asynchronous deep scans.
 - **Pending Integration Work:** Optional external API keys for Google Safe Browsing and URLhaus automated webhook ingestion.
 - **Known Bugs:** None currently identified.
 
@@ -227,7 +232,7 @@ sentrix/
 ## 8. Known Issues and Technical Debt
 
 - **Synchronous Scan Execution:** Scans currently execute synchronously over internal HTTP. For deep scans involving multiple network hops, request latency can exceed 3 seconds. *Mitigation:* Interfaces in `@sentrix/shared` and Fastify are designed to transition to asynchronous polling/WebSockets without breaking frontend contracts.
-- **Ephemeral Session Identifier:** Anonymous voting in community feeds uses browser localStorage session IDs (`sentrix_session_id`). *Mitigation:* Transition to signed JWT user authentication once auth module is implemented.
+- **Anonymous Voting Identity:** Anonymous voting binds 1 vote per report per source IP address via salted SHA-256 hash. Clients behind large CGNAT or shared institutional networks share voting identity per report. *Mitigation:* Transition to signed JWT user authentication once auth module is implemented.
 
 ---
 
@@ -256,4 +261,5 @@ sentrix/
 | **2026-11-07** | `60bfe51` | Platform Initialization | Complete modular cybersecurity platform initial commit with Next.js, Fastify, FastAPI, and MongoDB. |
 | **2026-11-07** | `cc12d88` | Standardized on npm Workspaces | Migrated workspace configuration to standard `npm` workspaces, generated `package-lock.json`, updated Dockerfiles. |
 | **2026-11-07** | `bd58628` | Architecture & Persistent Memory | Created root `ARCHITECTURE.md` and `MEMORY.md`, enforced single root `.env` loading across all services, organized `packages/shared` into `contracts`, `types`, and `utils`. |
-| **2026-11-07** | `Pending` | Security Hardening v1 | Implemented PinnedIPNetworkBackend, controlled manual redirects, 1MB streaming limits, strict TLS invariant, zero-trust INCONCLUSIVE verdicts, Fastify query/pagination sanitization, error redaction, 29 pytest tests, 4 API tests. |
+| **2026-11-07** | `ba0d7ef` | Security Hardening v1 | Implemented PinnedIPNetworkBackend, controlled manual redirects, 1MB streaming limits, strict TLS invariant, zero-trust INCONCLUSIVE verdicts, Fastify query/pagination sanitization, error redaction, 29 pytest tests, 4 API tests. |
+| **2026-11-07** | `Pending` | Security Remediation v1.1 | Fixed SENTRIX-SEC-01 (Docker env isolation), SENTRIX-SEC-02 (threat feed failure propagation), SENTRIX-SEC-03 (analyzer completeness evaluation), and SENTRIX-SEC-04 (community voting abuse hardening with IP voter hash & route rate limit). 47 pytest tests, 7 API tests. |

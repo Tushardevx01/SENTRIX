@@ -159,9 +159,11 @@ async def run_threat_analysis(request: AnalysisRequest):
 
     # 5. Reputation & Blacklist Intelligence
     try:
-        rep_findings = await reputation_analyzer.analyze(request.url, request.normalizedDomain)
+        rep_findings, rep_status, rep_meta = await reputation_analyzer.analyze(
+            request.url, request.normalizedDomain
+        )
         all_findings.extend(rep_findings)
-        statuses["reputationAnalyzer"] = "SUCCESS"
+        statuses["reputationAnalyzer"] = rep_status
     except (asyncio.TimeoutError, TimeoutError):
         statuses["reputationAnalyzer"] = "TIMEOUT"
     except Exception:

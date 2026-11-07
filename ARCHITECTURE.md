@@ -244,6 +244,13 @@ MongoDB 7.0 is the sole application database. Mongoose models are strictly house
    - Proxy security: Configures restricted `trustProxy` CIDRs to prevent spoofing of IP headers for rate-limiting.
 7. **Constant-Time Secret Authentication:**
    - Python scanner enforces `X-Scanner-Secret` pre-shared key validation using `secrets.compare_digest` to prevent timing side-channel attacks.
+8. **Docker Container Environment Scoping (Least Privilege):**
+   - In `docker-compose.yml`, blanket `env_file` loading is eliminated for `scanner` and `web`. Explicit variable mapping ensures database credentials (`MONGODB_URI`) are passed solely to the Fastify API container and are completely inaccessible inside the Python scanner or Next.js container.
+9. **Zero-Trust Threat Intelligence Failure Propagation:**
+   - External threat feed queries distinguish four structured outcomes: `MATCH`, `NO_MATCH`, `ERROR`, and `SKIPPED`. Network drops, rate limits, and provider timeouts are captured as `ERROR` and recorded as `FAILED`/`PARTIAL`, never allowing upstream outages to mask as clean verdicts.
+10. **Community Voting Anti-Abuse Controls:**
+    - Replaces client-controlled session IDs with deterministic, server-derived voter identities (`sha256(voter:${request.ip})`) enforced by MongoDB's unique compound index `{ reportId: 1, userId: 1 }`.
+    - Applies dedicated route-level rate limiting (20 votes per minute per IP) with 429 response enforcement to prevent voting manipulation.
 
 ---
 
@@ -277,7 +284,7 @@ A single `.env` file at repository root centralizes all service configuration:
 - Next.js loads root `.env` via `next.config.js` with `dotenv` (exposing only `NEXT_PUBLIC_` variables to client bundles).
 - Fastify loads root `.env` via `apps/api/src/config/index.ts` and validates schema on boot with Zod.
 - Python FastAPI loads root `.env` via `services/scanner/app/config/settings.py` with `pydantic-settings`.
-- Docker Compose loads root `.env` via top-level `env_file: ./.env`.
+- Docker Compose reads host environment variables from root `.env` and uses explicit service-level variable mapping (`environment:`) to enforce least privilege (e.g. database credentials passed strictly to Fastify, isolated from scanner and web).
 
 ### 10.2 Multi-Service Startup
 ```bash

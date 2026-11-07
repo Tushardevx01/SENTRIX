@@ -22,8 +22,13 @@ services:
       dockerfile: Dockerfile
     container_name: sentrix-scanner
     restart: unless-stopped
-    env_file:
-      - ./.env
+    environment:
+      - PORT=8001
+      - SCANNER_PORT=8001
+      - SCANNER_API_SECRET=${SCANNER_API_SECRET}
+      - URLHAUS_ENABLED=${URLHAUS_ENABLED:-true}
+      - GOOGLE_SAFE_BROWSING_API_KEY=${GOOGLE_SAFE_BROWSING_API_KEY:-}
+      - LLM_API_KEY=${LLM_API_KEY:-}
     # STRICT RULE: Scanner API is NOT mapped to host ports; internal communication only
     expose:
       - "8001"
@@ -71,8 +76,10 @@ services:
       dockerfile: apps/web/Dockerfile
     container_name: sentrix-web
     restart: unless-stopped
-    env_file:
-      - ./.env
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - PORT=3000
     ports:
       - "3000:3000"
     networks:

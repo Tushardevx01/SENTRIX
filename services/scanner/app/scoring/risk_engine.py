@@ -9,6 +9,14 @@ SEVERITY_WEIGHTS = {
     "INFO": 0,
 }
 
+EXPECTED_ANALYZERS = [
+    "urlAnalyzer",
+    "domainAnalyzer",
+    "tlsAnalyzer",
+    "webSecurityAnalyzer",
+    "reputationAnalyzer",
+]
+
 
 class RiskAggregationEngine:
     """
@@ -43,18 +51,22 @@ class RiskAggregationEngine:
         # Cap risk score between 0 and 100
         risk_score = min(100, max(0, raw_score))
 
-        # Determine Analyzer Execution Completeness
-        failed_analyzers = [k for k, v in analyzer_statuses.items() if v in ("FAILED", "TIMEOUT")]
+        # Determine Analyzer Execution Completeness (Zero-Trust Invariant: ONLY explicit SUCCESS is complete)
+        # Missing analyzer statuses MUST NOT silently count as success!
+        missing_analyzers = [name for name in EXPECTED_ANALYZERS if name not in analyzer_statuses]
+        non_success_analyzers = [k for k, v in analyzer_statuses.items() if v != "SUCCESS"]
+        incomplete_analyzers = sorted(list(set(missing_analyzers + non_success_analyzers)))
         success_analyzers = [k for k, v in analyzer_statuses.items() if v == "SUCCESS"]
 
-        if not failed_analyzers:
+        if not incomplete_analyzers:
             analysis_status = "COMPLETE"
             analysis_complete = True
         elif success_analyzers:
             analysis_status = "PARTIAL"
             analysis_complete = False
+            details = [f"{k}:{analyzer_statuses.get(k, 'MISSING')}" for k in incomplete_analyzers]
             inconclusive_reasons.append(
-                f"Partial inspection: {len(failed_analyzers)} analyzer(s) failed or timed out ({', '.join(failed_analyzers)})."
+                f"Partial inspection: {len(incomplete_analyzers)} analyzer(s) did not complete successfully ({', '.join(details)})."
             )
         else:
             analysis_status = "FAILED"
