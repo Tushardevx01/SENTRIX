@@ -2,66 +2,86 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #0b0f19;
-  --foreground: #f8fafc;
+@layer base {
+  :root {
+    /* LIGHT MODE (DEFAULT) */
+    --bg-main: #F7F9FC;
+    --bg-sidebar: #FFFFFF;
+    --bg-card: #FFFFFF;
+    --bg-elevated: #F0F4F8;
+    --border-color: #E3E9F0;
+    --border-subtle: #EDF2F7;
+    --text-primary: #172033;
+    --text-secondary: #68758A;
+    --text-muted: #94A3B8;
+    --accent-primary: #5278E8;
+    --accent-secondary: #16B8B0;
+    --accent-purple: #7457D5;
+    --status-success: #16A36A;
+    --status-warning: #E99A32;
+    --status-danger: #E34E5B;
+    --status-info: #3B82F6;
+  }
+
+  .dark {
+    /* DARK MODE (SECONDARY) */
+    --bg-main: #090B0E;
+    --bg-sidebar: #0D1014;
+    --bg-card: #11161C;
+    --bg-elevated: #171D24;
+    --border-color: #252D35;
+    --border-subtle: #1C232B;
+    --text-primary: #F4F7FA;
+    --text-secondary: #929EAD;
+    --text-muted: #64748B;
+    --accent-primary: #B6F36B;
+    --accent-secondary: #43D9E8;
+    --accent-purple: #9D7BFF;
+    --status-success: #42C98A;
+    --status-warning: #FFB547;
+    --status-danger: #FF4D5A;
+    --status-info: #38BDF8;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    overflow-x: hidden;
+  }
 }
 
-body {
-  background-color: #0b0f19;
-  color: #f8fafc;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  overflow-x: hidden;
-}
-
-/* Custom cyber scrollbars */
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 3px;
+  background: var(--border-color);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00e5ff;
+  background: var(--text-muted);
 }
 
-/* Cyber grid background effect */
-.cyber-grid {
-  background-size: 40px 40px;
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+/* Subtle pattern for subtle technical depth */
+.sentrix-grid {
+  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
 }
 
-.radar-sweep {
-  position: relative;
-  overflow: hidden;
-}
-
-.radar-sweep::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(180deg, transparent 40%, rgba(0, 229, 255, 0.15) 90%, rgba(0, 229, 255, 0.4) 100%);
-  animation: radar-sweep 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-@keyframes radar-sweep {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100%);
-  }
+.dark .sentrix-grid {
+  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
 }
