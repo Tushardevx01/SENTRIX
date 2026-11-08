@@ -65,18 +65,24 @@ flowchart LR
 ```
 sentrix/
 ├── apps/
-│   ├── web/              # Next.js frontend application
-│   └── api/              # Fastify API gateway
+│   ├── web/              # Next.js 14 frontend application (port 3000)
+│   └── api/              # Fastify 5 API gateway & background worker (port 8000)
 ├── services/
-│   └── scanner/          # Python FastAPI threat analysis engine
+│   └── scanner/          # Python FastAPI threat analysis engine (port 8001 / internal)
 ├── packages/
-│   └── shared/           # Shared TypeScript models, schemas, and utils
+│   └── shared/           # Shared TypeScript models, schemas, and contracts
+├── contracts/            # Solidity 0.8.20 ThreatRegistry.sol & compile script
 ├── docs/
-│   ├── ARCHITECTURE.md   # Architectural design and sequence diagrams
 │   ├── API.md            # Comprehensive REST API reference
 │   ├── THREAT-MODEL.md   # SSRF defense, adversary model, security policies
-│   ├── DATABASE.md       # MongoDB collections, indexes, and schemas
-│   └── DEVELOPMENT.md    # Local setup and workflow instructions
+│   ├── DATABASE.md       # MongoDB collections, 33 indexes, and schemas
+│   ├── DEPLOYMENT_GUIDE.md # Production and container deployment guide
+│   ├── TESTING_REPORT.md # Test execution report (90 API tests, 152 scanner tests)
+│   └── FINAL_HACKATHON_CHECKLIST.md # HackMatrix module audit checklist
+├── ARCHITECTURE.md       # Detailed system architecture and sequence diagrams
+├── DEMO.md               # Live demonstration guide with 6 reproducible cases
+├── DEPLOYMENT.md         # Production runbook
+├── MEMORY.md             # Persistent engineering memory and change log
 ├── docker-compose.yml    # Multi-container orchestration
 └── README.md
 ```
@@ -104,6 +110,16 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 MONGODB_URI=mongodb://localhost:27017/sentrix
 SCANNER_INTERNAL_URL=http://localhost:8001
 SCANNER_API_SECRET=your_generated_64_char_hex_secret
+JWT_SECRET=super_secret_jwt_signing_key_at_least_32_characters_long
+
+# Web3 Blockchain Configuration (EVM / Hardhat / Sepolia)
+BLOCKCHAIN_ENABLED=true
+BLOCKCHAIN_RPC_URL=http://127.0.0.1:8545
+THREAT_REGISTRY_CONTRACT_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
+# NOTE: In local dev, Hardhat default key 0xac09... is permitted; public networks require an authentic key:
+BLOCKCHAIN_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+
+# External Intelligence Feeds (Optional)
 GOOGLE_SAFE_BROWSING_API_KEY=
 URLHAUS_ENABLED=true
 LLM_API_KEY=
@@ -114,9 +130,12 @@ LLM_API_KEY=
 ```bash
 # 1. Install root & workspaces dependencies using npm
 npm install
-npm --workspace=@sentrix/shared run build
+npm run build:shared
 
-# 2. Setup Python Virtual Environment
+# 2. Compile Solidity ThreatRegistry smart contract
+node contracts/compile.js
+
+# 3. Setup Python Virtual Environment
 cd services/scanner
 python3 -m venv .venv
 source .venv/bin/activate

@@ -170,8 +170,9 @@ hidden-iframe escalation vs benign embeds, `evaluate_hostile_destination`
 corroboration, referrer-policy posture classification, and analyzer provenance
 stamping.
 
-Full verification for the phase: scanner pytest **81 passed**, API `npm test`
-**69 passed**, `npm run build` clean, `docker compose config` clean.
+Full platform verification: scanner pytest **152 passed**, API `npm test`
+**90 passed across 11 suites**, `npm run build` clean (15/15 Next.js routes compiled),
+`docker compose config` clean.
 
 ## 5. Limitations & Guardrails
 

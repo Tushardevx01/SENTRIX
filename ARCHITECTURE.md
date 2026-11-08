@@ -320,8 +320,12 @@ sequenceDiagram
 ```
 
 - **Smart Contract (`ThreatRegistry.sol`):** Solidity 0.8.20 EVM contract maintaining an immutable threat registry:
-  - `registerThreat(bytes32 reportId, bytes32 reportHash, uint8 severityScore, string threatCategory, string target)`
-  - `verifyThreat(bytes32 reportId)` returns `(bool exists, bytes32 reportHash, uint256 timestamp, uint256 blockNumber, address reporter, uint8 severityScore, string threatCategory, string target)`
+  - `registerThreat(bytes32 reportHash, string calldata category, uint8 severityScore, string calldata metadataUri) external returns (uint256 reportId)`
+  - `verifyThreat(bytes32 reportHash) external view returns (bool exists, address reporter, uint256 timestamp, string memory category, uint8 severityScore, string memory metadataUri)`
+  - `getRecordCount() external view returns (uint256)`
+- **Dual-Mode Cryptographic Integrity Architecture:**
+  - **On-Chain EVM Mode:** When connected to an active EVM node (Hardhat port 8545 or Sepolia), transactions are mined on-chain using an automated `NonceManager` with live contract deployment. Emits `ThreatRegistered` events and returns mined `txHash` and `blockNumber`.
+  - **Simulated Ledger Mode:** When EVM RPC is unreachable or during offline development, the service falls back to a verifiable SHA-256 ledger tagged with `status: 'SIMULATED'`, `isSimulated: true`, and transaction reference `simulated-<sha256>`. Simulated records are never misrepresented as on-chain transactions.
 - **Canonical Commitment:** Deterministic JSON serialization with alphabetically sorted keys guarantees identical SHA-256 computation across all nodes.
 - **Zero Sensitive Data On-Chain:** Only cryptographic commitments (`bytes32` SHA-256), severity scores, and target identifiers are stored on-chain; private user data is never submitted to the blockchain.
 
@@ -389,8 +393,8 @@ The migration manager provides:
    - Fields: `campaignId`, `name`, `threatType`, `confidence`, `indicators`, `relatedIncidents`, `summary`, timestamps.
    - Indexes: `{ campaignId: 1 }` (unique), `{ updatedAt: -1 }`.
 10. **`blockchainrecords`**:
-    - Fields: `reportId`, `reportType` (`SCAN` | `MESSAGE` | `THREAT_REPORT`), `target`, `reportHash`, `canonicalData`, `txHash`, `blockNumber`, `blockTimestamp`, `contractAddress`, `chainId`, `networkName`, `reporterAddress`, `status`, timestamps.
-    - Indexes: `{ reportId: 1 }`, `{ reportHash: 1 }` (unique), `{ txHash: 1 }` (unique), `{ createdAt: -1 }`.
+    - Fields: `reportId`, `reportType` (`SCAN` | `MESSAGE` | `THREAT_REPORT`), `target`, `reportHash`, `canonicalData`, `txHash`, `blockNumber`, `blockTimestamp`, `contractAddress`, `chainId`, `networkName`, `reporterAddress`, `status` (`CONFIRMED` | `SIMULATED` | `FAILED`), `isSimulated` (boolean), timestamps.
+    - Indexes: `{ reportId: 1 }`, `{ reportHash: 1 }`, `{ txHash: 1 }`, `{ createdAt: -1 }`.
 
 ---
 

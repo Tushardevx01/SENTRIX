@@ -43,6 +43,8 @@ SCANNER_API_SECRET=64_character_hex_shared_secret_between_api_and_scanner
 BLOCKCHAIN_ENABLED=true
 BLOCKCHAIN_RPC_URL=http://127.0.0.1:8545
 THREAT_REGISTRY_CONTRACT_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
+# NOTE: 0xac09... is permitted ONLY on local Hardhat RPC (127.0.0.1 / localhost);
+# For public networks (e.g. Ethereum Sepolia), supply your funded wallet private key:
 BLOCKCHAIN_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
 # External Intelligence Feeds (Optional)

@@ -48,10 +48,14 @@ SENTRIX enforces a strict **single root `.env` policy**.
 | `SCANNER_INTERNAL_URL`| Yes | `http://127.0.0.1:8001` | Private URL where Fastify contacts the scanner. |
 | `SCANNER_API_SECRET` | Yes | *(Random 32+ hex)* | Shared secret for inter-service authentication (`X-Scanner-Secret`). |
 | `JWT_SECRET` | Prod | *(Optional in dev)* | Secret for auth tokens (minimum 32 characters in production). |
+| `BLOCKCHAIN_ENABLED` | Optional | `true` | Toggle for Web3 threat registry commitments. |
+| `BLOCKCHAIN_RPC_URL` | Optional | `http://127.0.0.1:8545` | EVM JSON-RPC endpoint (Hardhat local node, Sepolia testnet). Accepts `ETHEREUM_RPC_URL` alias. |
+| `THREAT_REGISTRY_CONTRACT_ADDRESS` | Optional | `0x5FbDB...` | Deployed address of `ThreatRegistry.sol`. Auto-deploys locally if omitted. |
+| `BLOCKCHAIN_PRIVATE_KEY` | Optional | `None` | Signer private key for on-chain submissions. Accepts `ETHEREUM_PRIVATE_KEY` alias. Prohibits Hardhat default key on public RPCs. |
 | `GOOGLE_SAFE_BROWSING_API_KEY` | Optional | `None` | Google Safe Browsing Lookup API v4 key. |
 | `URLHAUS_ENABLED` | Optional | `true` | Toggle for abuse.ch URLhaus threat feed queries. |
 | `URLHAUS_API_KEY` | Optional | `None` | Auth-Key from `auth.abuse.ch` for URLhaus API. |
-| `LLM_API_KEY` | Optional | `None` | Optional API key for generative threat explanations. |
+| `LLM_API_KEY` | Optional | `None` | Optional API key for generative threat explanations (deterministic fallback if empty). |
 
 ### Generating a Secure Root `.env`
 
@@ -69,6 +73,15 @@ MONGODB_URI=mongodb://127.0.0.1:27017/sentrix
 SCANNER_INTERNAL_URL=http://127.0.0.1:8001
 SCANNER_API_SECRET=692a8e8b2b7336c572f3e8f5cb58e4695e86d0cf9becefb8ae41541ba3c78d5e
 JWT_SECRET=super_secret_jwt_signing_key_at_least_32_characters_long_1234
+
+# Web3 Threat Registry (Hardhat local development node)
+BLOCKCHAIN_ENABLED=true
+BLOCKCHAIN_RPC_URL=http://127.0.0.1:8545
+THREAT_REGISTRY_CONTRACT_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
+# NOTE: 0xac09... is permitted ONLY on local RPC (127.0.0.1/localhost); public networks require a secure private key:
+BLOCKCHAIN_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+
+# External Intelligence Feeds (Optional)
 GOOGLE_SAFE_BROWSING_API_KEY=
 URLHAUS_ENABLED=true
 URLHAUS_API_KEY=
@@ -110,9 +123,12 @@ docker run -d --name sentrix-mongo -p 27017:27017 -v sentrix_data:/data/db mongo
 podman run -d --name sentrix-mongo -p 27017:27017 -v sentrix_data:/data/db docker.io/library/mongo:7.0
 ```
 
-### Step 4: Apply Database Indexes & Seed Admin Account
+### Step 4: Compile Smart Contracts & Apply Database Indexes
 
 ```bash
+# Compile Solidity ThreatRegistry contract:
+node contracts/compile.js
+
 # Check index migration plan:
 npm run migrate:indexes:dry-run
 
@@ -202,7 +218,7 @@ curl -I http://localhost:3000
 Run API gateway integration tests:
 ```bash
 npm test
-# Runs 69 integration and unit tests covering background scanning, fencing, auth, and SSRF.
+# Runs 90 integration and unit tests across 11 suites covering background scanning, fencing, auth, SSRF, message analysis, correlation, blockchain, and AI explanations.
 ```
 
 Run Python scanner unit and security tests:

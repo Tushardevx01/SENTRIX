@@ -17,8 +17,9 @@ All automated test suites, build pipelines, contract compilers, and database ind
 | **Fastify API (Node.js/TypeScript)** | 11 suites | 90 tests | 90 | 0 | **PASS (100%)** |
 | **Python Threat Scanner (Pytest)** | 13 suites | 152 tests | 152 | 0 | **PASS (100%)** |
 | **Solidity Smart Contract (solc 0.8.20)** | 1 contract | 1 artifact | 1 | 0 | **COMPILED** |
+| **EVM Live Execution (Hardhat / Sepolia)** | 1 node | 6 scenarios | 6 | 0 | **MINED & VERIFIED** |
 | **Next.js 14 Frontend Application** | 15 routes | 15 routes | 15 | 0 | **COMPILED** |
-| **MongoDB Index Migrations** | 5 collections | 32 indexes | 32 | 0 | **VERIFIED** |
+| **MongoDB Index Migrations** | 5 collections | 33 indexes | 33 | 0 | **VERIFIED** |
 
 ---
 
@@ -177,16 +178,17 @@ Route (app)                              Size     First Load JS
 
 ## 6. MongoDB Database Index Verification Log
 
-Command executed: `npm run migrate:indexes`  
-Verified: 32 active compound and unique indexes configured.
+Command executed: `npm run migrate:indexes:dry-run` && `npm run migrate:indexes`  
+Verified: 33 active compound and unique indexes configured across collections.
 
 ```
 === MIGRATION EXECUTION REPORT ===
 Success: true
-Created Indexes (32):
+Created Indexes (33):
   + scans.status_1_createdAt_1
   + scans.status_1_claimedAt_1
   + scans.urlHash_1_status_1
+  + scans.urlHash_1
   + scans.publishedLeaseToken_1
   + scans.leaseToken_1
   + scans.normalizedDomain_1_createdAt_-1
