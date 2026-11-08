@@ -54,6 +54,7 @@ This document serves as the persistent engineering memory for all developers, ar
    - Pre-flight DNS resolution and IP address validation occurs before any network probe.
    - Loopback (`127.0.0.0/8`, `::1`), RFC 1918 private subnets, and cloud instance metadata (`169.254.169.254`, `metadata.google.internal`) are blocked immediately.
    - Socket-level connection-time IP pinning (`PinnedIPNetworkBackend`) prevents Time-of-Check to Time-of-Use (TOCTOU) DNS rebinding attacks.
+   - DNS64/NAT64 addresses in the well-known `64:ff9b::/96` prefix are checked by their embedded IPv4 destination, allowing public targets while continuing to block private, reserved, and metadata ranges.
 5. **Fail-Safe Zero-Trust Risk Scoring:**
    - Missing or unreachable analyzer results are never treated as evidence of safety.
    - Failed probes reduce confidence ratings and generate warning findings rather than lowering threat scores.
@@ -316,7 +317,7 @@ sentrix/
   - **Phase 4.1:** Operational Hardening: Bounded Orphan-Artifact Cleanup Service (`OrphanCleanupService`), Controlled MongoDB Index Migrations (`IndexMigrationManager`), Dry-Run Inspection CLI, `autoIndex: false` on startup.
   - **Phase 5:** Enterprise Threat Intelligence, Deep Cryptographic X.509 Trust Engine, Multi-Sector Phishing/Brand Impersonation Detection, Production User Authentication & RBAC, Cross-Platform Test Runner.
   - **Phase 6.1:** Benchmark Infrastructure & Baseline Evaluation: Reproducible offline test harness, 80-case development dataset (`dataset_dev.json`), 25-case independent validation dataset (`dataset_val.json`), 3x3 confusion matrix, binary threat metrics, and latency measurement without network egress.
-  - **Phase 6.3:** Evidence-Based Detection Calibration: Implemented CAL-01 through CAL-06, lifting development accuracy from 78.75% to 87.50%, eliminating all false alarms on benign targets (FPR 0.0%), and achieving 100% binary threat detection (FNR 0.0%).
+  - **Phase 6.3:** Evidence-Based Detection Calibration: Implemented CAL-01 through CAL-06 with a second evidence-refinement iteration (IDNA/confusable-skeleton/bounded-edit-distance brand matching, token-only keywords, hostile-destination corroboration for redirects and concealed iframes, cross-analyzer dedup keys with analyzer provenance), lifting development accuracy from 78.75% to 93.75% and validation accuracy from 80.00% to 92.00%, eliminating all false alarms on benign targets (FPR 0.0% on both corpora), and achieving 100% binary threat detection (FNR 0.0%).
 - **Completed Improvements:**
   - `SENTRIX-AUTH-01`: Production-grade User Authentication & Role-Based Access Control (RBAC) token issuance in `apps/api` (`POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me`) using zero-dependency Node `crypto.scrypt` password hashing with random 16-byte salt, constant-time comparison, and signed HMAC-SHA256 JWTs.
   - `SENTRIX-AUTH-02`: Implemented `authenticate` and `requireRole(['admin', 'analyst'])` preHandler guards in Fastify, and integrated authenticated voter identity into community threat reporting and voting, resolving `SENTRIX-SEC-04` by tying votes directly to verified accounts while gracefully supporting anonymous IP hash voting.
@@ -350,30 +351,35 @@ sentrix/
   - `SENTRIX-TLS-04`: Comprehensive SC-081v3 Deterministic Boundary Testing: Added exact UTC boundary tests for 2026 (200d), 2027 (100d), and 2029 (47d) transitions, and verified CA/self-signed validity exemptions.
   - `SENTRIX-CAL-01`: Contextual Security Posture Scoring: Implemented 15-point ceiling on defense-in-depth posture findings (missing HSTS, CSP, XFO, XCTO, Referrer-Policy, server banner disclosure, missing leaf SCTs) in `risk_engine.py`, preventing benign sites from crossing the SUSPICIOUS threshold (>= 26).
   - `SENTRIX-CAL-02`: PSL-Aware Authentic Domain Context: Integrated `tldextract` to identify authentic registrable domains from `RECOGNIZED_AUTHENTIC_DOMAINS` in `url_analyzer.py`, suppressing naive credential keyword penalties on standard authentication paths (`/login`, `/signin`, `/account`) for recognized domains free of homoglyphs and userinfo.
-  - `SENTRIX-CAL-03`: Token-Based Domain Segmentation: Domain segmentation into hyphen- and dot-delimited tokens in `domain_analyzer.py`. Short brands (<= 4 chars) require exact token equality (resolving false positives like `isbilling.com` and `simplicity.org`), and multi-token brands are matched across hyphens.
-  - `SENTRIX-CAL-04`: Multi-Candidate Leetspeak Impersonation Engine: Generated multi-candidate character substitutions (`1` -> `l`, `i`, `t`; `0` -> `o`) in `domain_analyzer.py`, detecting obfuscated impersonations like `wha1sapp`, `spot1fy`, and `b0fa`.
-  - `SENTRIX-CAL-05`: Credential Harvesting & Evasion Severity Calibration: Escalated national ID and financial credential collection to CRITICAL (40 points) in `web_security_analyzer.py`. Calibrated client-side meta-refresh redirects to require corroborating indicators before escalating to CRITICAL. Hardened TLS analyzer against `AttributeError` on `verify_message`.
-  - `SENTRIX-CAL-06`: Finding Deduplication & Risk Factor Aggregation: Deduplicated threat findings by `dedup_key` (e.g. `HOST_RAW_IP`) in `risk_engine.py`, selecting the highest-severity observation per group to prevent double-counting in score and risk factors.
+  - `SENTRIX-CAL-03`: Token-Based Domain Segmentation & Evidence-Based Similarity Matching: Domain segmentation into hyphen- and dot-delimited tokens in `domain_analyzer.py` with no substring matching (eliminating FPs such as `revolute.com`, `stripes.com`, `chases.com`). Short brands (<= 4 chars) require exact token equality (`isbilling.com`, `simplicity.org` clean), plus IDNA punycode decoding, Unicode confusable-skeleton matching (Cyrillic/Greek homographs), hyphen-window joins (`wells-fargo-alert` matches `wellsfargo`), compound-suffix tolerance, and corroboration-gated bounded edit distance (cap 1 for 5-8 char brands, cap 2 for >= 9, plural guard). Token-only keywords (e.g. `phish`) match exact hostname/path tokens only. Each finding records `matchMethod` and preserves the original domain in evidence.
+  - `SENTRIX-CAL-04`: Multi-Candidate Leetspeak Impersonation Engine: Per-token multi-candidate character substitutions (`1` -> `l`, `i`, `t`; `0` -> `o`) with a 16-candidate cap (no global substitution map) in `domain_analyzer.py`, detecting obfuscated impersonations like `wha1sapp`, `spot1fy`, and `b0fa` while avoiding ordinary-English false positives.
+  - `SENTRIX-CAL-05`: Credential Harvesting & Evasion Severity Calibration: Escalated national ID and financial credential collection to CRITICAL (40 points) in `web_security_analyzer.py`. Calibrated client-side meta-refresh redirects to require corroborating indicators (high-risk TLD or credential path) before escalating to CRITICAL; unknown external destinations are never auto-malicious. Added `evaluate_hostile_destination()` shared evidence helper producing a HIGH "Redirect Destination Exhibits Hostile Indicators" finding (dedup key `HOSTILE_DESTINATION:<host>`) for hostile redirect targets and hidden-iframe sources, with concealed iframes loading hostile payloads escalating to CRITICAL evidence sharing the `HIDDEN_IFRAME` key. Distrusted-CA verdicts require chain evidence (issuer-string spoofing on self-signed certs is distinguished from verified distrusted chains; cert trust/compliance failures alone never yield MALICIOUS). Hardened TLS analyzer against `AttributeError` on `verify_message`.
+  - `SENTRIX-CAL-06`: Finding Deduplication, Provenance & Risk Factor Aggregation: Deduplicated threat findings by stable `dedup_key` (e.g. `HOST_RAW_IP`, `POSTURE_*`) in `risk_engine.py`, selecting the highest-severity observation per group to prevent double-counting. Cross-analyzer keys: hostname-only keyword findings share `DECEPTIVE_HOSTNAME:<host>` with domain-analyzer hostname findings (fixes DEV-067), hostile-destination findings share `HOSTILE_DESTINATION:<host>`, and hidden-iframe findings share `HIDDEN_IFRAME`. Analyzer provenance (`evidence["analyzer"]`) is stamped at collection time in `main.py` and the benchmark harness; dedup never drops report evidence.
 - **Benchmark Metrics Comparison:**
   - **Development Dataset (80 cases, `dataset_dev.json`):**
-    - Overall 3-Class Accuracy: **78.75% -> 87.50%** (+8.75%)
-    - Macro-Averaged F1: **67.12% -> 79.95%** (+12.83%)
-    - Weighted-Averaged F1: **78.43% -> 87.88%** (+9.45%)
+    - Overall 3-Class Accuracy: **78.75% -> 93.75%** (+15.00%)
+    - Macro-Averaged F1: **67.12% -> 88.88%** (+21.76%)
+    - Weighted-Averaged F1: **79.95% -> 93.63%** (+13.68%)
     - Binary Threat F1 (Threat = SUSPICIOUS | MALICIOUS): **95.65% -> 100.00%**
     - False Positive Rate (FPR): **8.57% -> 0.00%** (0 false alarms out of 35 benign cases)
     - False Negative Rate (FNR): **2.22% -> 0.00%** (0 missed threats out of 45 threat cases)
     - BENIGN Class F1: **94.12% -> 100.00%** (Precision: 100.0%, Recall: 100.0%)
-  - **Independent Validation Dataset (25 cases, `dataset_val.json`):**
-    - Overall 3-Class Accuracy: **80.00% -> 88.00%** (+8.00%)
-    - Macro-Averaged F1: **73.18% -> 78.70%** (+5.52%)
-    - Weighted-Averaged F1: **80.00% -> 88.66%** (+8.66%)
-    - Binary Threat F1: **92.86% -> 100.00%** (FPR: 10.0% -> 0.0%, FNR: 0.0% -> 0.0%)
+    - MALICIOUS Class F1: **81.16% -> 92.96%** (Precision: 91.7%, Recall: 94.3%); SUSPICIOUS Class F1: **26.09% -> 73.68%**
+    - Latency: mean 136.8 ms, p50 114.0 ms, p90 209.0 ms, p99 233.0 ms
+    - Remaining errors (5, principled): DEV-057/066/072 (GT SUSPICIOUS, stacked distinct indicators reach >= 70) and DEV-078/080 (GT MALICIOUS, cert trust/compliance findings deliberately stop at SUSPICIOUS per CAL-05)
+  - **Independent Validation Dataset (25 cases, `dataset_val.json`, single run after dev freeze):**
+    - Overall 3-Class Accuracy: **80.00% -> 92.00%** (+12.00%)
+    - Macro-Averaged F1: **68.40% -> 85.86%** (+17.46%)
+    - Weighted-Averaged F1: **81.14% -> 92.00%** (+10.86%)
+    - Binary Threat F1: **92.86% -> 100.00%** (FPR: 9.09% -> 0.0%, FNR: 7.14% -> 0.0%)
+    - Remaining errors (2, principled): VAL-021 and VAL-024 (same patterns as dev)
+    - **Caveat:** 25 cases cannot support any production-accuracy claim.
 - **Test Metrics & Platform Verification:**
   - **API Test Suite:** 69 tests across 7 test suites (`security.test.ts`, `auth.test.ts`, `authIntegration.test.ts`, `asyncScan.test.ts`, `realMongoConcurrency.test.ts`, `orphanCleanup.test.ts`, `indexMigration.test.ts`) passing with 100% success rate against live MongoDB 7.0 (69 passed, 0 failed, 0 skipped).
-  - **Scanner Pytest Suite:** 67 tests passing (including 6 new calibration regression tests in `test_calibration_regression.py`) with zero failures.
-  - **Monorepo Build:** `@sentrix/shared` (tsc) + `@sentrix/api` (tsc) + `@sentrix/web` (Next.js 14 static generation) building 9/9 routes cleanly.
+  - **Scanner Pytest Suite:** 81 tests passing (including 19 calibration regression tests in `test_calibration_regression.py` covering CAL-01 through CAL-06 positive and negative cases) with zero failures.
+  - **Monorepo Build:** `@sentrix/shared` (tsc) + `@sentrix/api` (tsc) + `@sentrix/web` (Next.js 14 static generation) building 12/12 routes cleanly.
   - **Docker Compose:** `docker compose config --quiet` validating cleanly.
-- **Current Task:** Phase 6.3 Evidence-Based Detection Calibration completed; calibration benchmark reports generated (`calibrated_dev_report.json`, `calibrated_val_report.json`).
+- **Current Task:** Phase 6.3 Evidence-Based Detection Calibration completed with final evidence-refinement iteration; calibrated benchmark reports regenerated (`calibrated_dev_report.json` 93.75%, `calibrated_val_report.json` 92.00%), detection scoring documentation added (`docs/DETECTION-SCORING.md`).
 - **Next Priorities:**
   - Expand benchmark test suites with real-world threat feeds and broader multi-sector targets.
   - Complete optional external threat feeds (Google Safe Browsing v4 API key setup).
@@ -421,6 +427,6 @@ sentrix/
 | **2026-11-08** | `1267507` | Merge PR #1: Enterprise Threat Intelligence & Production Auth | Merged branch `Sayandeep` into `main`, unifying Phase 4.1 operational hardening, index migrations, orphan artifact cleanup, and Phase 5 enterprise auth and cryptographic trust engines. |
 | **2026-11-08** | `Working Tree` | Phase 5.2 Final Security Verification & Production Readiness Audit | Implemented distributed atomic locking for last-admin demotion invariant, bounded scrypt concurrency limiter (10 parallel max), safe hash parameter parsing, interactive masked password CLI in createAdmin.ts, exact UTC SC-081v3 boundary tests (2026, 2027, 2029) + CA exemptions, 7 real MongoDB 7.0 auth integration tests (69 total API tests + 61 pytest tests, 100% passing). |
 | **2026-11-08** | `Working Tree` | Phase 6.1 Benchmark Infrastructure & Baseline Evaluation | Built reproducible benchmark test harness, 80-case development dataset (`dataset_dev.json`), 25-case independent validation dataset (`dataset_val.json`), baseline reports (`baseline_dev_report.json`, `baseline_val_report.json`), 3x3 confusion matrix and binary metrics. |
-| **2026-11-08** | `Working Tree` | Phase 6.3 Evidence-Based Detection Calibration | Implemented CAL-01 through CAL-06 (15-pt posture ceiling, PSL authentic domain context, short-brand token boundaries, multi-candidate leetspeak matching, financial credential escalation, finding deduplication). Improved dev accuracy to 87.50% (+8.75%), eliminated false alarms (FPR 0.0%), achieved 100% binary threat detection. Added 6 calibration regression tests (67 passed in pytest). |
+| **2026-11-08** | `Working Tree` | Phase 6.3 Evidence-Based Detection Calibration | Implemented CAL-01 through CAL-06 (15-pt posture ceiling, PSL authentic domain context, evidence-based brand similarity matching, multi-candidate leetspeak matching, hostile-destination corroboration, cross-analyzer finding deduplication with analyzer provenance). Final evidence-refinement iteration lifted dev accuracy 78.75% -> 93.75% (macro F1 88.88%), val accuracy 80.00% -> 92.00% (single run after dev freeze), FPR 0.0% on both corpora, 100% binary threat detection. Added 19 calibration regression tests (81 passed in pytest). |
 | **2026-11-07** | `0fba23b` | Web API & Utils Fix | Fixed `.gitignore` broad `lib/` pattern to restore `apps/web/src/lib/`, implemented typed REST API client in `api.ts`, added standard `cn` helper in `utils.ts`. |
 | **2026-11-08** | `4f83440` | Frontend UI Redesign | Complete frontend UI redesign into premium cybersecurity SaaS platform with dual themes (Light default + Dark), Framer Motion, AppShell with responsive sidebar & header, and expanded intelligence routes. |

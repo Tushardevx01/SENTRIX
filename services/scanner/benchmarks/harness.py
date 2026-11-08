@@ -230,6 +230,13 @@ class OfflinePipelineRunner:
         self.reputation_analyzer = ReputationAnalyzer()
         self.risk_engine = RiskAggregationEngine()
 
+    @staticmethod
+    def _stamp_provenance(findings: List[RawFinding], analyzer_name: str) -> None:
+        """CAL-06: stamp analyzer provenance onto evidence at collection time."""
+        for f in findings:
+            if isinstance(f.evidence, dict) and "analyzer" not in f.evidence:
+                f.evidence["analyzer"] = analyzer_name
+
     async def run_case(self, case: Dict[str, Any]) -> Dict[str, Any]:
         start_time = time.perf_counter()
 
@@ -249,6 +256,7 @@ class OfflinePipelineRunner:
         # 1. URL Analysis (pure lexical)
         try:
             url_findings = self.url_analyzer.analyze(target_url, domain)
+            self._stamp_provenance(url_findings, "urlAnalyzer")
             all_findings.extend(url_findings)
             statuses["urlAnalyzer"] = "SUCCESS"
         except Exception:
@@ -257,6 +265,7 @@ class OfflinePipelineRunner:
         # 2. Domain Analysis (taxonomy & heuristics)
         try:
             dom_findings = self.domain_analyzer.analyze(domain)
+            self._stamp_provenance(dom_findings, "domainAnalyzer")
             all_findings.extend(dom_findings)
             statuses["domainAnalyzer"] = "SUCCESS"
         except Exception:
@@ -274,6 +283,7 @@ class OfflinePipelineRunner:
                      patch.object(ssl.SSLContext, "wrap_socket", return_value=mock_sock):
                     findings_tls, cert_info = self.tls_analyzer.analyze(domain, target_ip="93.184.216.34")
 
+            self._stamp_provenance(findings_tls, "tlsAnalyzer")
             all_findings.extend(findings_tls)
             statuses["tlsAnalyzer"] = "SUCCESS"
         except Exception:
@@ -287,6 +297,7 @@ class OfflinePipelineRunner:
                 web_findings, web_meta = await self.web_analyzer.analyze(
                     target_url, domain, pinned_ip="93.184.216.34"
                 )
+            self._stamp_provenance(web_findings, "webSecurityAnalyzer")
             all_findings.extend(web_findings)
             statuses["webSecurityAnalyzer"] = "SUCCESS"
         except Exception:
@@ -319,6 +330,7 @@ class OfflinePipelineRunner:
             with patch.object(self.reputation_analyzer.intel_client, "query_urlhaus", side_effect=mock_urlhaus), \
                  patch.object(self.reputation_analyzer.intel_client, "query_google_safe_browsing", side_effect=mock_gsb):
                 rep_findings, rep_status, rep_meta = await self.reputation_analyzer.analyze(target_url, domain)
+            self._stamp_provenance(rep_findings, "reputationAnalyzer")
             all_findings.extend(rep_findings)
             statuses["reputationAnalyzer"] = rep_status
         except Exception:

@@ -62,6 +62,16 @@ async def ssrf_exception_handler(request, exc: SSRFSecurityException):
     )
 
 
+def _stamp_finding_provenance(findings, analyzer_name: str) -> None:
+    """
+    CAL-06: record analyzer provenance on each finding's evidence at collection
+    time, so deduplication can never obscure which analyzer emitted evidence.
+    """
+    for f in findings:
+        if isinstance(f.evidence, dict) and "analyzer" not in f.evidence:
+            f.evidence["analyzer"] = analyzer_name
+
+
 @app.get("/health", tags=["System"])
 async def health_check():
     return {
@@ -110,6 +120,7 @@ async def run_threat_analysis(request: AnalysisRequest):
     # 1. URL Analysis (Lexical heuristics)
     try:
         url_findings = url_analyzer.analyze(request.url, request.normalizedDomain)
+        _stamp_finding_provenance(url_findings, "urlAnalyzer")
         all_findings.extend(url_findings)
         statuses["urlAnalyzer"] = "SUCCESS"
     except Exception:
@@ -118,6 +129,7 @@ async def run_threat_analysis(request: AnalysisRequest):
     # 2. Domain Analysis (TLD risk, brand impersonation)
     try:
         domain_findings = domain_analyzer.analyze(request.normalizedDomain)
+        _stamp_finding_provenance(domain_findings, "domainAnalyzer")
         all_findings.extend(domain_findings)
         statuses["domainAnalyzer"] = "SUCCESS"
     except Exception:
@@ -130,6 +142,7 @@ async def run_threat_analysis(request: AnalysisRequest):
             request.normalizedDomain,
             target_ip=primary_ip
         )
+        _stamp_finding_provenance(tls_findings, "tlsAnalyzer")
         all_findings.extend(tls_findings)
         statuses["tlsAnalyzer"] = "SUCCESS"
     except (socket.timeout, TimeoutError, asyncio.TimeoutError):
@@ -147,6 +160,7 @@ async def run_threat_analysis(request: AnalysisRequest):
             request.normalizedDomain,
             pinned_ip=primary_ip
         )
+        _stamp_finding_provenance(web_findings, "webSecurityAnalyzer")
         all_findings.extend(web_findings)
         redirect_chain = web_meta.get("redirectChain", [request.url])
         response_time_ms = web_meta.get("responseTimeMs")
@@ -162,6 +176,7 @@ async def run_threat_analysis(request: AnalysisRequest):
         rep_findings, rep_status, rep_meta = await reputation_analyzer.analyze(
             request.url, request.normalizedDomain
         )
+        _stamp_finding_provenance(rep_findings, "reputationAnalyzer")
         all_findings.extend(rep_findings)
         statuses["reputationAnalyzer"] = rep_status
     except (asyncio.TimeoutError, TimeoutError):

@@ -35,6 +35,7 @@ FORBIDDEN_NETWORKS = [
     ipaddress.ip_network("ff00::/8"),             # IPv6 Multicast
     ipaddress.ip_network("2001:db8::/32"),        # Documentation
 ]
+NAT64_WELL_KNOWN_PREFIX = ipaddress.ip_network("64:ff9b::/96")
 
 ALLOWED_SCHEMES = {"http", "https"}
 ALLOWED_PORTS = {80, 443, 8080, 8443}
@@ -62,8 +63,18 @@ def is_ip_forbidden(ip_str: str) -> Tuple[bool, str]:
     except ValueError:
         return True, f"Malformed IP address representation: {ip_str}"
 
-    # Handle IPv4-mapped IPv6 addresses (e.g. ::ffff:127.0.0.1)
     if isinstance(ip_obj, ipaddress.IPv6Address):
+        # DNS64 may synthesize public IPv4 destinations under this prefix.
+        # Apply the IPv4 policy to the embedded address instead of rejecting
+        # the translation prefix as reserved.
+        if ip_obj in NAT64_WELL_KNOWN_PREFIX:
+            embedded_ipv4 = ipaddress.IPv4Address(ip_obj.packed[-4:])
+            forbidden, reason = is_ip_forbidden(str(embedded_ipv4))
+            if forbidden:
+                return True, f"NAT64 address {ip_str} embeds a restricted destination: {reason}"
+            return False, ""
+
+        # Handle IPv4-mapped IPv6 addresses (e.g. ::ffff:127.0.0.1)
         if ip_obj.ipv4_mapped:
             return is_ip_forbidden(str(ip_obj.ipv4_mapped))
 

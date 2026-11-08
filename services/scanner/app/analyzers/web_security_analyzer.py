@@ -18,6 +18,53 @@ MAX_RESPONSE_BYTES = 1024 * 1024  # 1 MB strictly bounded
 MAX_REDIRECTS = 5
 SAFE_CONTENT_TYPES = ("text/html", "application/xhtml+xml", "text/plain")
 
+# Evidence signals that a redirect / embedded-destination host is hostile
+# infrastructure (CAL-05: destinations are hostile only with corroborating
+# evidence — an unknown destination alone is never treated as malicious).
+HOSTILE_DESTINATION_TLDS = (
+    "xyz", "top", "buzz", "biz", "live", "site", "online", "click", "cfd",
+    "monster", "fit", "surf", "icu", "work", "cam",
+)
+HOSTILE_DESTINATION_PATH_TERMS = (
+    "login", "signin", "auth", "payload", "save", "collect", "verify",
+    "drop", "stealer", "gate",
+)
+
+
+def evaluate_hostile_destination(dest_url: str, page_host: Optional[str]) -> Tuple[bool, Dict[str, Any]]:
+    """
+    Evaluates whether a destination URL exhibits hostile infrastructure signals.
+
+    Returns (is_hostile, evidence) where evidence lists the corroborating
+    indicators. A destination that merely differs from the page host is NOT
+    hostile by itself (CAL-05) — at least one corroborating indicator
+    (high-abuse TLD or credential/exfil-style payload path) is required.
+    """
+    parsed = urlsplit(dest_url)
+    dest_host = (parsed.hostname or "").lower()
+    indicators: List[str] = []
+
+    if not dest_host or (page_host and dest_host == page_host.lower()):
+        return False, {"destination": dest_url, "destinationHost": dest_host, "indicators": []}
+
+    has_suspicious_tld = any(
+        dest_host.endswith("." + t) for t in HOSTILE_DESTINATION_TLDS
+    )
+    if has_suspicious_tld:
+        indicators.append(f"highAbuseTLD:'.{dest_host.rsplit('.', 1)[-1]}'")
+
+    dest_path = (parsed.path or "").lower()
+    matched_path_terms = [t for t in HOSTILE_DESTINATION_PATH_TERMS if t in dest_path]
+    if matched_path_terms:
+        indicators.append(f"credentialOrPayloadPath:{','.join(matched_path_terms)}")
+
+    is_hostile = bool(indicators)
+    return is_hostile, {
+        "destination": dest_url,
+        "destinationHost": dest_host,
+        "indicators": indicators,
+    }
+
 
 class WebSecurityAnalyzer:
     """
@@ -201,6 +248,16 @@ class WebSecurityAnalyzer:
                                 description="Lacks 'nosniff' directive, allowing browsers to MIME-sniff responses away from the declared content-type.",
                                 evidence={"header": "X-Content-Type-Options", "isPosture": True, "dedupKey": "POSTURE_MISSING_XCTO"},
                                 confidence=90.0,
+                            ))
+
+                        if "referrer-policy" not in resp_headers:
+                            findings.append(RawFinding(
+                                category="WEB_SECURITY",
+                                severity="LOW",
+                                title="Missing Referrer-Policy Header",
+                                description="No Referrer-Policy header is set, so full request URLs (which may contain tokens or identifiers) can leak to third-party hosts.",
+                                evidence={"header": "Referrer-Policy", "isPosture": True, "dedupKey": "POSTURE_MISSING_REFPOL"},
+                                confidence=85.0,
                             ))
 
                         # Server & Technology Information Disclosure
@@ -414,17 +471,12 @@ class WebSecurityAnalyzer:
                     refresh_parsed = urlsplit(refresh_url)
                     if refresh_parsed.hostname and refresh_parsed.hostname != final_host:
                         dest_host = refresh_parsed.hostname.lower()
-                        dest_path = refresh_parsed.path.lower()
-                        # Corroborate external destination risk factors before escalating to CRITICAL
-                        has_suspicious_tld = any(
-                            dest_host.endswith("." + t)
-                            for t in ("xyz", "top", "buzz", "biz", "live", "site", "online", "click", "cfd", "monster", "fit", "surf", "icu", "work", "cam")
-                        )
-                        has_payload_path = any(
-                            term in dest_path
-                            for term in ("login", "signin", "auth", "payload", "save", "collect", "verify", "drop", "stealer", "gate")
-                        )
-                        is_corroborated_threat = has_suspicious_tld or has_payload_path
+                        # Corroborate destination risk before escalating (CAL-05):
+                        # an unknown external destination alone is never malicious.
+                        is_hostile, hostile_ev = evaluate_hostile_destination(refresh_url, final_host)
+                        has_suspicious_tld = any(ind.startswith("highAbuseTLD") for ind in hostile_ev["indicators"])
+                        has_payload_path = any(ind.startswith("credentialOrPayloadPath") for ind in hostile_ev["indicators"])
+                        is_corroborated_threat = is_hostile
 
                         findings.append(RawFinding(
                             category="URL_ANOMALY",
@@ -445,7 +497,28 @@ class WebSecurityAnalyzer:
                             confidence=95.0 if is_corroborated_threat else 90.0,
                         ))
 
-            # 4. Hidden IFrame detection
+                        # CAL-06: separately-evidenced destination-reputation finding,
+                        # deduplicated per destination host across redirect mechanisms.
+                        if is_hostile:
+                            findings.append(RawFinding(
+                                category="DOMAIN_REPUTATION",
+                                severity="HIGH",
+                                title="Redirect Destination Exhibits Hostile Indicators",
+                                description=(
+                                    f"Auto-redirect destination '{dest_host}' matches hostile infrastructure signals: "
+                                    f"{'; '.join(hostile_ev['indicators'])}."
+                                ),
+                                evidence={
+                                    "destination": refresh_url,
+                                    "destinationHost": dest_host,
+                                    "pageHost": final_host,
+                                    "indicators": hostile_ev["indicators"],
+                                    "dedupKey": f"HOSTILE_DESTINATION:{dest_host}",
+                                },
+                                confidence=90.0,
+                            ))
+
+            # 4. Hidden IFrame detection (CAL-05 / CAL-06)
             hidden_iframes = soup.find_all(
                 "iframe",
                 style=lambda val: val and ("display:none" in val.replace(" ", "") or "visibility:hidden" in val.replace(" ", ""))
@@ -456,8 +529,61 @@ class WebSecurityAnalyzer:
                     severity="MEDIUM",
                     title="Hidden IFrame Detected",
                     description="Page contains concealed iframe elements often used for silent exploit delivery or tracking.",
-                    evidence={"hiddenIframeCount": len(hidden_iframes)},
+                    evidence={"hiddenIframeCount": len(hidden_iframes), "dedupKey": "HIDDEN_IFRAME"},
                     confidence=75.0,
                 ))
+
+                # Inspect concealed iframe sources: hostile payload destinations are
+                # corroborated evidence of background exploit delivery / covert tracking.
+                hostile_sources: List[Dict[str, Any]] = []
+                hostile_hosts: Dict[str, Dict[str, Any]] = {}
+                for ifr in hidden_iframes:
+                    src = (ifr.get("src") or "").strip()
+                    if not src:
+                        continue
+                    iframe_url = urljoin(metadata["finalUrl"], src)
+                    is_hostile, hostile_ev = evaluate_hostile_destination(iframe_url, final_host)
+                    if is_hostile:
+                        hostile_sources.append(hostile_ev)
+                        hostile_hosts.setdefault(hostile_ev["destinationHost"], hostile_ev)
+
+                if hostile_sources:
+                    findings.append(RawFinding(
+                        category="PHISHING_INDICATOR",
+                        severity="CRITICAL",
+                        title="Concealed IFrame Loads Hostile Payload Destination",
+                        description=(
+                            "A hidden iframe silently loads hostile destination(s) "
+                            f"({', '.join(ev['destinationHost'] for ev in hostile_sources)}), consistent with "
+                            "background exploit delivery, credential harvesting, or covert tracking."
+                        ),
+                        evidence={
+                            "sources": hostile_sources,
+                            "pageHost": final_host,
+                            "hiddenIframeCount": len(hidden_iframes),
+                            # Shares the HIDDEN_IFRAME key: one concealed-iframe characteristic,
+                            # escalated by its payload evidence (highest severity retained).
+                            "dedupKey": "HIDDEN_IFRAME",
+                        },
+                        confidence=92.0,
+                    ))
+                    for dest_host, hostile_ev in hostile_hosts.items():
+                        findings.append(RawFinding(
+                            category="DOMAIN_REPUTATION",
+                            severity="HIGH",
+                            title="Redirect Destination Exhibits Hostile Indicators",
+                            description=(
+                                f"Embedded destination '{dest_host}' matches hostile infrastructure signals: "
+                                f"{'; '.join(hostile_ev['indicators'])}."
+                            ),
+                            evidence={
+                                "destination": hostile_ev["destination"],
+                                "destinationHost": dest_host,
+                                "pageHost": final_host,
+                                "indicators": hostile_ev["indicators"],
+                                "dedupKey": f"HOSTILE_DESTINATION:{dest_host}",
+                            },
+                            confidence=90.0,
+                        ))
 
         return findings, metadata

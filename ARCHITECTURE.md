@@ -369,18 +369,33 @@ The migration manager provides:
    - URL path keyword analysis uses Public Suffix List (PSL) parsing via `tldextract` to identify the genuine registrable root domain (`registered_domain`).
    - Maintains an authentic brand domain registry (`RECOGNIZED_AUTHENTIC_DOMAINS`, e.g., `google.com`, `microsoft.com`, `apple.com`, `github.com`).
    - When a known authentic brand serves standard authentication paths (`/login`, `/signin`, `/account`, `/oauth`), naive credential keyword penalties are suppressed provided the domain is free of punycode homoglyphs, deceptive userinfo (`user@host`), or subdomain stacking.
-3. **Token-Based Domain Segmentation & Leetspeak Matching (CAL-03 & CAL-04):**
-   - Registrable domain names are tokenized across hyphens (`-`) and dots (`.`).
+3. **Token-Based Domain Segmentation & Evidence-Based Similarity Matching (CAL-03 & CAL-04):**
+   - Registrable domain names are tokenized across hyphens (`-`) and dots (`.`). Matching is token/compound-based — indiscriminate substring matching is never used, eliminating collateral matches such as `revolute.com`, `stripes.com`, and `chases.com` against `revolut`, `stripe`, and `chase`.
    - Short brands (<= 4 characters, e.g., `sbi`, `citi`, `bofa`, `chase`) require exact token or dehyphenated equality, preventing substring false alarms on legitimate domain words (e.g. `isbilling.com` != SBI, `simplicity.org` != Citi).
-   - Hyphen-tolerant matching enables multi-token brand detection (e.g. `wells-fargo` matches `wellsfargo`).
-   - Leetspeak engine generates multi-candidate character permutations (e.g. `1` -> `l`, `i`, `t`; `0` -> `o`; `5` -> `s`), detecting obfuscated impersonations such as `wha1sapp`, `spot1fy`, and `b0fa`.
+   - **IDNA decoding**: `xn--` labels are decoded (punycode to Unicode) before comparison, while the original domain string is always preserved as evidence.
+   - **Confusable skeletons**: Unicode homographs (Cyrillic/Greek look-alikes) normalize to a canonical skeleton (`раypal` to `paypal`) for skeleton-token matching.
+   - **Hyphen-window matching**: consecutive tokens joined must equal the brand exactly (`wells-fargo-alert` matches `wellsfargo` via the `wells`+`fargo` window; short brands are excluded).
+   - **Bounded, corroboration-gated edit distance**: brand <= 4 chars exact only; 5-8 chars max distance 1; >= 9 chars max distance 2 — with a plural guard (`s`/`es` forms are ordinary words) and a requirement for corroborating evidence (high-risk TLD, punycode, leet digits, or authentication-context tokens) before a fuzzy match counts.
+   - **Controlled multi-candidate leetspeak engine**: per-token substitutions (e.g. `1` -> `l`, `i`, `t`; `0` -> `o`; `5` -> `s`) generate a bounded candidate set (16-candidate cap) instead of a global substitution map, detecting obfuscated impersonations such as `wha1sapp`, `spot1fy`, and `b0fa` without ordinary-English false positives.
+   - **Token-only keywords**: selected terms (e.g. `phish`) count only as complete alphanumeric tokens of the hostname/path, never as substrings of unrelated words.
+   - Every impersonation finding records its `matchMethod` (`exactToken`, `confusableSkeleton`, `normalizationCandidate`, `boundedEditDistance`) and the original domain in evidence.
 4. **Targeted Severity Calibration (CAL-05):**
    - Form harvesting analysis escalates to `CRITICAL` (40 points) when forms harvest national IDs or financial credentials (`ssn`, `aadhaar`, `pan-number`, `bankaccount` + `routingnumber`).
-   - Client-side `<meta http-equiv="refresh">` redirects are calibrated: escalated to `CRITICAL` only when accompanied by corroborating threat indicators (high-risk TLD or credential harvesting path), and `HIGH` otherwise.
+   - Client-side `<meta http-equiv="refresh">` redirects are calibrated: escalated to `CRITICAL` only when accompanied by corroborating threat indicators (high-risk TLD or credential harvesting path), and `HIGH` otherwise. An unknown external destination alone is never treated as malicious.
+   - **Hostile destination evaluation** (`evaluate_hostile_destination`): redirect targets and hidden-iframe sources that exhibit hostile infrastructure signals (high-abuse TLD such as `.biz`/`.xyz`, or credential/exfil-style path such as `/login`/`/payload`) produce a separate `HIGH` "Redirect Destination Exhibits Hostile Indicators" finding with a per-destination dedup key. Concealed (hidden) iframes loading such destinations additionally escalate to `CRITICAL` payload evidence sharing the `HIDDEN_IFRAME` key.
+   - Distrusted/compromised CA verdicts require chain evidence: issuer-string spoofing on a self-signed certificate is distinguished from a verified chain to a genuinely distrusted issuer, and certificate trust/compliance failures alone never yield `MALICIOUS`.
    - Safe TLS exception handling: Safely inspects SSL verification errors without throwing `AttributeError` on missing `verify_message`.
 5. **Finding Deduplication & Risk Factor Aggregation (CAL-06):**
-   - Threat findings with common root causes are assigned structured deduplication keys (`dedup_key`, e.g., `HOST_RAW_IP`, `CRED_HARVEST`, `HOMOGLYPH_DOMAIN`).
+   - Threat findings with common root causes are assigned stable structured deduplication keys (e.g. `HOST_RAW_IP`, `POSTURE_*`, `DECEPTIVE_HOSTNAME:<host>`, `HOSTILE_DESTINATION:<host>`, `HIDDEN_IFRAME`).
+   - **Cross-analyzer keys:** hostname-only keyword findings and domain-analyzer hostname findings share `DECEPTIVE_HOSTNAME:<host>`; hostile-destination findings across redirect mechanisms share `HOSTILE_DESTINATION:<host>`; the hidden-iframe observation and its payload escalation share `HIDDEN_IFRAME`. Overlapping observations of the same characteristic are counted once (highest severity retained), while distinct findings and their raw evidence are always preserved in the report.
+   - **Analyzer provenance:** each finding's `evidence["analyzer"]` is stamped at collection time (`main.py`, benchmark harness), so deduplication can never obscure which analyzer emitted evidence.
    - The risk engine groups active threat findings by `dedup_key`, retaining the single highest-severity finding per key. Overlapping observations are not double-counted in the raw risk score or in the risk factor summaries.
+
+### Measured Calibration Results (Phase 6.3)
+- **Development dataset (80 cases, iterate-only):** accuracy **78.75% -> 93.75%**, macro F1 **67.12% -> 88.88%**, weighted F1 **79.95% -> 93.63%**; benign false positives **3 -> 0** (0/35); binary threat F1 **95.65% -> 100%** (0/45 threats missed); mean latency 136.8 ms (p50 114.0 ms, p99 233.0 ms).
+- **Independent validation dataset (25 cases, single run after dev freeze):** accuracy **80.00% -> 92.00%**, macro F1 **68.40% -> 85.86%**; benign false positives **1 -> 0** (0/11); binary threat F1 **92.86% -> 100%** (0/14 missed).
+- **Remaining principled errors (dev 5, val 2):** DEV-057/066/072 and VAL-021 stack multiple *distinct* deception indicators that legitimately sum to >= 70 under unchanged weights (ground truth `SUSPICIOUS`); DEV-078/080 and VAL-024 are certificate trust/compliance failures that CAL-05 deliberately does not equate with phishing or malware (ground truth `MALICIOUS`). Fixing these would require threshold gaming or conflating distinct characteristics — explicitly out of scope.
+- **Limitations:** datasets are small (80 dev / 25 val) and synthetic-adjacent; validation numbers carry wide confidence intervals and must not be presented as production accuracy. Classification thresholds and severity weights were not altered during calibration.
 
 ### Verdict Classification & Zero-Trust Inconclusive State
 - `0 – 25`: **`BENIGN`** (Trusted destination, valid TLS, complete inspection, zero high-severity indicators)

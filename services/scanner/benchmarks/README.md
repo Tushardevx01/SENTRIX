@@ -30,23 +30,38 @@ An independent, non-overlapping verification corpus covering all 8 security cate
 
 ## Running the Evaluation
 
-To evaluate against the development dataset:
+All commands run from `services/scanner/` with the project virtualenv (`.venv/bin/python`).
+
 ```bash
-# Baseline evaluation
-python benchmarks/evaluate.py --dataset dataset_dev.json --output baseline_dev_report.json
+# Baseline evaluation (Phase 6.1, preserved as-is)
+.venv/bin/python benchmarks/evaluate.py --dataset dataset_dev.json  --output benchmarks/baseline_dev_report.json
+.venv/bin/python benchmarks/evaluate.py --dataset dataset_val.json  --output benchmarks/baseline_val_report.json
 
 # Calibrated evaluation (Phase 6.3)
-python benchmarks/evaluate.py --dataset dataset_dev.json --output calibrated_dev_report.json
+.venv/bin/python benchmarks/evaluate.py --dataset dataset_dev.json  --output benchmarks/calibrated_dev_report.json
+.venv/bin/python benchmarks/evaluate.py --dataset dataset_val.json  --output benchmarks/calibrated_val_report.json
 ```
 
-To evaluate against the independent validation dataset:
-```bash
-# Baseline evaluation
-python benchmarks/evaluate.py --dataset dataset_val.json --output baseline_val_report.json
+### Evaluation Protocol
 
-# Calibrated evaluation (Phase 6.3)
-python benchmarks/evaluate.py --dataset dataset_val.json --output calibrated_val_report.json
-```
+- **Iterate on dev only.** Every detector change is validated by re-running the 80-case development benchmark and diffing scores/verdicts against the previous run. Ground-truth labels, the datasets, and the Phase 6.1 baseline reports are never modified.
+- **Run val exactly once per calibration cycle.** The 25-case validation corpus is used only after development is frozen — no tuning is performed against its outcomes. The val report is a single-shot generalization check; with 25 cases (11 benign / 3 suspicious / 11 malicious) its accuracy has a wide confidence interval and must never be cited as a production accuracy figure.
+- **Reports are regenerated, not hand-edited.** `calibrated_dev_report.json` and `calibrated_val_report.json` are verbatim `evaluate.py` outputs.
+
+---
+
+## Current Results (Phase 6.3, final)
+
+| Metric | Baseline (6.1) dev | Calibrated dev | Baseline (6.1) val | Calibrated val |
+| :--- | :---: | :---: | :---: | :---: |
+| 3-class accuracy | 78.75% | **93.75%** | 80.00% | **92.00%** |
+| Macro F1 | 67.12% | **88.88%** | 68.40% | **85.86%** |
+| Weighted F1 | 79.95% | **93.63%** | 81.14% | **92.00%** |
+| Binary threat F1 (SUS+MAL vs BENIGN) | 95.65% | **100.00%** | 92.86% | **100.00%** |
+| Benign false positives | 3 / 35 | **0 / 35** | 1 / 11 | **0 / 11** |
+| Missed threats (BENIGN pred) | 1 / 45 | **0 / 45** | 1 / 14 | **0 / 14** |
+
+Remaining dev errors (5): DEV-057, DEV-066, DEV-072 (GT `SUSPICIOUS`, predicted `MALICIOUS` — stacked distinct deception indicators each scoring ≥ 70 under unchanged weights) and DEV-078, DEV-080 (GT `MALICIOUS`, predicted `SUSPICIOUS` — certificate trust/compliance failures that, per CAL-05, are not sufficient evidence of phishing or malware). Val errors (2): VAL-021 and VAL-024, the same two principled patterns.
 
 ---
 

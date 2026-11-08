@@ -66,6 +66,17 @@ def test_blocks_ipv6_reserved_and_mapped():
             validate_url_safety(vec)
 
 
+def test_nat64_checks_embedded_ipv4_destination():
+    forbidden, reason = is_ip_forbidden("64:ff9b::fcf:b7ae")
+    assert forbidden is False
+    assert reason == ""
+
+    for address in ("64:ff9b::a00:1", "64:ff9b::c000:201", "64:ff9b::a9fe:a9fe"):
+        forbidden, reason = is_ip_forbidden(address)
+        assert forbidden is True
+        assert "restricted destination" in reason
+
+
 def test_blocks_embedded_credentials():
     vectors = [
         "https://admin:secret@example.com/path",

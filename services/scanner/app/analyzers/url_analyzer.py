@@ -2,7 +2,7 @@ import re
 import ipaddress
 import tldextract
 from urllib.parse import urlparse, unquote
-from typing import List, Set
+from typing import List, Set, Dict, Any
 from app.schemas.response import RawFinding
 
 SUSPICIOUS_KEYWORDS = {
@@ -10,8 +10,30 @@ SUSPICIOUS_KEYWORDS = {
     "account", "update", "banking", "authenticate", "paypal", "appleid",
     "wallet", "billing", "recover", "passcode", "credential", "webscr",
     "payment", "invoice", "refund", "kyc", "aadhaar", "debit", "creditcard",
-    "cvv", "otp", "claim", "airdrop", "lottery", "recruitment", "salary"
+    "cvv", "otp", "claim", "airdrop", "lottery", "recruitment", "salary",
+    "phish",
 }
+
+# CAL-03: substring matching is unsafe for some terms ("phish" would also be
+# checked against ordinary words), so these keywords only count when they form
+# a complete alphanumeric token of the hostname / path / query.
+TOKEN_ONLY_KEYWORDS: Set[str] = {"phish"}
+
+# CAL-06: a keyword finding that originates solely from the hostname describes
+# the same deceptive-hostname characteristic as the domain analyzer's
+# impersonation findings for that host, so both share one stable dedup key
+# (the higher-severity finding is retained; report evidence is never dropped).
+HOSTNAME_IMPERSONATION_DEDUP_PREFIX = "DECEPTIVE_HOSTNAME:"
+
+
+def _token_match(keyword: str, text: str, tokens: Set[str]) -> bool:
+    if keyword in TOKEN_ONLY_KEYWORDS:
+        return keyword in tokens
+    return keyword in text
+
+
+def _split_tokens(text: str) -> Set[str]:
+    return {tok for tok in re.split(r"[^a-z0-9]+", text.lower()) if tok}
 
 ORDINARY_AUTH_TERMS: Set[str] = {
     "login", "signin", "account", "portal", "verify", "update",
@@ -127,10 +149,22 @@ class UrlAnalyzer:
             and not has_userinfo
         )
 
-        matched_keywords = [
-            kw for kw in SUSPICIOUS_KEYWORDS
-            if kw in path_lower or kw in query_lower or kw in hostname
-        ]
+        # Token sets for exact-token keyword matching (CAL-03)
+        hostname_tokens = _split_tokens(hostname)
+        path_tokens = _split_tokens(path_lower)
+        query_tokens = _split_tokens(query_lower)
+
+        matched_keywords: List[str] = []
+        matched_in_path_or_query: Set[str] = set()
+        for kw in SUSPICIOUS_KEYWORDS:
+            in_host = _token_match(kw, hostname, hostname_tokens)
+            in_pathq = _token_match(kw, path_lower, path_tokens) or _token_match(
+                kw, query_lower, query_tokens
+            )
+            if in_host or in_pathq:
+                matched_keywords.append(kw)
+                if in_pathq:
+                    matched_in_path_or_query.add(kw)
 
         if is_authentic_recognized_domain:
             # On authentic domains, suppress penalties for ordinary authentication endpoints (/login, /signin)
@@ -144,12 +178,18 @@ class UrlAnalyzer:
 
         if filtered_keywords:
             severity = "HIGH" if len(filtered_keywords) >= 2 else "MEDIUM"
+            evidence: Dict[str, Any] = {"keywords": filtered_keywords, "url": target_url}
+            # Hostname-only keyword findings deduplicate against domain-analyzer
+            # impersonation findings for the same host (one deceptive hostname).
+            if all(kw not in matched_in_path_or_query for kw in filtered_keywords):
+                evidence["hostname"] = hostname
+                evidence["dedupKey"] = f"{HOSTNAME_IMPERSONATION_DEDUP_PREFIX}{hostname.lower()}"
             findings.append(RawFinding(
                 category="PHISHING_INDICATOR",
                 severity=severity,
                 title="Sensitive Authentication Keywords in URL",
                 description=f"Detected high-risk deceptive terms ({', '.join(filtered_keywords)}) in the URL path, parameters, or domain.",
-                evidence={"keywords": filtered_keywords, "url": target_url},
+                evidence=evidence,
                 confidence=80.0
             ))
 
