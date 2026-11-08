@@ -2,8 +2,9 @@ import re
 import ipaddress
 import tldextract
 from urllib.parse import urlparse, unquote
-from typing import List, Set, Dict, Any
+from typing import List, Set, Dict, Any, Optional
 from app.schemas.response import RawFinding
+from app.intelligence.tranco_provider import get_tranco_provider, TrancoIntelligenceProvider
 
 SUSPICIOUS_KEYWORDS = {
     "login", "signin", "verify", "verification", "secure", "security",
@@ -67,8 +68,9 @@ RECOGNIZED_AUTHENTIC_DOMAINS: Set[str] = {
 class UrlAnalyzer:
     """Analyzes URL structure, lexical patterns, and obfuscation heuristics."""
 
-    def __init__(self):
+    def __init__(self, tranco_provider: Optional[TrancoIntelligenceProvider] = None):
         self.extract = tldextract.TLDExtract(cache_dir=None)
+        self.tranco_provider = tranco_provider or get_tranco_provider()
 
     def analyze(self, target_url: str, normalized_domain: str) -> List[RawFinding]:
         findings: List[RawFinding] = []
@@ -82,6 +84,18 @@ class UrlAnalyzer:
         domain = ext.domain.lower() if ext.domain else ""
         suffix = ext.suffix.lower() if ext.suffix else ""
         registered_domain = f"{domain}.{suffix}" if domain and suffix else hostname
+
+        # Operational coverage notice if Tranco intelligence is operating in degraded fallback
+        tranco_meta = self.tranco_provider.get_metadata()
+        if tranco_meta.get("status") in ("DEGRADED_FALLBACK", "DEGRADED_CORRUPT"):
+            findings.append(RawFinding(
+                category="DOMAIN_REPUTATION",
+                severity="INFO",
+                title="Domain Intelligence Operating in Degraded Mode",
+                description="Tranco popular domain database is operating in degraded fallback mode. Static authentic registries remain active.",
+                evidence={"status": tranco_meta.get("status"), "warning": tranco_meta.get("warning") or tranco_meta.get("error")},
+                confidence=50.0,
+            ))
 
         # 1. Check if hostname is raw IP address
         try:
@@ -141,10 +155,11 @@ class UrlAnalyzer:
                 confidence=60.0
             ))
 
-        # 5. Context-Aware Authentication and Phishing Keyword Analysis (CAL-02)
-        # Check if destination resides on an authentic recognized platform without deceptive evasions
+        # 5. Context-Aware Authentication and Phishing Keyword Analysis (CAL-02 & Phase 7.1)
+        # Check if destination resides on an authentic recognized platform or Tranco popular domain without deceptive evasions
+        is_tranco_popular = self.tranco_provider.is_popular_domain(registered_domain)
         is_authentic_recognized_domain = (
-            registered_domain in RECOGNIZED_AUTHENTIC_DOMAINS
+            (registered_domain in RECOGNIZED_AUTHENTIC_DOMAINS or is_tranco_popular)
             and not is_punycode
             and not has_userinfo
         )

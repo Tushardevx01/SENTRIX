@@ -40,12 +40,15 @@ Verdict thresholds (unchanged):
 - **CAL-01 — Posture ceiling.** Missing HSTS/CSP/XFO/XCTO/Referrer-Policy,
   server banner leaks, and missing embedded SCTs can contribute at most 15
   points in aggregate; posture alone can never reach `SUSPICIOUS` (≥ 26).
-- **CAL-02 — Authentic-domain context.** PSL-aware (`tldextract`) registered
-  domains are checked against a recognized authentic registry; ordinary
-  auth-path keyword penalties are suppressed only on authentic domains that
-  are free of punycode, userinfo masking, and subdomain stacking.
-  Subdomain-stacked attacker domains (`paypal.com.attacker.example`) are never
-  trusted.
+- **CAL-02 — Authentic-domain & Tranco intelligence context.** PSL-aware
+  (`tldextract`) registrable domains are checked against the verified Tranco Top-10K
+  in-memory domain dataset (`TrancoIntelligenceProvider`) and recognized platforms;
+  ordinary auth-path keyword penalties (`/login`, `/signin`, `/account`) are
+  suppressed strictly on authentic registrable domains that are free of punycode,
+  userinfo `@` masking, and subdomain stacking. Subdomain-stacked attacker domains
+  (`jetbrains.com.attacker.example`) resolve to `attacker.example` and are never trusted.
+  Compromised popular sites with active malware/phishing forms remain `MALICIOUS`
+  as web security and active threat findings are never dampened.
 - **CAL-03 — Evidence-based hostname matching.** No substring trust decisions:
   token/compound matching, IDNA decoding, Unicode confusable skeletons,
   hyphen-window joins (`wells-fargo-alert` → `wellsfargo`), financial

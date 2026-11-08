@@ -1,0 +1,5862 @@
+{
+  "dataset": {
+    "file": "dataset_dev.json",
+    "totalCases": 80
+  },
+  "overall": {
+    "accuracy": 0.9375,
+    "macroF1": 0.8888,
+    "weightedF1": 0.9363
+  },
+  "threeClass": {
+    "confusionMatrix": {
+      "BENIGN": {
+        "BENIGN": 35,
+        "SUSPICIOUS": 0,
+        "MALICIOUS": 0
+      },
+      "SUSPICIOUS": {
+        "BENIGN": 0,
+        "SUSPICIOUS": 7,
+        "MALICIOUS": 3
+      },
+      "MALICIOUS": {
+        "BENIGN": 0,
+        "SUSPICIOUS": 2,
+        "MALICIOUS": 33
+      }
+    },
+    "perClass": {
+      "BENIGN": {
+        "tp": 35,
+        "fp": 0,
+        "fn": 0,
+        "tn": 45,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 35
+      },
+      "SUSPICIOUS": {
+        "tp": 7,
+        "fp": 2,
+        "fn": 3,
+        "tn": 68,
+        "precision": 0.7778,
+        "recall": 0.7,
+        "f1": 0.7368,
+        "support": 10
+      },
+      "MALICIOUS": {
+        "tp": 33,
+        "fp": 3,
+        "fn": 2,
+        "tn": 42,
+        "precision": 0.9167,
+        "recall": 0.9429,
+        "f1": 0.9296,
+        "support": 35
+      }
+    },
+    "accuracy": 0.9375,
+    "macro": {
+      "precision": 0.8982,
+      "recall": 0.881,
+      "f1": 0.8888
+    },
+    "weighted": {
+      "precision": 0.9358,
+      "recall": 0.9375,
+      "f1": 0.9363
+    },
+    "totalSamples": 80
+  },
+  "binaryThreat": {
+    "metricName": "Threat Detection (Positive: SUSPICIOUS | MALICIOUS, Negative: BENIGN)",
+    "positiveClassDefinition": [
+      "SUSPICIOUS",
+      "MALICIOUS"
+    ],
+    "tp": 45,
+    "fp": 0,
+    "tn": 35,
+    "fn": 0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "f1": 1.0,
+    "falsePositiveRate": 0.0,
+    "falseNegativeRate": 0.0,
+    "total": 80
+  },
+  "binaryMalicious": {
+    "metricName": "Strict Malicious Detection (Positive: MALICIOUS, Negative: BENIGN | SUSPICIOUS)",
+    "positiveClassDefinition": [
+      "MALICIOUS"
+    ],
+    "tp": 33,
+    "fp": 3,
+    "tn": 42,
+    "fn": 2,
+    "accuracy": 0.9375,
+    "precision": 0.9167,
+    "recall": 0.9429,
+    "specificity": 0.9333,
+    "f1": 0.9296,
+    "falsePositiveRate": 0.0667,
+    "falseNegativeRate": 0.0571,
+    "total": 80
+  },
+  "categories": {
+    "BENIGN_LEGITIMATE": {
+      "total": 15,
+      "correct": 15,
+      "incorrect": 0,
+      "groundTruthCounts": {
+        "BENIGN": 15
+      },
+      "predictedCounts": {
+        "BENIGN": 15
+      },
+      "mismatches": [],
+      "accuracy": 1.0
+    },
+    "BENIGN_LEGACY_HEADERS": {
+      "total": 10,
+      "correct": 10,
+      "incorrect": 0,
+      "groundTruthCounts": {
+        "BENIGN": 10
+      },
+      "predictedCounts": {
+        "BENIGN": 10
+      },
+      "mismatches": [],
+      "accuracy": 1.0
+    },
+    "BENIGN_AUTH_PORTALS": {
+      "total": 10,
+      "correct": 10,
+      "incorrect": 0,
+      "groundTruthCounts": {
+        "BENIGN": 10
+      },
+      "predictedCounts": {
+        "BENIGN": 10
+      },
+      "mismatches": [],
+      "accuracy": 1.0
+    },
+    "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING": {
+      "total": 12,
+      "correct": 12,
+      "incorrect": 0,
+      "groundTruthCounts": {
+        "MALICIOUS": 12
+      },
+      "predictedCounts": {
+        "MALICIOUS": 12
+      },
+      "mismatches": [],
+      "accuracy": 1.0
+    },
+    "TYPOSQUATTING_HOMOGLYPHS": {
+      "total": 10,
+      "correct": 9,
+      "incorrect": 1,
+      "groundTruthCounts": {
+        "MALICIOUS": 6,
+        "SUSPICIOUS": 4
+      },
+      "predictedCounts": {
+        "MALICIOUS": 7,
+        "SUSPICIOUS": 3
+      },
+      "mismatches": [
+        {
+          "id": "DEV-057",
+          "url": "http://c0inbase-token-claim.xyz",
+          "groundTruth": "SUSPICIOUS",
+          "predicted": "MALICIOUS",
+          "score": 80,
+          "riskFactors": [
+            "Typosquatting / Leetspeak Impersonation: Coinbase (CRITICAL)",
+            "High-Risk Top-Level Domain (TLD) (HIGH)"
+          ]
+        }
+      ],
+      "accuracy": 0.9
+    },
+    "BRAND_IMPERSONATION_SUBDOMAIN_STACKING": {
+      "total": 10,
+      "correct": 9,
+      "incorrect": 1,
+      "groundTruthCounts": {
+        "MALICIOUS": 8,
+        "SUSPICIOUS": 2
+      },
+      "predictedCounts": {
+        "MALICIOUS": 9,
+        "SUSPICIOUS": 1
+      },
+      "mismatches": [
+        {
+          "id": "DEV-066",
+          "url": "http://workday-jobs-interview.xyz",
+          "groundTruth": "SUSPICIOUS",
+          "predicted": "MALICIOUS",
+          "score": 80,
+          "riskFactors": [
+            "High-Risk Top-Level Domain (TLD) (HIGH)",
+            "Brand Impersonation Detected: Workday (CRITICAL)"
+          ]
+        }
+      ],
+      "accuracy": 0.9
+    },
+    "MALICIOUS_REDIRECTS_EVASIONS": {
+      "total": 8,
+      "correct": 7,
+      "incorrect": 1,
+      "groundTruthCounts": {
+        "MALICIOUS": 6,
+        "SUSPICIOUS": 2
+      },
+      "predictedCounts": {
+        "MALICIOUS": 7,
+        "SUSPICIOUS": 1
+      },
+      "mismatches": [
+        {
+          "id": "DEV-072",
+          "url": "http://198.51.100.42/login.php",
+          "groundTruth": "SUSPICIOUS",
+          "predicted": "MALICIOUS",
+          "score": 77,
+          "riskFactors": [
+            "Direct IP Address in URL (HIGH)",
+            "Sensitive Authentication Keywords in URL (MEDIUM)",
+            "Insecure Form Submission (HTTP) (HIGH)"
+          ]
+        }
+      ],
+      "accuracy": 0.875
+    },
+    "CERTIFICATE_TLS_ANOMALIES": {
+      "total": 5,
+      "correct": 3,
+      "incorrect": 2,
+      "groundTruthCounts": {
+        "MALICIOUS": 3,
+        "SUSPICIOUS": 2
+      },
+      "predictedCounts": {
+        "MALICIOUS": 1,
+        "SUSPICIOUS": 4
+      },
+      "mismatches": [
+        {
+          "id": "DEV-078",
+          "url": "https://wosign-revoked-root.org",
+          "groundTruth": "MALICIOUS",
+          "predicted": "SUSPICIOUS",
+          "score": 55,
+          "riskFactors": [
+            "Compromised / High-Risk Certificate Authority: WoSign (Distrusted by Major Root Stores) (CRITICAL)"
+          ]
+        },
+        {
+          "id": "DEV-080",
+          "url": "https://excessive-validity-2027.com",
+          "groundTruth": "MALICIOUS",
+          "predicted": "SUSPICIOUS",
+          "score": 27,
+          "riskFactors": [
+            "Non-Compliant Certificate Validity Duration (395 days > 200 days) (MEDIUM)"
+          ]
+        }
+      ],
+      "accuracy": 0.6
+    }
+  },
+  "latency": {
+    "meanMs": 140.94,
+    "minMs": 19.32,
+    "maxMs": 1627.62,
+    "p50Ms": 103.07,
+    "p90Ms": 237.69,
+    "p99Ms": 354.22
+  },
+  "caseResults": [
+    {
+      "id": "DEV-001",
+      "url": "https://www.google.com",
+      "normalizedDomain": "google.com",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 5,
+      "confidence": 91,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 1627.62,
+      "findingsCount": 4,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-002",
+      "url": "https://en.wikipedia.org/wiki/Computer_security",
+      "normalizedDomain": "wikipedia.org",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 5,
+      "confidence": 91,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 98.81,
+      "findingsCount": 4,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-003",
+      "url": "https://www.python.org",
+      "normalizedDomain": "python.org",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 5,
+      "confidence": 91,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 187.53,
+      "findingsCount": 4,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-004",
+      "url": "https://github.com",
+      "normalizedDomain": "github.com",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 5,
+      "confidence": 91,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 56.81,
+      "findingsCount": 4,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-005",
+      "url": "https://www.mozilla.org",
+      "normalizedDomain": "mozilla.org",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 170.99,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-006",
+      "url": "https://stackoverflow.com/questions",
+      "normalizedDomain": "stackoverflow.com",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 45.87,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-007",
+      "url": "https://www.nytimes.com",
+      "normalizedDomain": "nytimes.com",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 138.94,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-008",
+      "url": "https://www.mit.edu",
+      "normalizedDomain": "mit.edu",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 209.31,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-009",
+      "url": "https://www.bbc.co.uk/news",
+      "normalizedDomain": "bbc.co.uk",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 81.93,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-010",
+      "url": "https://www.apache.org",
+      "normalizedDomain": "apache.org",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 75.19,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-011",
+      "url": "https://www.kernel.org",
+      "normalizedDomain": "kernel.org",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 81.91,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-012",
+      "url": "https://www.docker.com",
+      "normalizedDomain": "docker.com",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 121.16,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-013",
+      "url": "https://www.debian.org",
+      "normalizedDomain": "debian.org",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 71.78,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-014",
+      "url": "https://www.w3.org",
+      "normalizedDomain": "w3.org",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 93.31,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-015",
+      "url": "https://archive.org",
+      "normalizedDomain": "archive.org",
+      "category": "BENIGN_LEGITIMATE",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 123.9,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-016",
+      "url": "https://county-library-services.org",
+      "normalizedDomain": "county-library-services.org",
+      "category": "BENIGN_LEGACY_HEADERS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 15,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 153.32,
+      "findingsCount": 9,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-017",
+      "url": "https://historical-society-archives.net",
+      "normalizedDomain": "historical-society-archives.net",
+      "category": "BENIGN_LEGACY_HEADERS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 15,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 172.72,
+      "findingsCount": 9,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-018",
+      "url": "https://familydental-care-clinic.com",
+      "normalizedDomain": "familydental-care-clinic.com",
+      "category": "BENIGN_LEGACY_HEADERS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 15,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 119.99,
+      "findingsCount": 9,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-019",
+      "url": "https://botanical-gardens-visitor.org",
+      "normalizedDomain": "botanical-gardens-visitor.org",
+      "category": "BENIGN_LEGACY_HEADERS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 15,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 146.88,
+      "findingsCount": 9,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-020",
+      "url": "https://community-youth-sports.org",
+      "normalizedDomain": "community-youth-sports.org",
+      "category": "BENIGN_LEGACY_HEADERS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 15,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 103.07,
+      "findingsCount": 8,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-021",
+      "url": "https://regional-veterinary-hospital.net",
+      "normalizedDomain": "regional-veterinary-hospital.net",
+      "category": "BENIGN_LEGACY_HEADERS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 15,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 201.84,
+      "findingsCount": 9,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-022",
+      "url": "https://rural-electric-coop.org",
+      "normalizedDomain": "rural-electric-coop.org",
+      "category": "BENIGN_LEGACY_HEADERS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 15,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 230.15,
+      "findingsCount": 10,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Server Header Leaks Exact Software Version",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-023",
+      "url": "https://downtown-bakery-cafe.com",
+      "normalizedDomain": "downtown-bakery-cafe.com",
+      "category": "BENIGN_LEGACY_HEADERS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 15,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 98.82,
+      "findingsCount": 9,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-024",
+      "url": "https://neighborhood-farmers-market.net",
+      "normalizedDomain": "neighborhood-farmers-market.net",
+      "category": "BENIGN_LEGACY_HEADERS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 15,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 237.69,
+      "findingsCount": 9,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-025",
+      "url": "https://civic-symphony-orchestra.org",
+      "normalizedDomain": "civic-symphony-orchestra.org",
+      "category": "BENIGN_LEGACY_HEADERS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 15,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 109.26,
+      "findingsCount": 9,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-026",
+      "url": "https://github.com/login",
+      "normalizedDomain": "github.com",
+      "category": "BENIGN_AUTH_PORTALS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 95.76,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-027",
+      "url": "https://accounts.google.com/signin",
+      "normalizedDomain": "google.com",
+      "category": "BENIGN_AUTH_PORTALS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 354.22,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-028",
+      "url": "https://aws.amazon.com/console",
+      "normalizedDomain": "amazon.com",
+      "category": "BENIGN_AUTH_PORTALS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 135.66,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-029",
+      "url": "https://login.live.com/login.srf",
+      "normalizedDomain": "live.com",
+      "category": "BENIGN_AUTH_PORTALS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 150.8,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-030",
+      "url": "https://www.paypal.com/signin",
+      "normalizedDomain": "paypal.com",
+      "category": "BENIGN_AUTH_PORTALS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 129.61,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-031",
+      "url": "https://appleid.apple.com/sign-in",
+      "normalizedDomain": "apple.com",
+      "category": "BENIGN_AUTH_PORTALS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 22,
+      "confidence": 88,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 137.7,
+      "findingsCount": 6,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (MEDIUM)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-032",
+      "url": "https://auth.docker.com/login",
+      "normalizedDomain": "docker.com",
+      "category": "BENIGN_AUTH_PORTALS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 343.42,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-033",
+      "url": "https://id.atlassian.com/login",
+      "normalizedDomain": "atlassian.com",
+      "category": "BENIGN_AUTH_PORTALS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 155.09,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-034",
+      "url": "https://gitlab.com/users/sign_in",
+      "normalizedDomain": "gitlab.com",
+      "category": "BENIGN_AUTH_PORTALS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 195.56,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-035",
+      "url": "https://store.steampowered.com/login",
+      "normalizedDomain": "steampowered.com",
+      "category": "BENIGN_AUTH_PORTALS",
+      "groundTruth": "BENIGN",
+      "predictedVerdict": "BENIGN",
+      "riskScore": 10,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 242.89,
+      "findingsCount": 5,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [],
+      "threatTypes": []
+    },
+    {
+      "id": "DEV-036",
+      "url": "http://secure-login-portal-auth.com/login.html",
+      "normalizedDomain": "secure-login-portal-auth.com",
+      "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 87,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 107.07,
+      "findingsCount": 13,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Repeated Hyphenation in Hostname",
+          "severity": "LOW",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Credential Form Submits to External Host",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (HIGH)",
+        "Credential Form Submits to External Host (CRITICAL)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-037",
+      "url": "http://microsoft-online-recovery.net/office365",
+      "normalizedDomain": "microsoft-online-recovery.net",
+      "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 83.4,
+      "findingsCount": 13,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Brand Impersonation Detected: Microsoft",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Credential Form Submits to External Host",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Form Exfiltrates Data to Third-Party Webhook / Messaging API",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Brand Impersonation Detected: Microsoft (CRITICAL)",
+        "Credential Form Submits to External Host (CRITICAL)",
+        "Form Exfiltrates Data to Third-Party Webhook / Messaging API (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-038",
+      "url": "http://paypal-verification-center.org/confirm",
+      "normalizedDomain": "paypal-verification-center.org",
+      "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 95,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 333.0,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Brand Impersonation Detected: Paypal",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Payment / Financial Credential Harvesting Form Detected",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Brand Impersonation Detected: Paypal (CRITICAL)",
+        "Payment / Financial Credential Harvesting Form Detected (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-039",
+      "url": "http://chase-security-check.net/verify",
+      "normalizedDomain": "chase-security-check.net",
+      "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 59.67,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Brand Impersonation Detected: Chase",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Payment / Financial Credential Harvesting Form Detected",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (HIGH)",
+        "Brand Impersonation Detected: Chase (CRITICAL)",
+        "Payment / Financial Credential Harvesting Form Detected (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-040",
+      "url": "http://apple-icloud-findmy-lock.com/auth",
+      "normalizedDomain": "apple-icloud-findmy-lock.com",
+      "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 328.02,
+      "findingsCount": 13,
+      "findings": [
+        {
+          "title": "Repeated Hyphenation in Hostname",
+          "severity": "LOW",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Brand Impersonation Detected: Apple",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Credential Form Submits to External Host",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Form Exfiltrates Data to Third-Party Webhook / Messaging API",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Brand Impersonation Detected: Apple (CRITICAL)",
+        "Credential Form Submits to External Host (CRITICAL)",
+        "Form Exfiltrates Data to Third-Party Webhook / Messaging API (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-041",
+      "url": "http://netflix-billing-update-required.com/pay",
+      "normalizedDomain": "netflix-billing-update-required.com",
+      "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 88,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 158.59,
+      "findingsCount": 14,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Repeated Hyphenation in Hostname",
+          "severity": "LOW",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Brand Impersonation Detected: Netflix",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Form Exfiltrates Data to Third-Party Webhook / Messaging API",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Payment / Financial Credential Harvesting Form Detected",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Brand Impersonation Detected: Netflix (CRITICAL)",
+        "Form Exfiltrates Data to Third-Party Webhook / Messaging API (CRITICAL)",
+        "Payment / Financial Credential Harvesting Form Detected (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-042",
+      "url": "http://bankofamerica-customer-verify.com/login",
+      "normalizedDomain": "bankofamerica-customer-verify.com",
+      "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 118.58,
+      "findingsCount": 13,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Brand Impersonation Detected: Bankofamerica",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Credential Form Submits to External Host",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (HIGH)",
+        "Brand Impersonation Detected: Bankofamerica (CRITICAL)",
+        "Credential Form Submits to External Host (CRITICAL)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-043",
+      "url": "http://wells-fargo-alert-update.info/portal",
+      "normalizedDomain": "wells-fargo-alert-update.info",
+      "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 87,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 261.93,
+      "findingsCount": 13,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Repeated Hyphenation in Hostname",
+          "severity": "LOW",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Brand Impersonation Detected: Wellsfargo",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Payment / Financial Credential Harvesting Form Detected",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Brand Impersonation Detected: Wellsfargo (CRITICAL)",
+        "Payment / Financial Credential Harvesting Form Detected (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-044",
+      "url": "http://malware-drop-payload-delivery.net/invoice.pdf.exe",
+      "normalizedDomain": "malware-drop-payload-delivery.net",
+      "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 72,
+      "confidence": 88,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 93.84,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Repeated Hyphenation in Hostname",
+          "severity": "LOW",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Non-HTML Payload Detected",
+          "severity": "INFO",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "URL Listed in URLhaus Threat Database",
+          "severity": "CRITICAL",
+          "category": "BLACKLIST"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (MEDIUM)",
+        "URL Listed in URLhaus Threat Database (CRITICAL)"
+      ],
+      "threatTypes": [
+        "BLACKLIST",
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-045",
+      "url": "http://google-drive-shared-doc-view.net/signin",
+      "normalizedDomain": "google-drive-shared-doc-view.net",
+      "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 88,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 270.46,
+      "findingsCount": 14,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Repeated Hyphenation in Hostname",
+          "severity": "LOW",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Brand Impersonation Detected: Google",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Credential Form Submits to External Host",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (MEDIUM)",
+        "Brand Impersonation Detected: Google (CRITICAL)",
+        "Credential Form Submits to External Host (CRITICAL)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-046",
+      "url": "http://facebook-security-appeal-form.com/checkpoint",
+      "normalizedDomain": "facebook-security-appeal-form.com",
+      "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 88,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 62.49,
+      "findingsCount": 14,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Repeated Hyphenation in Hostname",
+          "severity": "LOW",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Brand Impersonation Detected: Facebook",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Credential Form Submits to External Host",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Form Exfiltrates Data to Third-Party Webhook / Messaging API",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Brand Impersonation Detected: Facebook (CRITICAL)",
+        "Credential Form Submits to External Host (CRITICAL)",
+        "Form Exfiltrates Data to Third-Party Webhook / Messaging API (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-047",
+      "url": "http://sbi-card-kyc-update.com/pan-verify",
+      "normalizedDomain": "sbi-card-kyc-update.com",
+      "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 87,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 103.84,
+      "findingsCount": 13,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Repeated Hyphenation in Hostname",
+          "severity": "LOW",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Brand Impersonation Detected: Sbi",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Payment / Financial Credential Harvesting Form Detected",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (HIGH)",
+        "Brand Impersonation Detected: Sbi (CRITICAL)",
+        "Payment / Financial Credential Harvesting Form Detected (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-048",
+      "url": "http://xn--ggle-p50aa.com/search",
+      "normalizedDomain": "xn--ggle-p50aa.com",
+      "category": "TYPOSQUATTING_HOMOGLYPHS",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 97,
+      "confidence": 88,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 44.33,
+      "findingsCount": 13,
+      "findings": [
+        {
+          "title": "Punycode / Homograph Domain Detected",
+          "severity": "MEDIUM",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Repeated Hyphenation in Hostname",
+          "severity": "LOW",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Credential Form Submits to External Host",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Punycode / Homograph Domain Detected (MEDIUM)",
+        "Credential Form Submits to External Host (CRITICAL)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR",
+        "URL_ANOMALY"
+      ]
+    },
+    {
+      "id": "DEV-049",
+      "url": "http://xn--appl-35a.com/support",
+      "normalizedDomain": "xn--appl-35a.com",
+      "category": "TYPOSQUATTING_HOMOGLYPHS",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 88,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 212.28,
+      "findingsCount": 14,
+      "findings": [
+        {
+          "title": "Punycode / Homograph Domain Detected",
+          "severity": "MEDIUM",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Repeated Hyphenation in Hostname",
+          "severity": "LOW",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Typosquatting / Leetspeak Impersonation: Apple",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Credential Form Submits to External Host",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Punycode / Homograph Domain Detected (MEDIUM)",
+        "Typosquatting / Leetspeak Impersonation: Apple (CRITICAL)",
+        "Credential Form Submits to External Host (CRITICAL)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR",
+        "URL_ANOMALY"
+      ]
+    },
+    {
+      "id": "DEV-050",
+      "url": "http://paypa1.com/account/login",
+      "normalizedDomain": "paypa1.com",
+      "category": "TYPOSQUATTING_HOMOGLYPHS",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 100.23,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Typosquatting / Leetspeak Impersonation: Paypal",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (HIGH)",
+        "Typosquatting / Leetspeak Impersonation: Paypal (CRITICAL)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-051",
+      "url": "http://micros0ft.com/verify",
+      "normalizedDomain": "micros0ft.com",
+      "category": "TYPOSQUATTING_HOMOGLYPHS",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 92,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 110.45,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Typosquatting / Leetspeak Impersonation: Microsoft",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (MEDIUM)",
+        "Typosquatting / Leetspeak Impersonation: Microsoft (CRITICAL)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-052",
+      "url": "http://arnazon.com/order-update",
+      "normalizedDomain": "arnazon.com",
+      "category": "TYPOSQUATTING_HOMOGLYPHS",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 102.38,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Typosquatting / Leetspeak Impersonation: Amazon",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Payment / Financial Credential Harvesting Form Detected",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (MEDIUM)",
+        "Typosquatting / Leetspeak Impersonation: Amazon (CRITICAL)",
+        "Payment / Financial Credential Harvesting Form Detected (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-053",
+      "url": "http://b0fa-secure-portal.com/auth",
+      "normalizedDomain": "b0fa-secure-portal.com",
+      "category": "TYPOSQUATTING_HOMOGLYPHS",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 80,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 67.26,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Typosquatting / Leetspeak Impersonation: Bofa",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Typosquatting / Leetspeak Impersonation: Bofa (CRITICAL)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-054",
+      "url": "http://netf1ix-activation.com",
+      "normalizedDomain": "netf1ix-activation.com",
+      "category": "TYPOSQUATTING_HOMOGLYPHS",
+      "groundTruth": "SUSPICIOUS",
+      "predictedVerdict": "SUSPICIOUS",
+      "riskScore": 55,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 69.81,
+      "findingsCount": 10,
+      "findings": [
+        {
+          "title": "Typosquatting / Leetspeak Impersonation: Netflix",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Typosquatting / Leetspeak Impersonation: Netflix (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-055",
+      "url": "http://faceb00k-login-help.com",
+      "normalizedDomain": "faceb00k-login-help.com",
+      "category": "TYPOSQUATTING_HOMOGLYPHS",
+      "groundTruth": "SUSPICIOUS",
+      "predictedVerdict": "SUSPICIOUS",
+      "riskScore": 55,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 56.65,
+      "findingsCount": 11,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Typosquatting / Leetspeak Impersonation: Facebook",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Typosquatting / Leetspeak Impersonation: Facebook (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-056",
+      "url": "http://wha1sapp-web-connect.com",
+      "normalizedDomain": "wha1sapp-web-connect.com",
+      "category": "TYPOSQUATTING_HOMOGLYPHS",
+      "groundTruth": "SUSPICIOUS",
+      "predictedVerdict": "SUSPICIOUS",
+      "riskScore": 55,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 115.07,
+      "findingsCount": 10,
+      "findings": [
+        {
+          "title": "Typosquatting / Leetspeak Impersonation: Whatsapp",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Typosquatting / Leetspeak Impersonation: Whatsapp (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-057",
+      "url": "http://c0inbase-token-claim.xyz",
+      "normalizedDomain": "c0inbase-token-claim.xyz",
+      "category": "TYPOSQUATTING_HOMOGLYPHS",
+      "groundTruth": "SUSPICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 80,
+      "confidence": 88,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": false,
+      "latencyMs": 145.89,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "High-Risk Top-Level Domain (TLD)",
+          "severity": "HIGH",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Typosquatting / Leetspeak Impersonation: Coinbase",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Typosquatting / Leetspeak Impersonation: Coinbase (CRITICAL)",
+        "High-Risk Top-Level Domain (TLD) (HIGH)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR",
+        "DOMAIN_REPUTATION"
+      ]
+    },
+    {
+      "id": "DEV-058",
+      "url": "http://paypal-security-update-account.com/webscr",
+      "normalizedDomain": "paypal-security-update-account.com",
+      "category": "BRAND_IMPERSONATION_SUBDOMAIN_STACKING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 88,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 126.24,
+      "findingsCount": 14,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Repeated Hyphenation in Hostname",
+          "severity": "LOW",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Brand Impersonation Detected: Paypal",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Payment / Financial Credential Harvesting Form Detected",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (HIGH)",
+        "Brand Impersonation Detected: Paypal (CRITICAL)",
+        "Insecure Form Submission (HTTP) (HIGH)",
+        "Payment / Financial Credential Harvesting Form Detected (CRITICAL)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-059",
+      "url": "http://chase-verify-login.xyz",
+      "normalizedDomain": "chase-verify-login.xyz",
+      "category": "BRAND_IMPERSONATION_SUBDOMAIN_STACKING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 99.96,
+      "findingsCount": 13,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "High-Risk Top-Level Domain (TLD)",
+          "severity": "HIGH",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Brand Impersonation Detected: Chase",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Brand Impersonation Detected: Chase (CRITICAL)",
+        "High-Risk Top-Level Domain (TLD) (HIGH)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR",
+        "DOMAIN_REPUTATION"
+      ]
+    },
+    {
+      "id": "DEV-060",
+      "url": "http://appleid-support-auth.live",
+      "normalizedDomain": "appleid-support-auth.live",
+      "category": "BRAND_IMPERSONATION_SUBDOMAIN_STACKING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 45.39,
+      "findingsCount": 13,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "High-Risk Top-Level Domain (TLD)",
+          "severity": "HIGH",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Brand Impersonation Detected: Apple",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Brand Impersonation Detected: Apple (CRITICAL)",
+        "High-Risk Top-Level Domain (TLD) (HIGH)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR",
+        "DOMAIN_REPUTATION"
+      ]
+    },
+    {
+      "id": "DEV-061",
+      "url": "http://incometax-refund-claim.org/filing",
+      "normalizedDomain": "incometax-refund-claim.org",
+      "category": "BRAND_IMPERSONATION_SUBDOMAIN_STACKING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 95,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 142.87,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Government / Public Authority Impersonation Detected",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Payment / Financial Credential Harvesting Form Detected",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Government / Public Authority Impersonation Detected (CRITICAL)",
+        "Payment / Financial Credential Harvesting Form Detected (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-062",
+      "url": "http://login.microsoft.com.account-auth-system.xyz",
+      "normalizedDomain": "login.microsoft.com.account-auth-system.xyz",
+      "category": "BRAND_IMPERSONATION_SUBDOMAIN_STACKING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 88,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 120.19,
+      "findingsCount": 14,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Excessive Subdomain Stacking",
+          "severity": "MEDIUM",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "High-Risk Top-Level Domain (TLD)",
+          "severity": "HIGH",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Brand Impersonation Detected: Microsoft",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Brand Impersonation Detected: Microsoft (CRITICAL)",
+        "Excessive Subdomain Stacking (MEDIUM)",
+        "High-Risk Top-Level Domain (TLD) (HIGH)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR",
+        "DOMAIN_REPUTATION",
+        "URL_ANOMALY"
+      ]
+    },
+    {
+      "id": "DEV-063",
+      "url": "http://harvard-scholarship-portal.top",
+      "normalizedDomain": "harvard-scholarship-portal.top",
+      "category": "BRAND_IMPERSONATION_SUBDOMAIN_STACKING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 59.55,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "High-Risk Top-Level Domain (TLD)",
+          "severity": "HIGH",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Academic / Higher Education Impersonation Detected",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Payment / Financial Credential Harvesting Form Detected",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "High-Risk Top-Level Domain (TLD) (HIGH)",
+        "Academic / Higher Education Impersonation Detected (HIGH)",
+        "Payment / Financial Credential Harvesting Form Detected (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR",
+        "DOMAIN_REPUTATION"
+      ]
+    },
+    {
+      "id": "DEV-064",
+      "url": "http://binance-security-prompt.com/withdraw",
+      "normalizedDomain": "binance-security-prompt.com",
+      "category": "BRAND_IMPERSONATION_SUBDOMAIN_STACKING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 80,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 67.17,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Brand Impersonation Detected: Binance",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Brand Impersonation Detected: Binance (CRITICAL)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-065",
+      "url": "http://stripe-payment-resolve.site/checkout",
+      "normalizedDomain": "stripe-payment-resolve.site",
+      "category": "BRAND_IMPERSONATION_SUBDOMAIN_STACKING",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 30.29,
+      "findingsCount": 13,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "High-Risk Top-Level Domain (TLD)",
+          "severity": "HIGH",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Brand Impersonation Detected: Stripe",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Payment / Financial Credential Harvesting Form Detected",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Brand Impersonation Detected: Stripe (CRITICAL)",
+        "High-Risk Top-Level Domain (TLD) (HIGH)",
+        "Payment / Financial Credential Harvesting Form Detected (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR",
+        "DOMAIN_REPUTATION"
+      ]
+    },
+    {
+      "id": "DEV-066",
+      "url": "http://workday-jobs-interview.xyz",
+      "normalizedDomain": "workday-jobs-interview.xyz",
+      "category": "BRAND_IMPERSONATION_SUBDOMAIN_STACKING",
+      "groundTruth": "SUSPICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 80,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": false,
+      "latencyMs": 74.82,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "High-Risk Top-Level Domain (TLD)",
+          "severity": "HIGH",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Deceptive Recruitment / Job Portal Detected",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Brand Impersonation Detected: Workday",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "High-Risk Top-Level Domain (TLD) (HIGH)",
+        "Brand Impersonation Detected: Workday (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR",
+        "DOMAIN_REPUTATION"
+      ]
+    },
+    {
+      "id": "DEV-067",
+      "url": "http://socialsecurity-benefits-verify.net",
+      "normalizedDomain": "socialsecurity-benefits-verify.net",
+      "category": "BRAND_IMPERSONATION_SUBDOMAIN_STACKING",
+      "groundTruth": "SUSPICIOUS",
+      "predictedVerdict": "SUSPICIOUS",
+      "riskScore": 55,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 116.3,
+      "findingsCount": 11,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Government / Public Authority Impersonation Detected",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Government / Public Authority Impersonation Detected (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR"
+      ]
+    },
+    {
+      "id": "DEV-068",
+      "url": "http://legitimate-bank.com@evil-phishing-drop.net/secure",
+      "normalizedDomain": "evil-phishing-drop.net",
+      "category": "MALICIOUS_REDIRECTS_EVASIONS",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 97,
+      "confidence": 91,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 41.49,
+      "findingsCount": 7,
+      "findings": [
+        {
+          "title": "Embedded User Credentials / Authority Masking",
+          "severity": "CRITICAL",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Target URL Blocked by SSRF Perimeter Policy",
+          "severity": "CRITICAL",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Embedded User Credentials / Authority Masking (CRITICAL)",
+        "Sensitive Authentication Keywords in URL (MEDIUM)",
+        "Target URL Blocked by SSRF Perimeter Policy (CRITICAL)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR",
+        "URL_ANOMALY"
+      ]
+    },
+    {
+      "id": "DEV-069",
+      "url": "http://trusted-service.org@credential-stealer.xyz/account",
+      "normalizedDomain": "credential-stealer.xyz",
+      "category": "MALICIOUS_REDIRECTS_EVASIONS",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 91,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 94.06,
+      "findingsCount": 8,
+      "findings": [
+        {
+          "title": "Embedded User Credentials / Authority Masking",
+          "severity": "CRITICAL",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "High-Risk Top-Level Domain (TLD)",
+          "severity": "HIGH",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Target URL Blocked by SSRF Perimeter Policy",
+          "severity": "CRITICAL",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Embedded User Credentials / Authority Masking (CRITICAL)",
+        "Sensitive Authentication Keywords in URL (HIGH)",
+        "High-Risk Top-Level Domain (TLD) (HIGH)",
+        "Target URL Blocked by SSRF Perimeter Policy (CRITICAL)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR",
+        "DOMAIN_REPUTATION",
+        "URL_ANOMALY"
+      ]
+    },
+    {
+      "id": "DEV-070",
+      "url": "http://redirect-chain-bounce.com/step1",
+      "normalizedDomain": "redirect-chain-bounce.com",
+      "category": "MALICIOUS_REDIRECTS_EVASIONS",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 80,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 73.62,
+      "findingsCount": 11,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Client-Side Meta Refresh Redirect to Untrusted Destination",
+          "severity": "CRITICAL",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Redirect Destination Exhibits Hostile Indicators",
+          "severity": "HIGH",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Client-Side Meta Refresh Redirect to Untrusted Destination (CRITICAL)",
+        "Redirect Destination Exhibits Hostile Indicators (HIGH)"
+      ],
+      "threatTypes": [
+        "DOMAIN_REPUTATION",
+        "URL_ANOMALY"
+      ]
+    },
+    {
+      "id": "DEV-071",
+      "url": "http://phish-loop-evasion.net/entry",
+      "normalizedDomain": "phish-loop-evasion.net",
+      "category": "MALICIOUS_REDIRECTS_EVASIONS",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 92,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 25.54,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Client-Side Meta Refresh Redirect to Untrusted Destination",
+          "severity": "CRITICAL",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Redirect Destination Exhibits Hostile Indicators",
+          "severity": "HIGH",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (MEDIUM)",
+        "Client-Side Meta Refresh Redirect to Untrusted Destination (CRITICAL)",
+        "Redirect Destination Exhibits Hostile Indicators (HIGH)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR",
+        "DOMAIN_REPUTATION",
+        "URL_ANOMALY"
+      ]
+    },
+    {
+      "id": "DEV-072",
+      "url": "http://198.51.100.42/login.php",
+      "normalizedDomain": "198.51.100.42",
+      "category": "MALICIOUS_REDIRECTS_EVASIONS",
+      "groundTruth": "SUSPICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 77,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": false,
+      "latencyMs": 29.39,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "Direct IP Address in URL",
+          "severity": "HIGH",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Direct IP Address in URL (HIGH)",
+        "Sensitive Authentication Keywords in URL (MEDIUM)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR",
+        "URL_ANOMALY"
+      ]
+    },
+    {
+      "id": "DEV-073",
+      "url": "http://203.0.113.88/secure/update",
+      "normalizedDomain": "203.0.113.88",
+      "category": "MALICIOUS_REDIRECTS_EVASIONS",
+      "groundTruth": "SUSPICIOUS",
+      "predictedVerdict": "SUSPICIOUS",
+      "riskScore": 65,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 79.61,
+      "findingsCount": 11,
+      "findings": [
+        {
+          "title": "Direct IP Address in URL",
+          "severity": "HIGH",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Direct IP Address in URL (HIGH)",
+        "Sensitive Authentication Keywords in URL (HIGH)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR",
+        "URL_ANOMALY"
+      ]
+    },
+    {
+      "id": "DEV-074",
+      "url": "http://exploit-carrier-page.com/ad.html",
+      "normalizedDomain": "exploit-carrier-page.com",
+      "category": "MALICIOUS_REDIRECTS_EVASIONS",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 80,
+      "confidence": 88,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 19.32,
+      "findingsCount": 12,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Hidden IFrame Detected",
+          "severity": "MEDIUM",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Concealed IFrame Loads Hostile Payload Destination",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Redirect Destination Exhibits Hostile Indicators",
+          "severity": "HIGH",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Concealed IFrame Loads Hostile Payload Destination (CRITICAL)",
+        "Redirect Destination Exhibits Hostile Indicators (HIGH)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR",
+        "DOMAIN_REPUTATION"
+      ]
+    },
+    {
+      "id": "DEV-075",
+      "url": "http://deep-subdomain-evasion.a.b.c.d.e.f.phish-hub.xyz/page",
+      "normalizedDomain": "deep-subdomain-evasion.a.b.c.d.e.f.phish-hub.xyz",
+      "category": "MALICIOUS_REDIRECTS_EVASIONS",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 100,
+      "confidence": 86,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 37.35,
+      "findingsCount": 15,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "MEDIUM",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Excessive Subdomain Stacking",
+          "severity": "MEDIUM",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Repeated Hyphenation in Hostname",
+          "severity": "LOW",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "High-Risk Top-Level Domain (TLD)",
+          "severity": "HIGH",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Credential Form Submits to External Host",
+          "severity": "CRITICAL",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Insecure Form Submission (HTTP)",
+          "severity": "HIGH",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (MEDIUM)",
+        "Excessive Subdomain Stacking (MEDIUM)",
+        "High-Risk Top-Level Domain (TLD) (HIGH)",
+        "Credential Form Submits to External Host (CRITICAL)",
+        "Insecure Form Submission (HTTP) (HIGH)"
+      ],
+      "threatTypes": [
+        "WEB_SECURITY",
+        "PHISHING_INDICATOR",
+        "DOMAIN_REPUTATION",
+        "URL_ANOMALY"
+      ]
+    },
+    {
+      "id": "DEV-076",
+      "url": "https://expired-ssl-phish.net/login",
+      "normalizedDomain": "expired-ssl-phish.net",
+      "category": "CERTIFICATE_TLS_ANOMALIES",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "MALICIOUS",
+      "riskScore": 80,
+      "confidence": 89,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 27.19,
+      "findingsCount": 11,
+      "findings": [
+        {
+          "title": "Sensitive Authentication Keywords in URL",
+          "severity": "HIGH",
+          "category": "PHISHING_INDICATOR"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Expired SSL/TLS Certificate",
+          "severity": "CRITICAL",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Sensitive Authentication Keywords in URL (HIGH)",
+        "Expired SSL/TLS Certificate (CRITICAL)"
+      ],
+      "threatTypes": [
+        "PHISHING_INDICATOR",
+        "TLS_SECURITY"
+      ]
+    },
+    {
+      "id": "DEV-077",
+      "url": "https://self-signed-bank-impersonator.com",
+      "normalizedDomain": "self-signed-bank-impersonator.com",
+      "category": "CERTIFICATE_TLS_ANOMALIES",
+      "groundTruth": "SUSPICIOUS",
+      "predictedVerdict": "SUSPICIOUS",
+      "riskScore": 45,
+      "confidence": 88,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 43.68,
+      "findingsCount": 10,
+      "findings": [
+        {
+          "title": "Repeated Hyphenation in Hostname",
+          "severity": "LOW",
+          "category": "URL_ANOMALY"
+        },
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Self-Signed TLS Certificate",
+          "severity": "HIGH",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Self-Signed TLS Certificate (HIGH)"
+      ],
+      "threatTypes": [
+        "TLS_SECURITY"
+      ]
+    },
+    {
+      "id": "DEV-078",
+      "url": "https://wosign-revoked-root.org",
+      "normalizedDomain": "wosign-revoked-root.org",
+      "category": "CERTIFICATE_TLS_ANOMALIES",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "SUSPICIOUS",
+      "riskScore": 55,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": false,
+      "latencyMs": 41.84,
+      "findingsCount": 10,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Compromised / High-Risk Certificate Authority: WoSign (Distrusted by Major Root Stores)",
+          "severity": "CRITICAL",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Compromised / High-Risk Certificate Authority: WoSign (Distrusted by Major Root Stores) (CRITICAL)"
+      ],
+      "threatTypes": [
+        "TLS_SECURITY"
+      ]
+    },
+    {
+      "id": "DEV-079",
+      "url": "https://fake-ca-leaf.net",
+      "normalizedDomain": "fake-ca-leaf.net",
+      "category": "CERTIFICATE_TLS_ANOMALIES",
+      "groundTruth": "SUSPICIOUS",
+      "predictedVerdict": "SUSPICIOUS",
+      "riskScore": 55,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": true,
+      "latencyMs": 80.4,
+      "findingsCount": 10,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Leaf Certificate Configured as Certificate Authority (CA: TRUE)",
+          "severity": "CRITICAL",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Leaf Certificate Configured as Certificate Authority (CA: TRUE) (CRITICAL)"
+      ],
+      "threatTypes": [
+        "TLS_SECURITY"
+      ]
+    },
+    {
+      "id": "DEV-080",
+      "url": "https://excessive-validity-2027.com",
+      "normalizedDomain": "excessive-validity-2027.com",
+      "category": "CERTIFICATE_TLS_ANOMALIES",
+      "groundTruth": "MALICIOUS",
+      "predictedVerdict": "SUSPICIOUS",
+      "riskScore": 27,
+      "confidence": 90,
+      "analysisStatus": "COMPLETE",
+      "analysisComplete": true,
+      "isCorrect": false,
+      "latencyMs": 94.29,
+      "findingsCount": 10,
+      "findings": [
+        {
+          "title": "Domain Taxonomy Verified",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        },
+        {
+          "title": "Standard RSA 2048-bit Public Key",
+          "severity": "INFO",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+          "severity": "LOW",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Non-Compliant Certificate Validity Duration (395 days > 200 days)",
+          "severity": "MEDIUM",
+          "category": "TLS_SECURITY"
+        },
+        {
+          "title": "Missing Strict-Transport-Security (HSTS)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Content-Security-Policy (CSP)",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Clickjacking Defenses",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing X-Content-Type-Options Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "Missing Referrer-Policy Header",
+          "severity": "LOW",
+          "category": "WEB_SECURITY"
+        },
+        {
+          "title": "No Threat Intelligence Blacklist Matches",
+          "severity": "INFO",
+          "category": "DOMAIN_REPUTATION"
+        }
+      ],
+      "riskFactors": [
+        "Non-Compliant Certificate Validity Duration (395 days > 200 days) (MEDIUM)"
+      ],
+      "threatTypes": [
+        "TLS_SECURITY"
+      ]
+    }
+  ]
+}

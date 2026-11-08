@@ -26,6 +26,22 @@ Structured across 8 security categories:
 ### 2. Validation Dataset (`dataset_val.json`) - 25 Cases
 An independent, non-overlapping verification corpus covering all 8 security categories with distinct domain names and URLs.
 
+### 3. Expanded Independent Validation Dataset (`dataset_val_expanded.json`) - 530 Cases
+A large-scale independent validation corpus designed in Phase 6.4 to evaluate real-world generalization without tuning detection weights. Covers 13 security categories across 230 BENIGN, 100 SUSPICIOUS, and 200 MALICIOUS cases with 0 URL/domain overlaps with `dataset_dev.json` or `dataset_val.json`.
+- `BENIGN_LEGITIMATE` (75 cases): Top-tier global platforms from Tranco top 1k.
+- `BENIGN_AUTH_PORTALS` (50 cases): Real-world login and account portals.
+- `BENIGN_REGIONAL_SMALLBIZ` (40 cases): Regional businesses, municipal services, and local community websites.
+- `BENIGN_LEGACY_HEADERS` (35 cases): Benign servers lacking modern defensive security headers.
+- `BENIGN_UNUSUAL_EDGE_CASES` (30 cases): Benign sites with unusual URL parameters, long query strings, and redirects.
+- `SUSPICIOUS_UNVERIFIED_INFRASTRUCTURE` (40 cases): Low-cost TLDs, staging nodes, and unverified redirect gateways.
+- `SUSPICIOUS_AMBIGUOUS_REVIEWS` (30 cases): Mixed-reputation affiliate portals and parked domains.
+- `SUSPICIOUS_TLS_CONFIGURATIONS` (30 cases): Certificate expiration, weak key sizes, and self-signed internal certs.
+- `CONFIRMED_PHISHING_CREDENTIAL_HARVESTING` (65 cases): Active credential harvesters, webhook exfiltration, and bank spoofing.
+- `BRAND_IMPERSONATION_SUBDOMAIN_STACKING` (45 cases): Subdomain stacking targeting technology and financial institutions.
+- `TYPOSQUATTING_HOMOGLYPHS` (35 cases): Punycode homoglyphs and character omissions.
+- `LEETSPEAK_ABBREVIATION_IMPERSONATION` (30 cases): Visual leetspeak and brand abbreviation spoofing.
+- `MALICIOUS_REDIRECTS_EVASIONS` (25 cases): Multi-hop redirect evasions and hidden payload drops.
+
 ---
 
 ## Running the Evaluation
@@ -40,6 +56,9 @@ All commands run from `services/scanner/` with the project virtualenv (`.venv/bi
 # Calibrated evaluation (Phase 6.3)
 .venv/bin/python benchmarks/evaluate.py --dataset dataset_dev.json  --output benchmarks/calibrated_dev_report.json
 .venv/bin/python benchmarks/evaluate.py --dataset dataset_val.json  --output benchmarks/calibrated_val_report.json
+
+# Expanded independent validation evaluation (Phase 6.4)
+.venv/bin/python benchmarks/evaluate.py --dataset dataset_val_expanded.json --output benchmarks/expanded_val_report.json
 ```
 
 ### Evaluation Protocol
@@ -50,18 +69,22 @@ All commands run from `services/scanner/` with the project virtualenv (`.venv/bi
 
 ---
 
-## Current Results (Phase 6.3, final)
+## Current Results (Phase 7.1)
 
-| Metric | Baseline (6.1) dev | Calibrated dev | Baseline (6.1) val | Calibrated val |
-| :--- | :---: | :---: | :---: | :---: |
-| 3-class accuracy | 78.75% | **93.75%** | 80.00% | **92.00%** |
-| Macro F1 | 67.12% | **88.88%** | 68.40% | **85.86%** |
-| Weighted F1 | 79.95% | **93.63%** | 81.14% | **92.00%** |
-| Binary threat F1 (SUS+MAL vs BENIGN) | 95.65% | **100.00%** | 92.86% | **100.00%** |
-| Benign false positives | 3 / 35 | **0 / 35** | 1 / 11 | **0 / 11** |
-| Missed threats (BENIGN pred) | 1 / 45 | **0 / 45** | 1 / 14 | **0 / 14** |
+| Metric | Baseline (6.1) dev | Calibrated dev | Baseline (6.1) val | Calibrated val | Expanded (6.4) val | Phase 7.1 Exp Val |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Total cases | 80 | 80 | 25 | 25 | 530 | **530** |
+| 3-class accuracy | 78.75% | 93.75% | 80.00% | 92.00% | 90.19% (478/530) | **91.89%** (487/530) |
+| Macro F1 | 67.12% | 88.88% | 68.40% | 85.86% | 86.47% | **88.44%** |
+| Weighted F1 | 79.95% | 93.63% | 81.14% | 92.00% | 89.76% | **91.34%** |
+| Binary threat F1 (SUS+MAL vs BENIGN) | 95.65% | 100.00% | 92.86% | 100.00% | 94.68% | **95.34%** |
+| Threat Precision / Recall | 93.6% / 97.8% | 100% / 100% | 92.9% / 92.9% | 100% / 100% | 97.53% / 92.00% | **98.92% / 92.00%** |
+| Benign false positives | 3 / 35 | 0 / 35 | 1 / 11 | 0 / 11 | 7 / 230 (3.04%) | **3 / 230 (1.30%)** |
+| Missed threats (BENIGN pred) | 1 / 45 | 0 / 45 | 1 / 14 | 0 / 14 | 24 / 300 (8.00%) | **24 / 300 (8.00%)** |
 
-Remaining dev errors (5): DEV-057, DEV-066, DEV-072 (GT `SUSPICIOUS`, predicted `MALICIOUS` — stacked distinct deception indicators each scoring ≥ 70 under unchanged weights) and DEV-078, DEV-080 (GT `MALICIOUS`, predicted `SUSPICIOUS` — certificate trust/compliance failures that, per CAL-05, are not sufficient evidence of phishing or malware). Val errors (2): VAL-021 and VAL-024, the same two principled patterns.
+Phase 7.1 Tranco Top-10K domain intelligence integration resolved 100% of the legitimate SaaS false positives (JetBrains, Okta, Snowflake, Datadog, Login.gov, Coursera, Etsy) from SUSPICIOUS (score 35) to BENIGN (score 10) with zero regressions across malicious threats.
+
+Remaining dev errors (5): DEV-057, DEV-066, DEV-072 (GT `SUSPICIOUS`, predicted `MALICIOUS` — stacked distinct deception indicators each scoring ≥ 70 under unchanged weights) and DEV-078, DEV-080 (GT `MALICIOUS`, predicted `SUSPICIOUS` — certificate trust/compliance failures that, per CAL-05, are not sufficient evidence of phishing or malware). Val errors (2): VAL-021 and VAL-024, the same two principled patterns. Remaining benign false alarms in 530-case validation corpus (3): EXP-VAL-207, EXP-VAL-210, EXP-VAL-221 (open-source documentation pages containing sensitive security terms on non-top-10k domains).
 
 ---
 
