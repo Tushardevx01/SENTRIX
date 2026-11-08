@@ -21,7 +21,7 @@ npm run build                   # shared -> api -> web (order matters; use this,
 
 npm run dev:web                 # :3000
 npm run dev:api                 # :8000 (tsx watch)
-npm run dev:scanner             # :8001 — requires services/scanner/.venv activated first
+npm run dev:scanner             # :8001 — uses services/scanner/.venv
 docker compose up --build       # full stack
 ```
 
@@ -50,7 +50,7 @@ There is **no lint/format toolchain** — do not invent one. Verification = `npm
 - **API tests need a root `.env` and live MongoDB.** Config validation (`src/config/index.ts`) fails at import without `MONGODB_URI` and `SCANNER_API_SECRET` (≥16 chars). Integration suites connect to `mongodb://127.0.0.1:27017/...` (override with `TEST_MONGODB_URI`). Start Mongo first: `docker run -d --name sentrix-mongo -p 27017:27017 mongo:7.0`.
 - **Single root `.env` policy — never create per-service `.env` files.** All three services resolve the repo-root `.env` themselves (paths are cwd-independent). Keys are documented in `README.md`; required: `MONGODB_URI`, `SCANNER_API_SECRET`, `SCANNER_INTERNAL_URL`, `NEXT_PUBLIC_API_URL`. Production additionally requires a non-default `JWT_SECRET` (≥32 chars).
 - **Index changes are not applied automatically** — Mongoose runs with `autoIndex: false`. After adding/changing indexes, run `npm run migrate:indexes` (inspect with `npm run migrate:indexes:dry-run`).
-- `npm run dev:scanner` uses `python3 -m uvicorn` from `services/scanner`; activate `.venv` in that shell or uvicorn won't be found (deps are only in `.venv`, per `requirements.txt`).
+- `npm run dev:scanner` uses `services/scanner/.venv/bin/python`; install scanner dependencies from `services/scanner/requirements.txt` into that environment if it is missing or incomplete.
 - Admin accounts are provisioned via `npm run create:admin` (interactive, masked password), not by inserting users directly.
 
 ## Invariants (do not break)

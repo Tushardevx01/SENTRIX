@@ -10,7 +10,7 @@
   "scripts": {
     "dev:web": "npm --workspace=@sentrix/web run dev",
     "dev:api": "npm --workspace=@sentrix/api run dev",
-    "dev:scanner": "cd services/scanner && python3 -m uvicorn app.main:app --reload --port 8001",
+    "dev:scanner": "cd services/scanner && .venv/bin/python -m uvicorn app.main:app --reload --port 8001",
     "build:shared": "npm --workspace=@sentrix/shared run build",
     "build:api": "npm --workspace=@sentrix/api run build",
     "build:web": "npm --workspace=@sentrix/web run build",
@@ -21,7 +21,6 @@
     "create:admin": "npm --workspace=@sentrix/api run create:admin"
   }
 }
-
 
 
 
