@@ -18,6 +18,7 @@ export interface IBlockchainRecordDocument extends Document {
   networkName: string;
   reporterAddress: string;
   status: BlockchainRecordStatus;
+  isSimulated?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -93,6 +94,11 @@ const BlockchainRecordSchema = new Schema<IBlockchainRecordDocument>(
       type: String,
       enum: Object.values(BlockchainRecordStatusEnum),
       default: BlockchainRecordStatusEnum.CONFIRMED,
+      index: true,
+    },
+    isSimulated: {
+      type: Boolean,
+      default: false,
       index: true,
     },
   },

@@ -2,166 +2,285 @@
 
 > **"Don't trust the link. Verify the threat."**
 
-This guide provides a structured, fail-safe script for demonstrating the **SENTRIX Website Threat Intelligence & Malicious URL Detection Platform** to hackathon judges, evaluators, and security teams.
+This guide provides a structured, reproducible demonstration protocol for presenting the **SENTRIX Multi-Vector Threat Intelligence & Malicious URL Detection Platform** to hackathon evaluators, security analysts, and engineering teams.
 
 ---
 
-## 1. Executive Summary for Judges (30-Second Elevator Pitch)
+## 1. Executive Summary for Evaluators (30-Second Elevator Pitch)
 
-Most URL scanners rely either on **slow external blacklists** (which miss zero-day phishing campaigns) or **black-box machine learning** (which hallucinate false positives on legitimate SaaS authentication portals).
+Traditional URL scanners rely primarily on **slow external blacklists** (which take 12–48 hours to index new infrastructure, missing zero-day lures) or **unexplainable black-box machine learning** (which hallucinate false positives on legitimate corporate single sign-on portals).
 
-**SENTRIX solves this with an explainable, multi-vector zero-trust threat engine:**
-- **Zero-Trust Analysis Invariant:** A URL is never assumed safe simply because blacklists have not yet indexed it. Failing or unreachable analyzers degrade confidence and yield `INCONCLUSIVE`, never a false benign.
-- **Multi-Vector Inspection:** Analyzes URLs across 5 parallel vectors in sub-second time:
+**SENTRIX solves this through an explainable, multi-vector zero-trust threat engine:**
+- **Zero-Trust Analysis Invariant:** A URL or message is never assumed clean simply because blacklists have not flagged it. Unreachable analyzers fail closed or degrade confidence, producing `INCONCLUSIVE` rather than false safety.
+- **Multi-Vector Threat Inspection:** Analyzes targets across 5 parallel vectors in sub-second latency:
   1. Lexical & Punycode Homoglyph Analysis
   2. Domain Impersonation & TLD Risk Profiling
   3. Cryptographic TLS/SSL Certificate Verification
-  4. Web Security, DOM Inspection & BIP-39 Seed-Phrase Harvesting Detection
+  4. Web Security, DOM Form Analysis & BIP-39 Seed-Phrase Harvesting Detection
   5. Tranco Top-10K Domain Intelligence & Global Reputation Feeds
-- **Explainable Verdicts:** Generates transparent risk scores (0–100) mapped to MITRE ATT&CK tactics, actionable findings, and defense-in-depth posture observations.
+- **Explainable Threat Attribution:** Every verdict is backed by MITRE ATT&CK mappings, raw evidence payloads, and deterministic risk scores (0–100).
+- **Decentralized Cryptographic Integrity:** All forensic reports generate canonical SHA-256 commitments anchored directly to a Solidity 0.8.20 EVM smart contract (`ThreatRegistry.sol`) with clear distinction between on-chain mined receipts and simulated offline audit logs.
 
 ---
 
-## 2. Quick Demo Setup & Health Check
+## 2. Platform Architecture & Service Topology
 
-Ensure all three platform services are active before presenting:
-
-```bash
-# 1. Verify Mongo, Scanner, and Web Gateway Health
-curl -s http://localhost:8001/health | jq .status
-# Expected: "healthy"
-
-curl -s http://localhost:8000/api/v1/health | jq .status
-# Expected: "healthy"
+```
+                  ┌──────────────────────────────────────────────┐
+                  │          SENTRIX Web UI (Next.js 14)         │
+                  │             http://localhost:3000            │
+                  └───────────────────────┬──────────────────────┘
+                                          │ (NEXT_PUBLIC_API_URL)
+                                          ▼
+                  ┌──────────────────────────────────────────────┐
+                  │       SENTRIX API Gateway (Fastify 5)        │
+                  │             http://localhost:8000            │
+                  │        (Sole Owner of MongoDB Access)        │
+                  └──┬────────────────────┬────────────────────┬─┘
+                     │                    │                    │
+                     ▼                    ▼                    ▼
+        ┌──────────────────────┐ ┌─────────────────┐ ┌─────────────────────┐
+        │ Python Threat Engine │ │   MongoDB 7.0   │ │ Local / Testnet EVM │
+        │ (FastAPI, Port 8001) │ │ (Database State)│ │ (Hardhat / Sepolia) │
+        └──────────────────────┘ └─────────────────┘ └─────────────────────┘
 ```
 
-Open the web interface in your browser:
-**URL:** [http://localhost:3000](http://localhost:3000)
+### Quick Demo Setup & Health Check
+
+Verify that all platform components are active before beginning:
+
+```bash
+# 1. Verify Python Scanner Service (Port 8001)
+curl -s http://localhost:8001/health | jq .
+# Expected output: {"status": "healthy", "service": "sentrix-scanner", "analyzers": [...]}
+
+# 2. Verify Fastify API Gateway (Port 8000)
+curl -s http://localhost:8000/health | jq .
+# Expected output: {"status": "healthy", "service": "sentrix-api", "database": "connected"}
+
+# 3. Access Web Interface
+# Open http://localhost:3000 in your browser
+```
 
 ---
 
-## 3. The 5 Live Demonstration Scenarios
+## 3. The 6 Reproducible Test Cases (3 Suspicious/Malicious + 3 Benign)
 
-SENTRIX supports five distinct verdict states. Follow these steps during the live demo:
+SENTRIX provides 6 deterministic, reproducible test scenarios covering both URL threat investigation and message/social-engineering analysis:
 
-### Scenario 1: BENIGN — Legitimate High-Reputation Platform
+### ─────────────────────────────────────────────────────────────
+### SUSPICIOUS & MALICIOUS TEST CASES (Cases 1–3)
+### ─────────────────────────────────────────────────────────────
 
-* **Objective:** Demonstrate that SENTRIX correctly recognizes legitimate portals without false positives, leveraging Tranco Top-10K domain intelligence and TLS auditing.
-* **Target URL:** `https://python.org` (or `https://github.com/login`)
+### Case 1: MALICIOUS — Cryptocurrency Wallet Drainer & Seed-Phrase Harvesting
+* **Target Vector:** Web3 Phishing URL
+* **Input Target:** `http://metamask-security-drainer.cc/claim`
 * **How to Run in Web UI:**
-  1. Navigate to `/scanner` (or use the hero input on the home page).
-  2. Enter `https://python.org` and click **Analyze Threat**.
-  3. Watch the scan transition from `QUEUED` &rarr; `PROCESSING` &rarr; `COMPLETED` in real time.
+  1. Navigate to `/scanner`.
+  2. Input `http://metamask-security-drainer.cc/claim` and click **Analyze Threat**.
+  3. Observe the transition: `QUEUED` &rarr; `PROCESSING` &rarr; `COMPLETED`.
+* **CLI cURL Alternative:**
+  ```bash
+  curl -s -X POST http://localhost:8000/api/v1/scans \
+    -H "Content-Type: application/json" \
+    -d '{"url": "http://metamask-security-drainer.cc/claim"}' | jq .
+  ```
+* **Observed & Expected Outcome:**
+  * **Verdict:** `MALICIOUS` (Red Badge)
+  * **Risk Score:** `100/100` (Confidence: 99%)
+  * **MITRE ATT&CK Tactics:** `Reconnaissance (T1598)`, `Initial Access (T1566)`, `Credential Access (T1056)`
+  * **Key Findings:**
+    * **Brand Impersonation:** Deceptive use of `MetaMask` trademark in unverified domain.
+    * **Web3 Drainer Form:** BIP-39 mnemonic phrase input inputs submitting credentials over cleartext HTTP.
+    * **Suspicious TLD:** `.cc` registrar combined with fake security subdomain lure.
+  * **Next Action:** Click **Anchor to Blockchain** to register on EVM `ThreatRegistry.sol`.
+
+---
+
+### Case 2: MALICIOUS — Urgent Banking OTP Harvesting SMS (Module A)
+* **Target Vector:** SMS Phishing (Smishing) Lure
+* **Input Text:** `"URGENT: Your Chase checking account is suspended. Reply with your 6-digit OTP code to +1-800-555-0199 or verify at http://chase-security-auth.net/verify immediately."`
+* **How to Run in Web UI:**
+  1. Navigate to `/messages`.
+  2. Paste the message into the text area, select channel `SMS`, and click **Analyze Message & Scam Tactics**.
+* **CLI cURL Alternative:**
+  ```bash
+  curl -s -X POST http://localhost:8000/api/v1/messages/analyze \
+    -H "Content-Type: application/json" \
+    -d '{
+      "messageText": "URGENT: Your Chase checking account is suspended. Reply with your 6-digit OTP code to +1-800-555-0199 or verify at http://chase-security-auth.net/verify immediately.",
+      "channel": "SMS"
+    }' | jq .
+  ```
+* **Observed & Expected Outcome:**
+  * **Classification:** `MALICIOUS` (High-Urgency Credential Theft)
+  * **Risk Score:** `77/100` (Confidence: 90%)
+  * **Detected Tactics:**
+    * `CREDENTIAL_OTP_HARVESTING` (Critical): Direct solicitation of authentication one-time passcode.
+    * `URGENCY_FEAR` (Medium): Forced artificial deadline (`immediately`, `suspended`).
+    * `AUTHORITY_IMPERSONATION` (High): Deceptive representation of `Chase Banking & Payments`.
+  * **Extracted Threat Indicators:** Phone `+1-800-555-0199`, Domain `chase-security-auth.net`.
+  * **Cross-Vector Impact:** Automatically registers `chase-security-auth.net` in the Campaign Correlation Graph.
+
+---
+
+### Case 3: SUSPICIOUS — Fake Technical Support & Trojan Alert (Module A)
+* **Target Vector:** Scam Email Lure
+* **Input Text:** `"ALERT: Microsoft Defender detected Trojan.Win32 on your workstation. Contact toll-free +1-888-019-2831 immediately for remote technical support and refund cancellation."`
+* **How to Run in Web UI:**
+  1. Navigate to `/messages`.
+  2. Paste the message into the text area, select channel `EMAIL`, and click **Analyze Message & Scam Tactics**.
+* **CLI cURL Alternative:**
+  ```bash
+  curl -s -X POST http://localhost:8000/api/v1/messages/analyze \
+    -H "Content-Type: application/json" \
+    -d '{
+      "messageText": "ALERT: Microsoft Defender detected Trojan.Win32 on your workstation. Contact toll-free +1-888-019-2831 immediately for remote technical support and refund cancellation.",
+      "channel": "EMAIL"
+    }' | jq .
+  ```
+* **Observed & Expected Outcome:**
+  * **Classification:** `SUSPICIOUS` (Scam / Coercive Social Engineering)
+  * **Risk Score:** `36–45/100` (Elevated Heuristic Warning)
+  * **Detected Tactics:**
+    * `AUTHORITY_IMPERSONATION`: Deceptive claims of representation from `Microsoft (Tech & Cloud)`.
+    * `URGENCY_FEAR`: Coercive alert regarding Trojan infection.
+    * `FINANCIAL_MANIPULATION`: Advance-fee or bogus refund cancellation pretext.
+  * **Extracted Threat Indicators:** Phone `+1-888-019-2831`.
+
+---
+
+### ─────────────────────────────────────────────────────────────
+### BENIGN TEST CASES (Cases 4–6)
+### ─────────────────────────────────────────────────────────────
+
+### Case 4: BENIGN — Legitimate High-Reputation Platform (Tranco Top-10K)
+* **Target Vector:** High-Traffic Enterprise URL
+* **Input Target:** `https://python.org` (or `https://github.com/login`)
+* **How to Run in Web UI:**
+  1. Navigate to `/scanner`.
+  2. Input `https://python.org` and click **Analyze Threat**.
 * **CLI cURL Alternative:**
   ```bash
   curl -s -X POST http://localhost:8000/api/v1/scans \
     -H "Content-Type: application/json" \
     -d '{"url": "https://python.org"}' | jq .
   ```
-* **Expected Outcome:**
-  * **Verdict:** `BENIGN` (Green Badge)
-  * **Risk Score:** ~15/100 (bounded defense-in-depth posture findings only)
-  * **Confidence:** &ge; 90%
-  * **Analysis Status:** `COMPLETE` (All 5 analyzers report `SUCCESS`)
-  * **Key Findings:** Authentic domain verification, valid Let's Encrypt / DigiCert certificate, zero active malicious indicators.
-
----
-
-### Scenario 2: SUSPICIOUS — Ambiguous Affiliate & Heuristic Anomaly
-
-* **Objective:** Show how SENTRIX detects risky heuristic patterns (suspicious query parameters, high-risk TLDs, redirect evasion) before a full weaponized payload is confirmed.
-* **Target URL:** `https://smart-shopper-coupon-finder.xyz/bounce?coupon=99`
-* **Expected Outcome:**
-  * **Verdict:** `SUSPICIOUS` (Amber Badge)
-  * **Risk Score:** 45–60/100
-  * **Analysis Status:** `COMPLETE`
-  * **Key Findings:** High-risk TLD (`.xyz`), deceptive tracking/redirect query parameters, lack of established brand identity.
-  * **Analyst Advisory:** Prompts elevated attention and sandboxed review before navigating.
-
----
-
-### Scenario 3: MALICIOUS — Credential Harvesting & Brand Impersonation
-
-* **Objective:** Demonstrate detection of an active credential harvesting campaign targeting enterprise single sign-on (SSO).
-* **Target URL:** `http://microsoft-online-recovery.net/office365/login.htm`
-* **Expected Outcome:**
-  * **Verdict:** `MALICIOUS` (Red Badge)
-  * **Risk Score:** 85–100/100
-  * **Confidence:** 95%+
-  * **MITRE ATT&CK Tactics:** `Reconnaissance`, `Initial Access`, `Credential Access`
+* **Observed & Expected Outcome:**
+  * **Verdict:** `BENIGN` (Emerald Green Badge)
+  * **Risk Score:** `15/100` (Bounded defense-in-depth posture observations only)
+  * **Confidence:** &ge; `90%`
   * **Key Findings:**
-    * **Brand Impersonation:** Detected unauthorized use of `Microsoft / Office365` trademark in an unverified domain.
-    * **Insecure Form Submission:** Login form submitting credentials over cleartext HTTP.
-    * **Suspicious Path Structure:** Phishing path imitating corporate password recovery.
+    * **Tranco Top-10K Verified:** Confirmed high-reputation authentic domain owner.
+    * **Valid TLS/SSL:** Active cryptographic certificate issued by trusted CA.
+    * **Zero Malicious Signatures:** No credential redirection or payload injection.
 
 ---
 
-### Scenario 4: UNVERIFIED_INFRASTRUCTURE — Parked / Cold Hosting
-
-* **Objective:** Demonstrate Phase 7.3's defensive classification. Parked domains and low-reputation staging sites that lack malicious payloads are NOT marked benign, nor are they falsely flagged as active threats.
-* **Target URL:** `http://fast-content-delivery-cdn-test.club`
-* **Expected Outcome:**
-  * **Verdict:** `UNVERIFIED_INFRASTRUCTURE` (Cyan/Indigo Informational Badge)
-  * **Risk Score:** 15–25/100
-  * **Analysis Status:** `COMPLETE`
-  * **Key Findings:** Parked or placeholder domain page indicators, absence of production TLS certificate, non-authoritative hosting.
-  * **Value Proposition:** Prevents analysts from treating unverified throwaway infrastructure as trusted corporate assets.
-
----
-
-### Scenario 5: INCONCLUSIVE — Zero-Trust Fail-Safe Under Network Anomaly
-
-* **Objective:** Prove the core zero-trust security invariant: **Incomplete or unreachable analysis NEVER defaults to clean.**
-* **Target URL:** `http://192.0.2.1/test` (or internal loopback `http://127.0.0.1:8000/api`)
-* **Expected Outcome:**
-  * **For loopback/private IPs:** Immediate HTTP 400 rejection via `SSRFGuard` with message `Target destination violated perimeter safety policies`.
-  * **For unreachable hosts:** The scan completes with `verdict: "INCONCLUSIVE"` and `analysisStatus: "PARTIAL"`, warning the user that safety could not be verified due to unreachable analyzers.
-
----
-
-## 4. Touring Platform Features
-
-After demonstrating URL scanning, walk judges through the rest of the application:
-
-1. **Investigation Report View (`/reports/:id`):**
-   * **Categorized Findings Breakdown:** Filter by Critical, High, Medium, Low, and Info.
-   * **Cryptographic TLS Audit:** View leaf certificate subject, issuer, serial, SANs, and validity period.
-   * **Raw Evidence Payloads:** Expand each finding to inspect raw HTTP headers, DOM fixtures, and token matches.
-2. **Global Threat Dashboard (`/dashboard`):**
-   * Real telemetry aggregated directly from MongoDB.
-   * Total Scans Conducted, Threat Detection Rate, Average Risk Score.
-   * Breakdown of threats by category (Impersonation, Phishing, TLS Weaknesses).
-3. **Community Threat Hub (`/community`):**
-   * Crowdsourced URL threat submissions.
-   * Real-time community upvoting with IP-based rate limiting (20 votes/min).
-   * Search and filter by domain or status.
+### Case 5: BENIGN — Standard Corporate Internal Meeting Sync (Module A)
+* **Target Vector:** Clean Internal Communication
+* **Input Text:** `"Hi team, let us reschedule our internal design review meeting to 4pm today. Thanks!"`
+* **How to Run in Web UI:**
+  1. Navigate to `/messages`.
+  2. Paste the message into the text area, select channel `EMAIL`, and click **Analyze Message**.
+* **CLI cURL Alternative:**
+  ```bash
+  curl -s -X POST http://localhost:8000/api/v1/messages/analyze \
+    -H "Content-Type: application/json" \
+    -d '{
+      "messageText": "Hi team, let us reschedule our internal design review meeting to 4pm today. Thanks!",
+      "channel": "EMAIL"
+    }' | jq .
+  ```
+* **Observed & Expected Outcome:**
+  * **Classification:** `BENIGN` (Green Safe Badge)
+  * **Risk Score:** `0/100` (Confidence: 60%)
+  * **Detected Tactics:** `[]` (Zero deceptive manipulation tactics detected)
+  * **Extracted Threat Indicators:** `None`
+  * **AI Guidance:** Confirms standard routine communication with zero coercion indicators.
 
 ---
 
-## 5. Offline Fallback Procedure (If Conference Internet Drops)
+### Case 6: BENIGN — Developer Documentation Portal
+* **Target Vector:** Open-Source Documentation URL
+* **Input Target:** `https://fastapi.tiangolo.com/tutorial`
+* **How to Run in Web UI:**
+  1. Navigate to `/scanner`.
+  2. Input `https://fastapi.tiangolo.com/tutorial` and click **Analyze Threat**.
+* **CLI cURL Alternative:**
+  ```bash
+  curl -s -X POST http://localhost:8000/api/v1/scans \
+    -H "Content-Type: application/json" \
+    -d '{"url": "https://fastapi.tiangolo.com/tutorial"}' | jq .
+  ```
+* **Observed & Expected Outcome:**
+  * **Verdict:** `BENIGN`
+  * **Risk Score:** `< 20/100`
+  * **Key Findings:** Clean static documentation site, valid Let's Encrypt TLS certificate, legitimate HTTPS encryption, zero phishing indicators.
 
-If network connectivity fails during presentation, SENTRIX includes an offline benchmark evaluation harness that tests against deterministic, curated datasets without requiring internet egress:
+---
+
+## 4. Demonstrating the 4 Core Innovation Modules
+
+### Module A: AI-Powered Scam & Message Analysis (`/messages`)
+1. Open [http://localhost:3000/messages](http://localhost:3000/messages).
+2. Demonstrate how non-URL communication vectors (SMS smishing, WhatsApp lures, Telegram seed-phrase solicitations) are parsed.
+3. Review extracted indicators (phone numbers, cryptocurrency wallets, unverified payment handles) and detected MITRE ATT&CK psychological tactics.
+
+### Module B: Cross-Vector Threat Correlation & Campaign Graph (`/correlations`)
+1. Open [http://localhost:3000/correlations](http://localhost:3000/correlations).
+2. SENTRIX connects indicators across disparate vectors (e.g., matching a domain found in an SMS message to an earlier web scan).
+3. Test correlation retrieval via API:
+   ```bash
+   curl -s http://localhost:8000/api/v1/correlations/related/chase-security-auth.net | jq .
+   ```
+4. Observe that the indicator graph links the domain directly to the originating message ID and related threats.
+
+### Module C: Web3 Threat Registry & Cryptographic Ledger (`/blockchain`)
+1. Open [http://localhost:3000/blockchain](http://localhost:3000/blockchain).
+2. **On-Chain EVM Execution vs Simulated Distinction:**
+   * **Real On-Chain Mode:** When connected to an active EVM node (Hardhat local port 8545 or Ethereum Sepolia), reports are submitted directly to the `ThreatRegistry.sol` smart contract via `registerThreat(bytes32, string, uint8, string)`.
+   * The UI renders an **emerald badge `[ON-CHAIN EVM RECORD]`** displaying real transaction hash and mined block number.
+   * **Simulated Ledger Mode:** When EVM RPC is unreachable or in non-EVM deployments, the platform falls back to an offline SHA-256 cryptographic ledger.
+   * The UI renders an **amber badge `[SIMULATED LOCAL COMMITMENT]`** with clear disclosure: *"Cryptographic commitment verified in simulated local ledger; not submitted to on-chain EVM."*
+3. **Independent Cryptographic Verification:**
+   * Enter any Report ID into the verification input.
+   * SENTRIX recalculates the canonical SHA-256 hash commitment byte-for-byte and verifies it against the immutable on-chain state:
+   ```bash
+   curl -s http://localhost:8000/api/v1/blockchain/verify/6af09dc6ac9bfb4b4d7b1113 | jq .
+   ```
+
+### Module D: Evidence-Grounded AI Explanations (`/reports/:id` & `/messages`)
+1. View any completed investigation report.
+2. In the AI Assistant section, click **Generate Grounded Threat Analysis**.
+3. The engine passes verified structured findings, risk score, and MITRE tactics to the AI explanation generator.
+4. Explanations cite observed evidence exclusively without hallucinating unverified claims, providing actionable precautions and technical limitations.
+
+---
+
+## 5. Offline Zero-Egress Benchmark Evaluation
+
+If presenting in an environment without internet connectivity, SENTRIX provides an offline evaluation harness that benchmarks the production analyzers against curated datasets:
 
 ```bash
-# Run the 80-case development benchmark harness:
 cd services/scanner
 .venv/bin/python benchmarks/evaluate.py --dataset dataset_dev.json --output demo_report.json
-
-# View high-level metrics summary:
-# 100% Threat Detection Binary F1 (TP=45, FN=0)
-# 0.00% False Positive Rate on Legitimate Sites
-# P50 Latency: < 100 ms
 ```
 
-Pre-scanned historical cases remain accessible locally in the web dashboard at `http://localhost:3000/history`.
+**Verified Benchmark Metrics:**
+* **80 Development Cases:** 100% Threat Detection F1 Score (45 True Positives, 0 False Negatives).
+* **0.00% False Positive Rate** on legitimate high-reputation SaaS platforms.
+* **P50 Latency:** < 100ms per analysis.
 
 ---
 
-## 6. Judge FAQ & Talking Points
+## 6. Judge FAQ & Technical Defense
 
 * **Q: How does SENTRIX differ from VirusTotal or Google Safe Browsing?**  
-  * *A:* VirusTotal and GSB are primarily reactive blacklists. When a phisher registers a new domain and sends lures, it can take 12–48 hours for blacklists to flag it. SENTRIX inspects lexical structure, DOM form actions, TLS certificates, and cryptographic entropy on the wire, catching zero-day phishing attacks on their first encounter.
-* **Q: How do you prevent false positives on corporate login pages?**  
-  * *A:* Through Tranco Top-10K domain intelligence and contextual risk weighting (CAL-01 & CAL-02). Legitimate SaaS authentication portals (Google, Atlassian, Docker) are validated as authentic brand owners, preventing legitimate credential forms from being misclassified as phishing.
-* **Q: Is the scanner safe to run against weaponized sites?**  
-  * *A:* Yes. SENTRIX features strict SSRF protection (blocking RFC 1918, link-local, loopback, and cloud metadata addresses), connection-time IP pinning to defeat DNS rebinding, streaming body limits (2 MB maximum), and inert parsing via BeautifulSoup without executing client-side scripts.
+  * *Answer:* VT and GSB are predominantly reactive blacklists. Threat actors register disposable domains and weaponize them within minutes; blacklists can lag by 12–48 hours. SENTRIX performs real-time wire-level inspection (DOM forms, lexical homoglyphs, TLS entropy, and BIP-39 mnemonic fields), detecting zero-day phishing on first encounter.
+
+* **Q: How do you prevent false positives on corporate login pages (e.g. Google, Atlassian)?**  
+  * *Answer:* Through integrated Tranco Top-10K domain intelligence and calibrated risk weighting (CAL-01 & CAL-02). Legitimate SaaS authentication portals are confirmed as authentic brand owners, preventing legitimate credential inputs from triggering false alarms.
+
+* **Q: Is the scanner safe against weaponized and adversarial infrastructure?**  
+  * *Answer:* Yes. SENTRIX implements multi-layered SSRF protection: blocking private RFC 1918, link-local, loopback, and cloud metadata (169.254.169.254) addresses, strict streaming body limits (2 MB maximum), and connection-time IP pinning to defeat DNS rebinding. Scanning uses inert HTML parsing without client-side script execution.

@@ -120,10 +120,12 @@ export default function BlockchainRegistryPage() {
         <div className="bg-theme-card border border-theme-border rounded-xl p-4 shadow-sm">
           <span className="text-[10px] font-mono uppercase text-theme-muted block">Active Network</span>
           <span className="text-sm font-mono font-bold text-theme-text mt-1 block">
-            {config?.isSimulated ? 'Local Cryptographic Simulator' : 'EVM Testnet / Hardhat'}
+            {config?.isSimulated
+              ? 'Simulated Cryptographic Ledger'
+              : config?.networkName || 'EVM Testnet / Hardhat'}
           </span>
           <span className="text-[11px] text-theme-muted font-mono mt-0.5 block">
-            Chain ID: {config?.chainId || 31337}
+            {config?.isSimulated ? 'Mode: Offline Ledger' : `Chain ID: ${config?.chainId || 31337}`}
           </span>
         </div>
 
@@ -187,16 +189,44 @@ export default function BlockchainRegistryPage() {
         )}
 
         {verificationResult && (
-          <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 space-y-3 font-mono text-xs">
+          <div
+            className={`p-4 rounded-lg border space-y-3 font-mono text-xs ${
+              verificationResult.isSimulated || verificationResult.mode === 'SIMULATED'
+                ? 'bg-amber-500/10 border-amber-500/30'
+                : 'bg-emerald-500/10 border-emerald-500/30'
+            }`}
+          >
             <div className="flex items-center justify-between">
-              <span className="font-bold text-emerald-400 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                VERIFICATION PASSED: Report Integrity Confirmed Byte-For-Byte
+              <span
+                className={`font-bold flex items-center gap-1.5 ${
+                  verificationResult.isSimulated || verificationResult.mode === 'SIMULATED'
+                    ? 'text-amber-400'
+                    : 'text-emerald-400'
+                }`}
+              >
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                {verificationResult.isSimulated || verificationResult.mode === 'SIMULATED'
+                  ? 'VERIFICATION PASSED: Cryptographic Commitment Verified (Simulated Ledger)'
+                  : 'VERIFICATION PASSED: Report Integrity Confirmed on EVM Blockchain'}
               </span>
-              <span className="text-[10px] text-theme-muted">
-                Block #{verificationResult.blockNumber || 1}
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                  verificationResult.isSimulated || verificationResult.mode === 'SIMULATED'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                }`}
+              >
+                {verificationResult.isSimulated || verificationResult.mode === 'SIMULATED'
+                  ? 'SIMULATED LEDGER'
+                  : `BLOCK #${verificationResult.blockNumber || 1}`}
               </span>
             </div>
+
+            {Boolean(verificationResult.isSimulated || verificationResult.mode === 'SIMULATED') && (
+              <p className="text-[11px] text-amber-300/80">
+                Note: This threat commitment was verified against the local tamper-evident cryptographic ledger (Simulated Mode). It was not anchored to a live EVM blockchain network.
+              </p>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
               <div>
@@ -206,16 +236,36 @@ export default function BlockchainRegistryPage() {
                 </span>
               </div>
               <div>
-                <span className="text-theme-muted block">On-Chain Anchored Commitment:</span>
-                <span className="text-emerald-400 font-bold break-all block">
+                <span className="text-theme-muted block">
+                  {verificationResult.isSimulated || verificationResult.mode === 'SIMULATED'
+                    ? 'Anchored Ledger Hash:'
+                    : 'On-Chain Anchored Commitment:'}
+                </span>
+                <span
+                  className={`font-bold break-all block ${
+                    verificationResult.isSimulated || verificationResult.mode === 'SIMULATED'
+                      ? 'text-amber-300'
+                      : 'text-emerald-400'
+                  }`}
+                >
                   {verificationResult.onChainHash}
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-emerald-500/20 text-[10px] text-theme-muted">
+            <div
+              className={`grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t text-[10px] text-theme-muted ${
+                verificationResult.isSimulated || verificationResult.mode === 'SIMULATED'
+                  ? 'border-amber-500/20'
+                  : 'border-emerald-500/20'
+              }`}
+            >
               <div>
-                <span className="text-theme-text">Tx Hash:</span>{' '}
+                <span className="text-theme-text">
+                  {verificationResult.isSimulated || verificationResult.mode === 'SIMULATED'
+                    ? 'Ledger Reference:'
+                    : 'Tx Hash:'}
+                </span>{' '}
                 <span className="truncate block font-mono text-theme-muted">
                   {verificationResult.txHash}
                 </span>
@@ -227,9 +277,12 @@ export default function BlockchainRegistryPage() {
                 </span>
               </div>
               <div>
-                <span className="text-theme-text">Anchored Timestamp:</span>{' '}
+                <span className="text-theme-text">Network:</span>{' '}
                 <span className="block font-mono text-theme-muted">
-                  {verificationResult.timestampDate || 'Verified'}
+                  {verificationResult.networkName ||
+                    (verificationResult.isSimulated
+                      ? 'Simulated Cryptographic Ledger'
+                      : 'EVM Local')}
                 </span>
               </div>
             </div>
@@ -266,56 +319,75 @@ export default function BlockchainRegistryPage() {
                 <tr className="border-b border-theme-border text-theme-muted uppercase text-[10px]">
                   <th className="py-2 px-3">Target / Host</th>
                   <th className="py-2 px-3">Type</th>
+                  <th className="py-2 px-3">Mode</th>
                   <th className="py-2 px-3">Canonical SHA-256 Hash</th>
                   <th className="py-2 px-3">Block #</th>
-                  <th className="py-2 px-3">Tx Hash</th>
+                  <th className="py-2 px-3">Tx Hash / Ledger Ref</th>
                   <th className="py-2 px-3 text-right">Integrity</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-theme-border/50">
-                {records.map((rec) => (
-                  <tr key={rec._id} className="hover:bg-theme-elevated/40 transition-colors">
-                    <td className="py-2.5 px-3 font-semibold text-theme-text truncate max-w-[200px]">
-                      {rec.target}
-                    </td>
-                    <td className="py-2.5 px-3">
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-theme-elevated text-theme-muted uppercase font-semibold">
-                        {rec.reportType}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-3 font-mono text-[11px] text-theme-muted">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate max-w-[140px] text-emerald-400">{rec.reportHash}</span>
+                {records.map((rec) => {
+                  const isSim = Boolean(
+                    rec.isSimulated ||
+                    rec.status === 'SIMULATED' ||
+                    rec.txHash?.startsWith('simulated-')
+                  );
+                  return (
+                    <tr key={rec._id} className="hover:bg-theme-elevated/40 transition-colors">
+                      <td className="py-2.5 px-3 font-semibold text-theme-text truncate max-w-[200px]">
+                        {rec.target}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-theme-elevated text-theme-muted uppercase font-semibold">
+                          {rec.reportType}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        {isSim ? (
+                          <span className="text-[9px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold uppercase">
+                            Simulated
+                          </span>
+                        ) : (
+                          <span className="text-[9px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold uppercase">
+                            On-Chain EVM
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 font-mono text-[11px] text-theme-muted">
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate max-w-[140px] text-emerald-400">{rec.reportHash}</span>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(rec.reportHash, rec._id)}
+                            className="hover:text-theme-text text-theme-muted"
+                            title="Copy Full Hash"
+                          >
+                            {copiedHash === rec._id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3 font-bold text-theme-text">
+                        {isSim ? <span className="text-theme-muted font-normal text-[11px]">Offline</span> : `#${rec.blockNumber}`}
+                      </td>
+                      <td className="py-2.5 px-3 text-[11px] text-theme-muted font-mono truncate max-w-[120px]">
+                        {rec.txHash}
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
                         <button
                           type="button"
-                          onClick={() => copyToClipboard(rec.reportHash, rec._id)}
-                          className="hover:text-theme-text text-theme-muted"
-                          title="Copy Full Hash"
+                          onClick={() => {
+                            setVerifyId(rec.reportId);
+                            window.scrollTo({ top: 180, behavior: 'smooth' });
+                          }}
+                          className="text-theme-accent hover:underline text-[11px] font-semibold"
                         >
-                          {copiedHash === rec._id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                          Verify
                         </button>
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-3 font-bold text-theme-text">
-                      #{rec.blockNumber}
-                    </td>
-                    <td className="py-2.5 px-3 text-[11px] text-theme-muted font-mono truncate max-w-[120px]">
-                      {rec.txHash}
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setVerifyId(rec.reportId);
-                          window.scrollTo({ top: 180, behavior: 'smooth' });
-                        }}
-                        className="text-theme-accent hover:underline text-[11px] font-semibold"
-                      >
-                        Verify
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

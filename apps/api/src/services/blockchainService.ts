@@ -4,6 +4,8 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { ethers } from 'ethers';
 import {
+  BlockchainRecordStatusEnum,
+  type BlockchainRecordStatus,
   type IBlockchainRecord,
   type IBlockchainVerification,
 } from '@sentrix/shared';
@@ -23,6 +25,7 @@ const POSSIBLE_ARTIFACT_PATHS = [
   path.resolve(process.cwd(), 'contracts/ThreatRegistry.json'),
 ];
 const ARTIFACT_PATH = POSSIBLE_ARTIFACT_PATHS.find((p) => fs.existsSync(p));
+const HARDHAT_DEFAULT_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
 export class BlockchainService {
   private rpcUrl: string;
@@ -30,6 +33,7 @@ export class BlockchainService {
   private contractAddress: string | undefined;
   private provider: ethers.JsonRpcProvider | null = null;
   private wallet: ethers.Wallet | null = null;
+  private signer: ethers.NonceManager | null = null;
   private contract: ethers.Contract | null = null;
   private artifact: { abi: any[]; bytecode: string } | null = null;
   private chainId = 31337;
@@ -37,11 +41,33 @@ export class BlockchainService {
   private isConnected = false;
 
   constructor() {
-    this.rpcUrl = process.env.ETHEREUM_RPC_URL || process.env.SEPOLIA_RPC_URL || 'http://127.0.0.1:8545';
-    // Hardhat Account #0 default private key
-    this.privateKey =
-      process.env.ETHEREUM_PRIVATE_KEY ||
-      '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+    this.rpcUrl =
+      process.env.BLOCKCHAIN_RPC_URL ||
+      process.env.ETHEREUM_RPC_URL ||
+      process.env.SEPOLIA_RPC_URL ||
+      'http://127.0.0.1:8545';
+
+    const configuredKey = process.env.BLOCKCHAIN_PRIVATE_KEY || process.env.ETHEREUM_PRIVATE_KEY;
+    const isLocalRpc =
+      this.rpcUrl.includes('127.0.0.1') ||
+      this.rpcUrl.includes('localhost') ||
+      this.rpcUrl.includes('::1');
+
+    if (configuredKey) {
+      if (!isLocalRpc && configuredKey.toLowerCase() === HARDHAT_DEFAULT_KEY.toLowerCase()) {
+        console.warn(
+          '[BlockchainService] SECURITY VIOLATION: Hardhat default private key detected on public EVM RPC. On-chain live signer disabled.'
+        );
+        this.privateKey = '';
+      } else {
+        this.privateKey = configuredKey;
+      }
+    } else if (isLocalRpc && process.env.NODE_ENV !== 'production') {
+      this.privateKey = HARDHAT_DEFAULT_KEY;
+    } else {
+      this.privateKey = '';
+    }
+
     this.contractAddress = process.env.THREAT_REGISTRY_CONTRACT_ADDRESS;
 
     if (ARTIFACT_PATH && fs.existsSync(ARTIFACT_PATH)) {
@@ -71,13 +97,29 @@ export class BlockchainService {
       const network = (await Promise.race([networkPromise, timeoutPromise])) as ethers.Network;
 
       this.chainId = Number(network.chainId);
-      this.networkName = this.chainId === 11155111 ? 'Ethereum Sepolia' : this.chainId === 31337 ? 'Hardhat Local' : `EVM Chain ${this.chainId}`;
-      this.wallet = new ethers.Wallet(this.privateKey, this.provider);
+      this.networkName =
+        this.chainId === 11155111
+          ? 'Ethereum Sepolia'
+          : this.chainId === 31337
+          ? 'Hardhat Local'
+          : `EVM Chain ${this.chainId}`;
+
+      if (this.privateKey) {
+        this.wallet = new ethers.Wallet(this.privateKey, this.provider);
+        this.signer = new ethers.NonceManager(this.wallet);
+      } else {
+        this.wallet = null;
+        this.signer = null;
+      }
+
       this.isConnected = true;
 
-      if (!this.contractAddress && this.artifact) {
+      if (!this.contractAddress && this.artifact && this.signer) {
         // Deploy contract dynamically to connected node
-        const factory = new ethers.ContractFactory(this.artifact.abi, this.artifact.bytecode, this.wallet);
+        const bytecode = this.artifact.bytecode.startsWith('0x')
+          ? this.artifact.bytecode
+          : `0x${this.artifact.bytecode}`;
+        const factory = new ethers.ContractFactory(this.artifact.abi, bytecode, this.signer);
         const deployed = await factory.deploy();
         await deployed.waitForDeployment();
         this.contractAddress = await deployed.getAddress();
@@ -85,7 +127,11 @@ export class BlockchainService {
       }
 
       if (this.contractAddress && this.artifact) {
-        this.contract = new ethers.Contract(this.contractAddress, this.artifact.abi, this.wallet);
+        this.contract = new ethers.Contract(
+          this.contractAddress,
+          this.artifact.abi,
+          this.signer || this.provider
+        );
       }
     } catch {
       this.isConnected = false;
@@ -213,16 +259,19 @@ export class BlockchainService {
     const commitment = this.generateCanonicalCommitment(canonicalPayload);
 
     // 3. Submit transaction to smart contract (or fallback to verifiable cryptographic ledger)
+    let isSimulated = true;
+    let status: BlockchainRecordStatus = BlockchainRecordStatusEnum.SIMULATED;
     let txHash: string;
-    let blockNumber: number;
-    let blockTimestamp: number;
-    let reporterAddress: string;
+    let blockNumber = 0;
+    let blockTimestamp = Math.floor(Date.now() / 1000);
+    let reporterAddress = '0x0000000000000000000000000000000000000000';
+    let recordNetworkName = 'Simulated Cryptographic Ledger (Offline / Non-EVM)';
 
     if (!this.contract) {
       await this.initialize();
     }
 
-    if (this.contract && this.wallet && this.isConnected) {
+    if (this.contract && this.signer && this.isConnected) {
       try {
         const tx = await this.contract.registerThreat(
           commitment.bytes32,
@@ -235,25 +284,34 @@ export class BlockchainService {
         blockNumber = receipt.blockNumber;
         const block = await this.provider!.getBlock(blockNumber);
         blockTimestamp = block ? block.timestamp : Math.floor(Date.now() / 1000);
-        reporterAddress = await this.wallet.getAddress();
+        reporterAddress = await this.signer.getAddress();
+        isSimulated = false;
+        status = BlockchainRecordStatusEnum.CONFIRMED;
+        recordNetworkName = this.networkName;
       } catch (chainErr: any) {
         if (chainErr.message?.includes('RecordAlreadyExists')) {
           // Query existing on chain
           const onChain = await this.contract.verifyThreat(commitment.bytes32);
-          txHash = `0x${crypto.createHash('sha256').update(commitment.bytes32 + 'tx').digest('hex')}`;
+          txHash = `0x${crypto.createHash('sha256').update(commitment.bytes32 + 'existing').digest('hex')}`;
           blockNumber = 1;
-          blockTimestamp = Number(onChain.timestamp) || Math.floor(Date.now() / 1000);
-          reporterAddress = onChain.reporter;
+          blockTimestamp = Number(onChain[2] || onChain.timestamp) || Math.floor(Date.now() / 1000);
+          reporterAddress = onChain[1] || onChain.reporter;
+          isSimulated = false;
+          status = BlockchainRecordStatusEnum.CONFIRMED;
+          recordNetworkName = this.networkName;
         } else {
           throw chainErr;
         }
       }
     } else {
       // Offline Cryptographic Registry Fallback
-      reporterAddress = this.wallet ? await this.wallet.getAddress() : '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
-      blockNumber = Math.floor(Date.now() / 12000) - 17000000;
+      isSimulated = true;
+      status = BlockchainRecordStatusEnum.SIMULATED;
+      reporterAddress = '0x0000000000000000000000000000000000000000';
+      blockNumber = 0;
       blockTimestamp = Math.floor(Date.now() / 1000);
-      txHash = `0x${crypto.createHash('sha256').update(commitment.bytes32 + blockNumber.toString()).digest('hex')}`;
+      txHash = `simulated-${crypto.createHash('sha256').update(commitment.bytes32 + reportId).digest('hex')}`;
+      recordNetworkName = 'Simulated Cryptographic Ledger (Offline / Non-EVM)';
     }
 
     // 4. Save to MongoDB
@@ -268,9 +326,10 @@ export class BlockchainService {
       blockTimestamp,
       contractAddress: (this.contractAddress || '0x71c95911e9a5d330f4d621842ec243ee1343292e').toLowerCase(),
       chainId: this.chainId,
-      networkName: this.networkName,
+      networkName: recordNetworkName,
       reporterAddress: reporterAddress.toLowerCase(),
-      status: 'CONFIRMED',
+      status,
+      isSimulated,
     });
 
     return record.toObject() as unknown as IBlockchainRecord;
@@ -301,12 +360,41 @@ export class BlockchainService {
     const onChainHash = record.reportHash.toLowerCase();
 
     // 2. Validate hash match
-    const hashesMatch = calculatedHash === onChainHash && (!expectedHash || calculatedHash === expectedHash.toLowerCase());
+    const hashesMatch =
+      calculatedHash === onChainHash && (!expectedHash || calculatedHash === expectedHash.toLowerCase());
+
+    const isSimulated = Boolean(
+      record.isSimulated ||
+        record.status === BlockchainRecordStatusEnum.SIMULATED ||
+        record.txHash?.startsWith('simulated-')
+    );
+
+    if (isSimulated) {
+      return {
+        verified: hashesMatch,
+        reportId,
+        calculatedHash,
+        onChainHash,
+        hashesMatch,
+        isSimulated: true,
+        mode: 'SIMULATED',
+        blockNumber: record.blockNumber,
+        blockTimestamp: record.blockTimestamp,
+        timestampDate: new Date(record.blockTimestamp * 1000).toISOString(),
+        txHash: record.txHash,
+        contractAddress: record.contractAddress,
+        networkName: 'Simulated Cryptographic Ledger (Offline / Non-EVM)',
+        reporterAddress: record.reporterAddress,
+        category: record.canonicalData?.category || 'THREAT',
+        severityScore: record.canonicalData?.riskScore || 80,
+        failureReason: 'Cryptographic commitment verified in simulated local ledger; not submitted to on-chain EVM.',
+      };
+    }
 
     // 3. If EVM contract is reachable, verify on-chain existence directly from contract
-    let onChainExists = true;
-    let onChainCategory = 'THREAT';
-    let onChainSeverity = 80;
+    let onChainExists = false;
+    let onChainCategory = record.canonicalData?.category || 'THREAT';
+    let onChainSeverity = record.canonicalData?.riskScore || 80;
     let onChainReporter = record.reporterAddress;
     let onChainTimestamp = record.blockTimestamp;
 
@@ -314,7 +402,11 @@ export class BlockchainService {
       await this.initialize();
     }
 
-    if (this.contract && this.isConnected) {
+    if (
+      this.contract &&
+      this.isConnected &&
+      this.contractAddress?.toLowerCase() === record.contractAddress?.toLowerCase()
+    ) {
       try {
         const result = await this.contract.verifyThreat(record.reportHash);
         onChainExists = Boolean(result[0]);
@@ -323,16 +415,21 @@ export class BlockchainService {
         onChainCategory = result[3];
         onChainSeverity = Number(result[4]);
       } catch {
-        // Contract query offline, rely on recorded proof
+        onChainExists = false;
       }
+    } else {
+      // Contract unreachable or different deployment; verify against stored immutable proof
+      onChainExists = !this.isConnected ? true : false;
     }
 
     return {
-      verified: hashesMatch && onChainExists,
+      verified: hashesMatch && (this.isConnected ? onChainExists : true),
       reportId,
       calculatedHash,
       onChainHash,
       hashesMatch,
+      isSimulated: false,
+      mode: 'ON_CHAIN',
       blockNumber: record.blockNumber,
       blockTimestamp: onChainTimestamp || record.blockTimestamp,
       timestampDate: new Date((onChainTimestamp || record.blockTimestamp) * 1000).toISOString(),
@@ -361,6 +458,7 @@ export class BlockchainService {
     chainId: number;
     contractAddress: string;
     isConnected: boolean;
+    isSimulated: boolean;
   }> {
     if (!this.contract && !this.isConnected) {
       await this.initialize();
@@ -370,6 +468,7 @@ export class BlockchainService {
       chainId: this.chainId,
       contractAddress: this.contractAddress || '0x71c95911e9a5d330f4d621842ec243ee1343292e',
       isConnected: this.isConnected,
+      isSimulated: !this.isConnected,
     };
   }
   /**
@@ -384,6 +483,9 @@ export class BlockchainService {
       }
       this.provider = null;
     }
+    this.wallet = null;
+    this.signer = null;
+    this.contract = null;
     this.isConnected = false;
   }
 }

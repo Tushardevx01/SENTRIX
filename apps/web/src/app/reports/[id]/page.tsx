@@ -431,7 +431,9 @@ export default function SecurityReportPage() {
               {registeringChain
                 ? 'Registering...'
                 : blockchainVerification?.verified
-                ? 'On-Chain Verified'
+                ? (blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
+                    ? 'Ledger Verified (Offline)'
+                    : 'On-Chain Verified (EVM)')
                 : 'Anchor to Blockchain'}
             </span>
           </button>
@@ -890,41 +892,84 @@ export default function SecurityReportPage() {
         </div>
 
         {blockchainVerification?.verified ? (
-          <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 space-y-3 font-mono text-xs">
+          <div
+            className={`p-4 rounded-lg border space-y-3 font-mono text-xs ${
+              blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
+                ? 'bg-amber-500/10 border-amber-500/30'
+                : 'bg-emerald-500/10 border-emerald-500/30'
+            }`}
+          >
             <div className="flex items-center justify-between">
-              <span className="font-bold text-emerald-400 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                REPORT ANCHORED & CRYPTOGRAPHICALLY VERIFIED ON EVM
+              <span
+                className={`font-bold flex items-center gap-1.5 ${
+                  blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
+                    ? 'text-amber-400'
+                    : 'text-emerald-400'
+                }`}
+              >
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                {blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
+                  ? 'LOCAL CRYPTOGRAPHIC COMMITMENT (SIMULATED LEDGER)'
+                  : 'REPORT ANCHORED & CRYPTOGRAPHICALLY VERIFIED ON EVM'}
               </span>
               <button
                 type="button"
                 onClick={handleVerifyOnChain}
                 disabled={verifyingChain}
-                className="text-[11px] text-emerald-300 hover:underline flex items-center gap-1"
+                className={`text-[11px] hover:underline flex items-center gap-1 ${
+                  blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
+                    ? 'text-amber-300'
+                    : 'text-emerald-300'
+                }`}
               >
                 {verifyingChain ? <RefreshCw className="w-3 h-3 animate-spin" /> : null}
                 Re-verify Byte-for-Byte
               </button>
             </div>
 
+            {Boolean(blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED') && (
+              <p className="text-[11px] text-amber-300/80">
+                Note: This threat commitment was verified against the local tamper-evident cryptographic ledger (Simulated Mode). It was not anchored to a live EVM blockchain network.
+              </p>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
               <div>
                 <span className="text-theme-muted block">Canonical SHA-256 Hash:</span>
-                <code className="text-emerald-300 font-bold break-all block">
+                <code
+                  className={`font-bold break-all block ${
+                    blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
+                      ? 'text-amber-300'
+                      : 'text-emerald-300'
+                  }`}
+                >
                   {blockchainVerification.calculatedHash}
                 </code>
               </div>
               <div>
-                <span className="text-theme-muted block">Transaction Hash:</span>
+                <span className="text-theme-muted block">
+                  {blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
+                    ? 'Ledger Reference ID:'
+                    : 'Transaction Hash:'}
+                </span>
                 <code className="text-theme-text break-all block">
                   {blockchainVerification.txHash}
                 </code>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-emerald-500/20 text-[10px] text-theme-muted">
+            <div
+              className={`grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t text-[10px] text-theme-muted ${
+                blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
+                  ? 'border-amber-500/20'
+                  : 'border-emerald-500/20'
+              }`}
+            >
               <div>
-                <span className="text-theme-text">Block:</span> #{blockchainVerification.blockNumber || 1}
+                <span className="text-theme-text">Block:</span>{' '}
+                {blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
+                  ? 'Offline Ledger'
+                  : `#${blockchainVerification.blockNumber || 1}`}
               </div>
               <div>
                 <span className="text-theme-text">Contract:</span>{' '}
@@ -933,7 +978,11 @@ export default function SecurityReportPage() {
                 </span>
               </div>
               <div>
-                <span className="text-theme-text">Network:</span> EVM Sepolia / Hardhat
+                <span className="text-theme-text">Network:</span>{' '}
+                {blockchainVerification.networkName ||
+                  (blockchainVerification.isSimulated
+                    ? 'Simulated Ledger'
+                    : 'EVM Local')}
               </div>
             </div>
           </div>

@@ -178,15 +178,15 @@ npm run migrate:indexes
 
 ## Documentation
 
-- [Live Hackathon Demonstration Guide (DEMO.md)](file:///home/tushardevx01/Documents/SENTRIX/DEMO.md)
-- [Final Hackathon Checklist (docs/FINAL_HACKATHON_CHECKLIST.md)](file:///home/tushardevx01/Documents/SENTRIX/docs/FINAL_HACKATHON_CHECKLIST.md)
-- [Comprehensive Testing Report (docs/TESTING_REPORT.md)](file:///home/tushardevx01/Documents/SENTRIX/docs/TESTING_REPORT.md)
-- [Deployment Runbook (docs/DEPLOYMENT_GUIDE.md)](file:///home/tushardevx01/Documents/SENTRIX/docs/DEPLOYMENT_GUIDE.md)
-- [System Architecture](file:///home/tushardevx01/Documents/SENTRIX/ARCHITECTURE.md)
-- [Persistent Engineering Memory](file:///home/tushardevx01/Documents/SENTRIX/MEMORY.md)
-- [API Reference](file:///home/tushardevx01/Documents/SENTRIX/docs/API.md)
-- [Threat Model & SSRF Defense](file:///home/tushardevx01/Documents/SENTRIX/docs/THREAT-MODEL.md)
-- [Database Schema & Indexes](file:///home/tushardevx01/Documents/SENTRIX/docs/DATABASE.md)
+- [Live Hackathon Demonstration Guide (DEMO.md)](./DEMO.md)
+- [Final Hackathon Checklist (docs/FINAL_HACKATHON_CHECKLIST.md)](./docs/FINAL_HACKATHON_CHECKLIST.md)
+- [Comprehensive Testing Report (docs/TESTING_REPORT.md)](./docs/TESTING_REPORT.md)
+- [Deployment Runbook (docs/DEPLOYMENT_GUIDE.md)](./docs/DEPLOYMENT_GUIDE.md)
+- [System Architecture](./ARCHITECTURE.md)
+- [Persistent Engineering Memory](./MEMORY.md)
+- [API Reference](./docs/API.md)
+- [Threat Model & SSRF Defense](./docs/THREAT-MODEL.md)
+- [Database Schema & Indexes](./docs/DATABASE.md)
 
 ---
 

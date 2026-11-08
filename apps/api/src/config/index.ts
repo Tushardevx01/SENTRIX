@@ -19,6 +19,12 @@ const EnvSchema = z
       .min(32, 'JWT_SECRET must be at least 32 characters for HMAC-SHA256')
       .default('sentrix-default-jwt-secret-key-32chars!!'),
     LLM_API_KEY: z.string().optional(),
+    BLOCKCHAIN_ENABLED: z.coerce.boolean().default(true),
+    BLOCKCHAIN_RPC_URL: z.string().optional(),
+    ETHEREUM_RPC_URL: z.string().optional(),
+    BLOCKCHAIN_PRIVATE_KEY: z.string().optional(),
+    ETHEREUM_PRIVATE_KEY: z.string().optional(),
+    THREAT_REGISTRY_CONTRACT_ADDRESS: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -45,6 +51,12 @@ const rawConfig = {
   CORS_ORIGIN: process.env.CORS_ORIGIN,
   JWT_SECRET: process.env.JWT_SECRET || process.env.SCANNER_API_SECRET || 'sentrix-default-jwt-secret-key-32chars!!',
   LLM_API_KEY: process.env.LLM_API_KEY,
+  BLOCKCHAIN_ENABLED: process.env.BLOCKCHAIN_ENABLED,
+  BLOCKCHAIN_RPC_URL: process.env.BLOCKCHAIN_RPC_URL || process.env.ETHEREUM_RPC_URL,
+  ETHEREUM_RPC_URL: process.env.ETHEREUM_RPC_URL || process.env.BLOCKCHAIN_RPC_URL,
+  BLOCKCHAIN_PRIVATE_KEY: process.env.BLOCKCHAIN_PRIVATE_KEY || process.env.ETHEREUM_PRIVATE_KEY,
+  ETHEREUM_PRIVATE_KEY: process.env.ETHEREUM_PRIVATE_KEY || process.env.BLOCKCHAIN_PRIVATE_KEY,
+  THREAT_REGISTRY_CONTRACT_ADDRESS: process.env.THREAT_REGISTRY_CONTRACT_ADDRESS,
 };
 
 const parsed = EnvSchema.safeParse(rawConfig);

@@ -363,6 +363,7 @@ export interface IRelatedThreats {
 export const BlockchainRecordStatusEnum = {
   PENDING: 'PENDING',
   CONFIRMED: 'CONFIRMED',
+  SIMULATED: 'SIMULATED',
   FAILED: 'FAILED',
 } as const;
 export type BlockchainRecordStatus = (typeof BlockchainRecordStatusEnum)[keyof typeof BlockchainRecordStatusEnum];
@@ -382,6 +383,7 @@ export interface IBlockchainRecord {
   networkName: string;
   reporterAddress: string;
   status: BlockchainRecordStatus;
+  isSimulated?: boolean;
   createdAt: string;
 }
 
@@ -391,6 +393,8 @@ export interface IBlockchainVerification {
   calculatedHash: string;
   onChainHash: string;
   hashesMatch: boolean;
+  isSimulated?: boolean;
+  mode?: 'ON_CHAIN' | 'SIMULATED';
   blockNumber?: number;
   blockTimestamp?: number;
   txHash?: string;

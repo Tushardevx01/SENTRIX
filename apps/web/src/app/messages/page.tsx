@@ -370,9 +370,11 @@ export default function MessageScannerPage() {
                       >
                         <Blocks className="w-3.5 h-3.5" />
                         {registeringChain
-                          ? 'Publishing to EVM...'
+                          ? 'Publishing...'
                           : blockchainRecord
-                          ? 'Anchored on Chain'
+                          ? (blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
+                              ? 'Committed (Offline Ledger)'
+                              : 'Anchored on Chain (EVM)')
                           : 'Register on Blockchain'}
                       </button>
                     </div>
@@ -382,23 +384,33 @@ export default function MessageScannerPage() {
                     &quot;{currentAnalysis.preview}&quot;
                   </p>
 
-                  {/* Blockchain On-Chain Receipt Banner if registered */}
+                  {/* Blockchain Receipt Banner if registered */}
                   {blockchainRecord && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
-                      className="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs space-y-1.5"
+                      className={`p-3.5 rounded-lg border font-mono text-xs space-y-1.5 ${
+                        blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                          : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                      }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-semibold flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                          Cryptographically Anchored to Blockchain
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          {blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
+                            ? 'Cryptographically Committed (Offline Local Ledger)'
+                            : 'Cryptographically Anchored to EVM Blockchain'}
                         </span>
                         <button
                           type="button"
                           onClick={handleVerifyOnChain}
                           disabled={verifyingChain}
-                          className="underline hover:text-emerald-300 text-[11px]"
+                          className={`underline text-[11px] ${
+                            blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
+                              ? 'hover:text-amber-300'
+                              : 'hover:text-emerald-300'
+                          }`}
                         >
                           {verifyingChain ? 'Verifying...' : 'Verify Cryptographic State'}
                         </button>
@@ -406,13 +418,25 @@ export default function MessageScannerPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-theme-muted">
                         <div>
                           <span className="text-theme-text">SHA-256 Report Hash:</span>{' '}
-                          <span className="truncate block font-mono text-emerald-300">
+                          <span className={`truncate block font-mono ${
+                            blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
+                              ? 'text-amber-300'
+                              : 'text-emerald-300'
+                          }`}>
                             {blockchainRecord.reportHash}
                           </span>
                         </div>
                         <div>
-                          <span className="text-theme-text">Tx Hash:</span>{' '}
-                          <span className="truncate block font-mono text-emerald-300">
+                          <span className="text-theme-text">
+                            {blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
+                              ? 'Ledger Ref:'
+                              : 'Tx Hash:'}
+                          </span>{' '}
+                          <span className={`truncate block font-mono ${
+                            blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
+                              ? 'text-amber-300'
+                              : 'text-emerald-300'
+                          }`}>
                             {blockchainRecord.txHash}
                           </span>
                         </div>
@@ -424,11 +448,17 @@ export default function MessageScannerPage() {
                     <div className="p-3 rounded-lg bg-theme-elevated border border-theme-border font-mono text-xs space-y-1">
                       <div className="flex items-center gap-2 text-theme-text font-semibold">
                         <Shield className="w-4 h-4 text-emerald-500" />
-                        Verification Status: {blockchainVerification.verified ? 'VALID & UNTAMPERED' : 'INVALID'}
+                        Verification Status:{' '}
+                        {blockchainVerification.verified
+                          ? (blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
+                              ? 'VALID & UNTAMPERED (Offline Ledger Commitment)'
+                              : 'VALID & UNTAMPERED (On-Chain EVM)')
+                          : 'INVALID'}
                       </div>
                       <p className="text-[11px] text-theme-muted">
-                        Computed local SHA-256 matches on-chain commitment byte-for-byte. Contract address:{' '}
-                        <code className="text-theme-accent">{blockchainVerification.contractAddress}</code>
+                        {blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
+                          ? 'Computed local SHA-256 matches immutable local ledger commitment byte-for-byte (Simulated / Non-EVM).'
+                          : 'Computed local SHA-256 matches on-chain commitment byte-for-byte in ThreatRegistry smart contract.'}
                       </p>
                     </div>
                   )}

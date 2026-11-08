@@ -72,8 +72,8 @@ export function buildServer(): FastifyInstance {
     });
   });
 
-  // Health Check Endpoint
-  app.get('/health', async () => {
+  // Health Check Endpoints
+  const healthHandler = async () => {
     const dbState = mongoose.connection.readyState;
     const dbStatusMap: Record<number, string> = {
       0: 'disconnected',
@@ -89,7 +89,9 @@ export function buildServer(): FastifyInstance {
       database: dbStatusMap[dbState] || 'unknown',
       timestamp: new Date().toISOString(),
     };
-  });
+  };
+  app.get('/health', healthHandler);
+  app.get('/api/v1/health', healthHandler);
 
   // API v1 Routes
   app.register(authRoutes, { prefix: '/api/v1/auth' });
