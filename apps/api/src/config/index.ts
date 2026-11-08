@@ -43,7 +43,7 @@ const EnvSchema = z
   );
 
 const rawConfig = {
-  PORT: process.env.PORT || process.env.API_PORT || 8000,
+  PORT: process.env.API_PORT || (process.env.PORT && process.env.PORT !== '3000' ? process.env.PORT : 8000),
   NODE_ENV: process.env.NODE_ENV,
   MONGODB_URI: process.env.MONGODB_URI,
   SCANNER_INTERNAL_URL: process.env.SCANNER_INTERNAL_URL,
