@@ -4,20 +4,13 @@ import React, { useState } from 'react';
 import {
   Activity,
   ShieldCheck,
-  ShieldAlert,
-  AlertTriangle,
+  Search,
   CheckCircle2,
-  XCircle,
+  AlertTriangle,
   Lock,
   Globe,
-  Search,
-  Layers,
-  ArrowRight,
-  Info,
-  Server,
-  FileText,
+  Terminal,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 export default function SecurityAssessmentPage() {
   const [targetDomain, setTargetDomain] = useState('cloudflare.com');
@@ -99,153 +92,113 @@ export default function SecurityAssessmentPage() {
   };
 
   return (
-    <div className="space-y-8 py-2 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="space-y-2">
-        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-theme-accent/10 border border-theme-accent/20 text-theme-accent text-xs font-mono font-medium">
-          <Activity className="w-3.5 h-3.5" />
-          <span>Automated Web Posture Evaluation</span>
+    <div className="space-y-8 py-2 max-w-5xl mx-auto font-mono text-xs">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-neutral-200 dark:border-[#1f1f23] pb-6">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 dark:bg-[#121214] border border-neutral-300 dark:border-[#27272a] text-[11px] text-neutral-600 dark:text-neutral-300">
+            <Activity className="w-3.5 h-3.5" />
+            <span>[ AUDIT // POSTURE BENCHMARK ]</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-serif text-black dark:text-white">
+            Security Posture Assessment
+          </h1>
+          <p className="text-xs text-neutral-500 font-mono max-w-2xl">
+            Evaluate HTTP security headers, framing restrictions, TLS configuration, and mixed content vulnerabilities.
+          </p>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-theme-text font-mono tracking-tight">
-          SECURITY POSTURE ASSESSMENT
-        </h1>
-        <p className="text-xs text-theme-muted font-mono max-w-2xl">
-          Evaluate HTTP defensive headers, TLS configurations, mixed content vulnerabilities, and
-          architectural weaknesses.
-        </p>
       </div>
 
-      {/* Target Domain Input Bar */}
-      <div className="p-5 rounded-xl border border-theme-border bg-theme-card shadow-xs">
-        <form onSubmit={handleAudit} className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted" />
+      {/* Target Domain Input Bar with Normal Rounded Search Bar */}
+      <div className="p-5 sm:p-6 rounded-xl border border-neutral-200 dark:border-[#27272a] bg-white dark:bg-[#0c0c0e] shadow-card space-y-3">
+        <span className="text-[10px] uppercase font-bold text-neutral-400 block">
+          // 01. TARGET ENDPOINT POSTURE BENCHMARK
+        </span>
+        <form onSubmit={handleAudit} className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
             <input
               type="text"
+              required
               value={targetDomain}
               onChange={(e) => setTargetDomain(e.target.value)}
-              placeholder="Enter domain to audit (e.g. cloudflare.com)..."
-              className="w-full pl-9 pr-3 py-2 text-xs font-mono bg-theme-bg border border-theme-border rounded-lg text-theme-text focus:outline-none focus:border-theme-accent"
+              placeholder="Target domain (e.g. cloudflare.com or paypal.com)..."
+              className="w-full pl-11 pr-4 py-2.5 text-xs font-mono rounded-full border border-neutral-300 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] text-black dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-black dark:focus:border-white transition-all"
             />
           </div>
+          {/* Normal dark gray button with white button text */}
           <button
             type="submit"
             disabled={evaluating}
-            className="w-full sm:w-auto px-5 py-2 bg-theme-accent text-white dark:text-slate-950 font-bold rounded-lg text-xs font-mono transition-opacity hover:opacity-90 disabled:opacity-50 shrink-0"
+            className="btn-industrial py-2.5 px-6 rounded-full text-xs font-semibold cursor-pointer disabled:opacity-50 shrink-0"
           >
-            {evaluating ? 'Auditing Headers...' : 'Run Security Assessment'}
+            {evaluating ? 'Auditing Headers...' : 'Run Posture Audit'}
           </button>
         </form>
       </div>
 
-      {/* Posture Score & Executive Card */}
-      <div className="p-6 rounded-xl border border-theme-border bg-theme-card shadow-card">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
-          <div className="flex flex-col items-center justify-center p-4 border-b md:border-b-0 md:border-r border-theme-borderSubtle">
-            <span className="text-[10px] uppercase font-mono font-bold text-theme-muted mb-1">
-              Posture Grade
-            </span>
-            <div className="w-20 h-20 rounded-2xl bg-emerald-500/10 border-2 border-emerald-500 flex items-center justify-center">
-              <span className="text-4xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                A+
-              </span>
-            </div>
-            <span className="text-xs font-mono text-theme-success mt-2 font-semibold">
-              96 / 100 Score
-            </span>
-          </div>
+      {/* Security Headers Assessment Grid */}
+      <div className="bg-white dark:bg-[#0c0c0e] border border-neutral-200 dark:border-[#27272a] rounded-xl p-5 shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-[#1f1f23]">
+          <span className="font-bold uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
+            <Terminal className="w-4 h-4" />
+            // 02. HTTP DEFENSIVE HEADERS EVALUATION
+          </span>
+          <span className="text-[10px] text-neutral-500 font-pixel">CAL-01 AUDIT</span>
+        </div>
 
-          <div className="md:col-span-3 space-y-3">
-            <h3 className="text-base font-bold font-mono text-theme-text">
-              EXECUTIVE POSTURE SUMMARY: {targetDomain.toUpperCase()}
-            </h3>
-            <p className="text-xs font-mono text-theme-muted leading-relaxed">
-              Target endpoint demonstrates exceptional defense-in-depth posture. All primary security
-              headers are actively configured with modern directives. Strict TLS 1.3 parameters and zero
-              insecure DOM assets were detected.
-            </p>
-            <div className="flex flex-wrap gap-4 text-xs font-mono pt-2">
-              <span className="flex items-center gap-1.5 text-theme-success">
-                <CheckCircle2 className="w-3.5 h-3.5" /> 5 Passing Headers
-              </span>
-              <span className="flex items-center gap-1.5 text-theme-warning">
-                <AlertTriangle className="w-3.5 h-3.5" /> 1 Minor Advisory
-              </span>
-              <span className="flex items-center gap-1.5 text-theme-text">
-                <Lock className="w-3.5 h-3.5 text-theme-accent" /> Strict HTTPS
+        <div className="space-y-2.5">
+          {securityHeaderAudit.map((h, i) => (
+            <div
+              key={i}
+              className="p-3.5 rounded-lg border border-neutral-200 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className={`text-[9px] font-pixel px-1.5 py-0.5 rounded ${
+                    h.status === 'PASS'
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                  }`}>
+                    {h.status}
+                  </span>
+                  <span className="font-bold text-black dark:text-white text-xs">{h.name}</span>
+                </div>
+                <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
+                  {h.description}
+                </p>
+              </div>
+
+              <span className="text-[10px] font-mono text-neutral-600 dark:text-neutral-400 p-1.5 bg-neutral-200/50 dark:bg-[#1f1f23] rounded border border-neutral-300 dark:border-[#27272a] shrink-0 max-w-xs truncate">
+                {h.grade}
               </span>
             </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Defensive HTTP Headers Audit */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold font-mono text-theme-text flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-theme-accent" />
-            <span>HTTP SECURITY HEADERS COMPLIANCE</span>
-          </h3>
-          <span className="text-[11px] font-mono text-theme-muted">RFC 6797 / OWASP ASVS</span>
+      {/* Configuration Audit */}
+      <div className="bg-white dark:bg-[#0c0c0e] border border-neutral-200 dark:border-[#27272a] rounded-xl p-5 shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-[#1f1f23]">
+          <span className="font-bold uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
+            <Terminal className="w-4 h-4" />
+            // 03. TRANSPORT & DOM CONFIGURATION
+          </span>
+          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-pixel">ACTIVE</span>
         </div>
 
-        <div className="space-y-3">
-          {securityHeaderAudit.map((header) => (
-            <div
-              key={header.name}
-              className="p-4 rounded-xl border border-theme-border bg-theme-card shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono"
-            >
-              <div className="space-y-1 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-theme-text">{header.name}</span>
-                  {header.status === 'PASS' ? (
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] border border-emerald-500/20">
-                      PASS
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[10px] border border-amber-500/20">
-                      ADVISORY
-                    </span>
-                  )}
-                </div>
-                <p className="text-theme-muted text-[11px] leading-relaxed">{header.description}</p>
-              </div>
-
-              <div className="px-3 py-1.5 rounded-lg bg-theme-elevated border border-theme-borderSubtle text-theme-text text-[11px] truncate max-w-xs font-mono">
-                {header.grade}
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {configurationAudit.map((c, i) => (
+            <div key={i} className="p-3.5 rounded-lg border border-neutral-200 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] space-y-1">
+              <span className="text-[10px] uppercase font-bold text-neutral-400 block font-pixel">
+                {c.category}
+              </span>
+              <h4 className="font-bold text-black dark:text-white text-xs">{c.finding}</h4>
+              <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">{c.detail}</p>
             </div>
           ))}
         </div>
-      </section>
-
-      {/* Configuration & Hardening Matrix */}
-      <section className="space-y-4">
-        <h3 className="text-sm font-bold font-mono text-theme-text flex items-center gap-2">
-          <Layers className="w-4 h-4 text-theme-accent" />
-          <span>SYSTEM CONFIGURATION & HARDENING MATRIX</span>
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {configurationAudit.map((item, idx) => (
-            <div
-              key={idx}
-              className="p-4 rounded-xl border border-theme-border bg-theme-card shadow-xs space-y-1.5 text-xs font-mono"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-bold text-theme-muted">
-                  {item.category}
-                </span>
-                <span className="text-theme-success font-semibold flex items-center gap-1 text-[11px]">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Verified
-                </span>
-              </div>
-              <h4 className="font-bold text-theme-text">{item.finding}</h4>
-              <p className="text-theme-muted text-[11px] leading-relaxed">{item.detail}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      </div>
     </div>
   );
 }

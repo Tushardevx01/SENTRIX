@@ -8,16 +8,18 @@ import {
   ShieldCheck,
   AlertTriangle,
   Radio,
-  ArrowUpRight,
+  ArrowRight,
   TrendingUp,
   Activity,
   Search,
-  Server,
   Zap,
-  CheckCircle2,
+  Terminal,
   Lock,
   Clock,
-  ArrowRight,
+  ExternalLink,
+  ChevronRight,
+  Server,
+  Layers,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -28,7 +30,6 @@ import {
   Tooltip,
   Cell,
 } from 'recharts';
-import { motion } from 'framer-motion';
 import { fetchDashboardStats, submitUrlScan } from '@/lib/api';
 import { RiskBadge } from '@/components/ui/RiskBadge';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -98,123 +99,100 @@ export default function DashboardPage() {
   }
 
   const chartData = [
-    { name: 'Benign', count: stats.benignCount, color: '#16A36A' },
-    { name: 'Suspicious', count: stats.suspiciousCount, color: '#E99A32' },
-    { name: 'Malicious', count: stats.maliciousCount, color: '#E34E5B' },
+    { name: 'Benign', count: stats.benignCount, fill: '#15803D' },
+    { name: 'Suspicious', count: stats.suspiciousCount, fill: '#B45309' },
+    { name: 'Malicious', count: stats.maliciousCount, fill: '#B91C1C' },
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.05 },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 12 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-  };
-
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="space-y-8 py-2"
-    >
-      {/* Top Welcome & Global Quick Scan Action */}
-      <motion.div
-        variants={itemVariants}
-        className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 p-5 rounded-xl border border-theme-border bg-theme-card shadow-xs"
-      >
+    <div className="space-y-8 py-2">
+      {/* Top Banner & Normal Rounded Quick Scan Bar */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 p-6 sm:p-7 card-floating">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[11px] font-mono font-semibold uppercase text-theme-muted tracking-wider">
-              Security Operations Center
+            <span className="text-[11px] font-mono font-semibold uppercase text-neutral-500 tracking-wider">
+              [ SOC // INCIDENT COMMAND ]
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-theme-text tracking-tight font-mono">
-            COMMAND CENTER TELEMETRY
+          <h1 className="text-2xl sm:text-3xl font-serif text-black dark:text-white">
+            Command Center Telemetry
           </h1>
-          <p className="text-xs text-theme-muted font-mono">
-            Real-time multi-vector threat index across automated sandbox executions.
+          <p className="text-xs text-neutral-500 font-mono">
+            Deterministic passive threat metrics computed directly from production database records.
           </p>
         </div>
 
-        {/* Global Quick Scan Action */}
+        {/* Global Normal Rounded Search Bar */}
         <form
           onSubmit={handleQuickScan}
-          className="flex items-center gap-2 w-full lg:w-auto min-w-[320px]"
+          className="flex items-center gap-2 w-full lg:w-auto min-w-[320px] max-w-md"
         >
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
             <input
               type="text"
               value={quickUrl}
               onChange={(e) => setQuickUrl(e.target.value)}
               placeholder="Fast inspect URL or domain..."
-              className="w-full pl-9 pr-3 py-2 text-xs font-mono bg-theme-bg border border-theme-border rounded-lg text-theme-text placeholder:text-theme-muted focus:outline-none focus:border-theme-accent transition-all"
+              className="w-full pl-9 pr-3 py-2 text-xs font-mono rounded-full border border-neutral-300 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] text-black dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-black dark:focus:border-white transition-all"
             />
           </div>
+          {/* Normal dark gray button with white button text */}
           <button
             type="submit"
             disabled={quickScanning}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-theme-accent text-white dark:text-slate-950 font-bold rounded-lg text-xs font-mono transition-opacity hover:opacity-90 disabled:opacity-50 shrink-0 shadow-sm"
+            className="btn-industrial rounded-full shrink-0 px-4 py-2 text-xs font-semibold cursor-pointer disabled:opacity-50"
           >
             {quickScanning ? (
-              <span className="w-3.5 h-3.5 rounded-full border-2 border-white dark:border-slate-950 border-t-transparent animate-spin" />
+              <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
             ) : (
-              <Zap className="w-3.5 h-3.5" />
+              <Zap className="w-3.5 h-3.5 text-white" />
             )}
             <span>Scan</span>
           </button>
         </form>
-      </motion.div>
+      </div>
 
-      {/* Six Primary KPI Cards */}
-      <motion.div
-        variants={itemVariants}
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5"
-      >
+      {/* KPI Cards Grid with Instrumental Serif numbers */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
         {/* Total Scans */}
-        <div className="p-4 rounded-xl border border-theme-border bg-theme-card">
-          <div className="flex items-center justify-between text-theme-muted mb-2">
+        <div className="p-4 rounded-xl border border-neutral-200 dark:border-[#27272a] bg-white dark:bg-[#0c0c0e] shadow-xs">
+          <div className="flex items-center justify-between text-neutral-500 mb-2">
             <span className="text-[10px] font-mono uppercase tracking-wider font-semibold">
               Total Audits
             </span>
             <Activity className="w-3.5 h-3.5" />
           </div>
-          <span className="text-2xl font-black font-mono text-theme-text block">
+          <span className="text-3xl font-serif font-bold text-black dark:text-white block">
             {stats.totalScans}
           </span>
-          <span className="text-[10px] font-mono text-theme-muted mt-1 block">Live DB records</span>
+          <span className="text-[10px] font-mono text-neutral-500 mt-1 block">Live DB scans</span>
         </div>
 
         {/* Malicious Threats */}
-        <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20">
-          <div className="flex items-center justify-between text-rose-600 dark:text-rose-400 mb-2">
+        <div className="p-4 rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50/40 dark:bg-red-950/20 shadow-xs">
+          <div className="flex items-center justify-between text-red-600 dark:text-red-400 mb-2">
             <span className="text-[10px] font-mono uppercase tracking-wider font-semibold flex items-center gap-1">
               <ShieldAlert className="w-3 h-3" /> Malicious
             </span>
           </div>
-          <span className="text-2xl font-black font-mono text-rose-600 dark:text-rose-400 block">
+          <span className="text-3xl font-serif font-bold text-red-700 dark:text-red-400 block">
             {stats.maliciousCount}
           </span>
-          <span className="text-[10px] font-mono text-rose-600/70 dark:text-rose-400/70 mt-1 block">
-            High-threat IOCs
+          <span className="text-[10px] font-mono text-red-600/70 dark:text-red-400/70 mt-1 block">
+            High threat IOCs
           </span>
         </div>
 
         {/* Suspicious Scans */}
-        <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20">
+        <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/20 shadow-xs">
           <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mb-2">
             <span className="text-[10px] font-mono uppercase tracking-wider font-semibold flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" /> Suspicious
             </span>
           </div>
-          <span className="text-2xl font-black font-mono text-amber-600 dark:text-amber-400 block">
+          <span className="text-3xl font-serif font-bold text-amber-700 dark:text-amber-400 block">
             {stats.suspiciousCount}
           </span>
           <span className="text-[10px] font-mono text-amber-600/70 dark:text-amber-400/70 mt-1 block">
@@ -223,217 +201,172 @@ export default function DashboardPage() {
         </div>
 
         {/* Benign Scans */}
-        <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/20">
+        <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/20 shadow-xs">
           <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-2">
             <span className="text-[10px] font-mono uppercase tracking-wider font-semibold flex items-center gap-1">
               <ShieldCheck className="w-3 h-3" /> Trusted
             </span>
           </div>
-          <span className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400 block">
+          <span className="text-3xl font-serif font-bold text-emerald-700 dark:text-emerald-400 block">
             {stats.benignCount}
           </span>
           <span className="text-[10px] font-mono text-emerald-600/70 dark:text-emerald-400/70 mt-1 block">
-            Valid TLS & clean
+            Clean perimeter
           </span>
         </div>
 
         {/* Average Risk Index */}
-        <div className="p-4 rounded-xl border border-theme-border bg-theme-card">
-          <div className="flex items-center justify-between text-theme-muted mb-2">
+        <div className="p-4 rounded-xl border border-neutral-200 dark:border-[#27272a] bg-white dark:bg-[#0c0c0e] shadow-xs">
+          <div className="flex items-center justify-between text-neutral-500 mb-2">
             <span className="text-[10px] font-mono uppercase tracking-wider font-semibold">
-              Avg Risk Index
+              Risk Index
             </span>
             <TrendingUp className="w-3.5 h-3.5" />
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-black font-mono text-theme-accent">
+            <span className="text-3xl font-serif font-bold text-black dark:text-white">
               {stats.averageRiskScore}
             </span>
-            <span className="text-[11px] font-mono text-theme-muted">/100</span>
+            <span className="text-xs font-mono text-neutral-400">/100</span>
           </div>
-          <span className="text-[10px] font-mono text-theme-muted mt-1 block">Platform mean</span>
+          <span className="text-[10px] font-mono text-neutral-500 mt-1 block">Mean severity</span>
         </div>
 
-        {/* Community Alerts */}
-        <div className="p-4 rounded-xl border border-theme-border bg-theme-card">
-          <div className="flex items-center justify-between text-theme-muted mb-2">
-            <span className="text-[10px] font-mono uppercase tracking-wider font-semibold flex items-center gap-1">
-              <Radio className="w-3 h-3 text-theme-accentSec" /> Community
+        {/* Crowdsourced Reports */}
+        <div className="p-4 rounded-xl border border-neutral-200 dark:border-[#27272a] bg-white dark:bg-[#0c0c0e] shadow-xs">
+          <div className="flex items-center justify-between text-neutral-500 mb-2">
+            <span className="text-[10px] font-mono uppercase tracking-wider font-semibold">
+              Community
             </span>
+            <Radio className="w-3.5 h-3.5" />
           </div>
-          <span className="text-2xl font-black font-mono text-theme-accentSec block">
+          <span className="text-3xl font-serif font-bold text-black dark:text-white block">
             {stats.threatsReported}
           </span>
-          <span className="text-[10px] font-mono text-theme-muted mt-1 block">Peer submissions</span>
+          <span className="text-[10px] font-mono text-neutral-500 mt-1 block">Peer submissions</span>
         </div>
-      </motion.div>
+      </div>
 
-      {/* Threat Distribution Chart & Architecture Engine Status */}
-      <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recharts Bar Chart */}
-        <div className="lg:col-span-2 p-5 rounded-xl border border-theme-border bg-theme-card">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-bold text-theme-text font-mono flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-theme-accent" />
-                VERDICT SEVERITY DISTRIBUTION
-              </h3>
-              <p className="text-[11px] font-mono text-theme-muted mt-0.5">
-                Aggregated scan results categorized by zero-trust risk score thresholds.
-              </p>
+      {/* Analytics & Spectrum Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Threat Spectrum Bar Chart */}
+        <div className="lg:col-span-1 p-6 card-floating flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-[#1f1f23]">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                // 01. VERDICT SPECTRUM
+              </span>
+              <span className="text-[9px] font-pixel text-neutral-500">DISTRIBUTION</span>
             </div>
-            <span className="text-[10px] font-mono text-theme-muted px-2 py-0.5 rounded bg-theme-elevated border border-theme-border">
-              Live Aggregate
-            </span>
+            <p className="text-[11px] text-neutral-500 font-mono mt-2">
+              Categorization of all analyzed web endpoints by deterministic heuristic threshold.
+            </p>
           </div>
 
-          <div className="h-64 w-full">
+          <div className="h-44 w-full my-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} fontFamily="monospace" />
-                <YAxis stroke="#94A3B8" fontSize={11} fontFamily="monospace" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#71717A' }} />
+                <YAxis tick={{ fontSize: 10, fill: '#71717A' }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'var(--bg-card)',
-                    borderColor: 'var(--border-color)',
-                    borderRadius: '8px',
+                    backgroundColor: '#18181B',
+                    borderColor: '#27272A',
+                    color: '#FAFAFA',
+                    fontSize: '11px',
                     fontFamily: 'monospace',
-                    fontSize: '12px',
-                    color: 'var(--text-primary)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                   }}
                 />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          <div className="pt-3 border-t border-neutral-100 dark:border-[#1f1f23] grid grid-cols-3 text-center text-xs font-mono">
+            <div>
+              <span className="text-[10px] text-neutral-500 block">BENIGN</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">{stats.benignCount}</span>
+            </div>
+            <div>
+              <span className="text-[10px] text-neutral-500 block">SUSPICIOUS</span>
+              <span className="font-bold text-amber-600 dark:text-amber-400">{stats.suspiciousCount}</span>
+            </div>
+            <div>
+              <span className="text-[10px] text-neutral-500 block">MALICIOUS</span>
+              <span className="font-bold text-red-600 dark:text-red-400">{stats.maliciousCount}</span>
+            </div>
+          </div>
         </div>
 
-        {/* Engine Telemetry & Sandbox Guard State */}
-        <div className="p-5 rounded-xl border border-theme-border bg-theme-card flex flex-col justify-between space-y-4">
+        {/* Live Investigations Table */}
+        <div className="lg:col-span-2 p-6 card-floating flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-xs font-mono font-bold text-theme-text mb-2">
-              <Server className="w-4 h-4 text-theme-accent" />
-              <span>CORE DEFENSE ENGINES</span>
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-[#1f1f23]">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
+                <Terminal className="w-4 h-4" />
+                // 02. RECENT INVESTIGATION LOGS
+              </span>
+              <Link
+                href="/history"
+                className="text-[11px] font-mono text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-1"
+              >
+                Full Log <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
-            <p className="text-xs font-mono text-theme-muted leading-relaxed">
-              Multi-tier verification pipeline enforcing strict SSRF boundaries and zero-trust
-              evaluations.
-            </p>
-          </div>
 
-          <div className="p-3 bg-theme-elevated rounded-lg space-y-2.5 text-xs font-mono border border-theme-borderSubtle">
-            <div className="flex justify-between items-center">
-              <span className="text-theme-muted">Threat Scanner</span>
-              <span className="text-theme-success font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> FastAPI (v1.1)
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-theme-muted">API Gateway</span>
-              <span className="text-theme-success font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Fastify 5
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-theme-muted">Database Tier</span>
-              <span className="text-theme-success font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> MongoDB 7.0
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-theme-muted">SSRF Protection</span>
-              <span className="text-theme-success font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> RFC 1918 Block
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-theme-muted">Anti-DNS Rebinding</span>
-              <span className="text-theme-success font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Socket Pinned
-              </span>
-            </div>
-          </div>
-
-          <Link
-            href="/scanner"
-            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-theme-elevated hover:bg-theme-border border border-theme-border text-xs font-mono font-semibold text-theme-text transition-colors"
-          >
-            <span>Launch Deep Investigation</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </motion.div>
-
-      {/* Recent Investigations Table */}
-      <motion.div variants={itemVariants} className="p-5 rounded-xl border border-theme-border bg-theme-card space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold font-mono text-theme-text">RECENT INVESTIGATIONS</h3>
-            <p className="text-[11px] font-mono text-theme-muted mt-0.5">
-              Audit log of recently analyzed destinations and computed risk ratings.
-            </p>
-          </div>
-          <Link
-            href="/history"
-            className="text-xs font-mono text-theme-accent hover:underline inline-flex items-center gap-1 font-semibold"
-          >
-            Full Audit History <ArrowUpRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {stats.recentScans.length === 0 ? (
-          <div className="text-center py-10 text-xs font-mono text-theme-muted border border-dashed border-theme-border rounded-lg">
-            No security scans recorded yet. Enter a URL above to perform the first analysis.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono">
-              <thead>
-                <tr className="border-b border-theme-border text-theme-muted">
-                  <th className="py-2.5 px-3">Target Domain</th>
-                  <th className="py-2.5 px-3">Risk Score</th>
-                  <th className="py-2.5 px-3">Verdict</th>
-                  <th className="py-2.5 px-3">Timestamp</th>
-                  <th className="py-2.5 px-3 text-right">Report</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-theme-borderSubtle">
-                {stats.recentScans.map((scan) => (
-                  <tr key={scan._id} className="hover:bg-theme-elevated/50 transition-colors">
-                    <td className="py-3 px-3 font-semibold text-theme-text truncate max-w-xs">
-                      {scan.normalizedDomain}
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className="px-2 py-0.5 rounded bg-theme-elevated border border-theme-border text-theme-text font-bold">
-                        {scan.riskScore}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3">
-                      <RiskBadge verdict={scan.verdict} size="sm" />
-                    </td>
-                    <td className="py-3 px-3 text-theme-muted">
-                      {new Date(scan.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <Link
-                        href={`/reports/${scan._id}`}
-                        className="text-theme-accent hover:underline inline-flex items-center gap-1 font-semibold"
-                      >
-                        Inspect <ArrowUpRight className="w-3 h-3" />
-                      </Link>
-                    </td>
+            <div className="overflow-x-auto mt-3">
+              <table className="w-full text-left font-mono text-xs">
+                <thead>
+                  <tr className="border-b border-neutral-100 dark:border-[#1f1f23] text-neutral-400 text-[10px] uppercase">
+                    <th className="pb-2">Target Destination</th>
+                    <th className="pb-2 text-center">Score</th>
+                    <th className="pb-2">Verdict</th>
+                    <th className="pb-2 text-right">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-neutral-100 dark:divide-[#18181b]">
+                  {stats.recentScans.slice(0, 5).map((scan) => (
+                    <tr key={scan._id} className="hover:bg-neutral-50 dark:hover:bg-[#141416] transition-colors">
+                      <td className="py-2.5 max-w-[200px] truncate">
+                        <span className="font-medium text-black dark:text-white block truncate">
+                          {scan.normalizedDomain}
+                        </span>
+                        <span className="text-[10px] text-neutral-400 truncate block">
+                          {scan.submittedUrl}
+                        </span>
+                      </td>
+                      <td className="py-2.5 text-center">
+                        <span className="font-bold text-xs">{scan.riskScore}</span>
+                        <span className="text-[10px] text-neutral-400">/100</span>
+                      </td>
+                      <td className="py-2.5">
+                        <RiskBadge verdict={scan.verdict} />
+                      </td>
+                      <td className="py-2.5 text-right">
+                        <Link
+                          href={`/reports/${scan._id}`}
+                          className="btn-industrial text-[11px] py-1 px-2.5 rounded"
+                        >
+                          Forensics
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        )}
-      </motion.div>
-    </motion.div>
+
+          <div className="pt-3 border-t border-neutral-100 dark:border-[#1f1f23] flex items-center justify-between text-[11px] font-mono text-neutral-500">
+            <span>Automated attempt-scoped worker execution</span>
+            <span>Real-time polling active</span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

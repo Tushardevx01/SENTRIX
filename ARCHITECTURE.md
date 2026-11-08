@@ -24,7 +24,7 @@ The modern web attack surface is dominated by rapid-cycle phishing infrastructur
 - **Explainable Threat Scoring:** Multi-vector weighted score (0–100) mapping to `BENIGN`, `SUSPICIOUS`, or `MALICIOUS` with associated MITRE ATT&CK tactics.
 
 ### 1.3 Technology Stack
-- **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS, Lucide Icons, Recharts.
+- **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS (minimal monochrome industrial design system), Typography (Silkscreen Pixel Geist, Instrument Serif, Geist Mono, Geist Sans), Lucide Icons, Recharts.
 - **Backend API:** Node.js, Fastify 5, TypeScript, Mongoose ODM, `@fastify/rate-limit`, `@fastify/cors`.
 - **Security Scanner:** Python 3.15, FastAPI, Pydantic v2, `httpx`, `BeautifulSoup4`, `cryptography`, `tldextract`.
 - **Database:** MongoDB 7.0 with compound and unique indexes.

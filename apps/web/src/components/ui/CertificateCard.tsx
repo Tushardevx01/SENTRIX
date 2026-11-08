@@ -19,7 +19,7 @@ export const CertificateCard: React.FC<CertificateCardProps> = ({ certificate })
   const isExpired = new Date(certificate.validUntil) < new Date();
 
   return (
-    <div className="bg-theme-card border border-theme-border rounded-xl p-5 shadow-xs">
+    <div className="card-floating p-6">
       <div className="flex items-center justify-between border-b border-theme-borderSubtle pb-3 mb-4">
         <div className="flex items-center gap-2">
           <Lock className="w-4 h-4 text-theme-accent" />

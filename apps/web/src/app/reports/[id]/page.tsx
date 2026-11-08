@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
+  Download,
   Share2,
   Info,
   HelpCircle,
@@ -42,6 +43,8 @@ import { FindingCard } from '@/components/ui/FindingCard';
 import { CertificateCard } from '@/components/ui/CertificateCard';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { useAuth } from '@/contexts/AuthContext';
+import { LockedForensicPreviewGate } from '@/components/reports/LockedForensicPreviewGate';
 import {
   type ScanReportDetail,
   VerdictEnum,
@@ -54,6 +57,8 @@ import {
 export default function SecurityReportPage() {
   const params = useParams();
   const id = params?.id as string;
+  const { isAuthenticated, openAuthModal } = useAuth();
+  const hasTriggeredPopup = useRef(false);
 
   const [report, setReport] = useState<ScanReportDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -114,6 +119,16 @@ export default function SecurityReportPage() {
           })
             .then((res) => isMounted && setAiExplanation(res.explanation))
             .catch(() => {});
+
+          // Trigger login popup for unauthenticated visitors after showing the short result
+          if (!isAuthenticated && !hasTriggeredPopup.current) {
+            hasTriggeredPopup.current = true;
+            setTimeout(() => {
+              if (isMounted) {
+                openAuthModal('login');
+              }
+            }, 1200);
+          }
 
           return; // Stop polling on terminal COMPLETED
         }
@@ -193,7 +208,21 @@ export default function SecurityReportPage() {
     }
   };
 
+  const handleDownloadPDF = () => {
+    if (!isAuthenticated) {
+      openAuthModal('login');
+      return;
+    }
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
+  };
+
   const handleRegisterOnChain = async () => {
+    if (!isAuthenticated) {
+      openAuthModal('login');
+      return;
+    }
     if (!id || registeringChain) return;
     setRegisteringChain(true);
     try {
@@ -261,39 +290,39 @@ export default function SecurityReportPage() {
         </div>
 
         {/* Live Processing Card */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-8 shadow-2xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+        <div className="bg-white dark:bg-[#0c0c0e] border border-neutral-200 dark:border-[#27272a] rounded-xl p-8 shadow-card space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 dark:border-[#1f1f23] pb-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span
                   className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold tracking-wider uppercase border ${
                     scan.status === 'QUEUED'
-                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                      : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 animate-pulse'
+                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                      : 'bg-neutral-100 dark:bg-[#18181b] text-black dark:text-white border-neutral-300 dark:border-[#27272a] animate-pulse'
                   }`}
                 >
                   <Activity className="w-3.5 h-3.5 animate-spin" />
                   {scan.status === 'QUEUED' ? 'Job Queued' : 'Analysis In Progress'}
                 </span>
-                <span className="text-xs font-mono text-slate-500">Live Polling (1.5s)</span>
+                <span className="text-xs font-mono text-neutral-500">Live Polling (1.5s)</span>
               </div>
-              <h1 className="text-xl font-bold text-white font-mono break-all">
+              <h1 className="text-xl font-bold text-black dark:text-white font-mono break-all">
                 {scan.submittedUrl}
               </h1>
-              <p className="text-xs font-mono text-slate-400 mt-1">
-                Domain: <span className="text-slate-200">{scan.normalizedDomain}</span>
+              <p className="text-xs font-mono text-neutral-500 mt-1">
+                Domain: <span className="text-black dark:text-neutral-200">{scan.normalizedDomain}</span>
               </p>
             </div>
-            <div className="text-right sm:border-l sm:border-slate-800 sm:pl-6">
-              <span className="text-xs font-mono text-slate-500 block">Queue Retries</span>
-              <span className="text-sm font-mono text-slate-300 font-bold">
+            <div className="text-right sm:border-l sm:border-neutral-200 dark:sm:border-[#1f1f23] sm:pl-6">
+              <span className="text-xs font-mono text-neutral-500 block">Queue Retries</span>
+              <span className="text-sm font-mono text-black dark:text-white font-bold">
                 {scan.retryCount || 0} / 3
               </span>
             </div>
           </div>
 
-          <div className="p-4 bg-slate-950/70 border border-slate-800/80 rounded-lg text-xs font-mono text-slate-300 space-y-2">
-            <div className="flex items-center gap-2 text-cyan-400 font-semibold">
+          <div className="p-4 bg-neutral-50 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a] rounded-lg text-xs font-mono text-neutral-700 dark:text-neutral-300 space-y-2">
+            <div className="flex items-center gap-2 text-black dark:text-white font-semibold">
               <Clock className="w-4 h-4" />
               <span>
                 {scan.status === 'QUEUED'
@@ -301,7 +330,7 @@ export default function SecurityReportPage() {
                   : 'Worker active: executing SSRF check, TLS handshake, DOM security analysis, and reputation lookups...'}
               </span>
             </div>
-            <p className="text-slate-500 text-[11px]">
+            <p className="text-neutral-500 text-[11px]">
               This page updates automatically upon completion without requiring manual refresh.
             </p>
           </div>
@@ -309,24 +338,24 @@ export default function SecurityReportPage() {
           {/* Real-time Analyzer Pipeline Execution Matrix */}
           {scan.analyzerStatuses && (
             <div className="space-y-3">
-              <h3 className="text-xs font-mono uppercase tracking-wider text-slate-400">
-                Security Pipeline Engine Matrix
+              <h3 className="text-xs font-mono uppercase tracking-wider text-neutral-500">
+                // SECURITY PIPELINE ENGINE MATRIX
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs font-mono">
                 {Object.entries(scan.analyzerStatuses).map(([key, status]) => (
                   <div
                     key={key}
-                    className="p-3 bg-slate-950/70 border border-slate-800 rounded-lg flex items-center justify-between"
+                    className="p-3 bg-neutral-50 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a] rounded-lg flex items-center justify-between"
                   >
-                    <span className="text-slate-300 truncate capitalize">
+                    <span className="text-black dark:text-neutral-200 truncate capitalize">
                       {key.replace('Analyzer', '')}
                     </span>
                     <span
                       className={
                         status === 'SUCCESS'
-                          ? 'text-emerald-400 flex items-center gap-1 font-bold'
+                          ? 'text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold'
                           : status === 'FAILED'
-                          ? 'text-red-400 flex items-center gap-1 font-bold'
+                          ? 'text-red-600 dark:text-red-400 flex items-center gap-1 font-bold'
                           : status === 'TIMEOUT'
                           ? 'text-amber-400 flex items-center gap-1 font-bold'
                           : 'text-slate-500 flex items-center gap-1'
@@ -354,36 +383,44 @@ export default function SecurityReportPage() {
         <div className="flex items-center justify-between">
           <Link
             href="/scanner"
-            className="inline-flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-white transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-mono text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors font-medium"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             Back to Scanner
           </Link>
-          <span className="text-xs font-mono text-slate-500">
-            Scan ID: <span className="text-slate-300">{scan._id}</span>
+          <span className="text-xs font-mono text-neutral-500">
+            Scan ID: <span className="text-neutral-800 dark:text-neutral-200 font-semibold">{scan._id}</span>
           </span>
         </div>
 
-        <div className="bg-red-950/20 border border-red-900/60 rounded-xl p-8 shadow-xl space-y-4">
-          <div className="flex items-center gap-3">
-            <XCircle className="w-7 h-7 text-red-400 shrink-0" />
-            <div>
-              <h1 className="text-lg font-bold text-red-200">Security Inspection Terminated</h1>
-              <p className="text-xs font-mono text-red-400 mt-0.5">
+        <div className="card-floating bg-white dark:bg-[#0c0c0e] border border-red-200 dark:border-red-900/60 rounded-panel p-6 sm:p-8 space-y-6">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 rounded-xl bg-red-100 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 shrink-0">
+              <XCircle className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h1 className="text-xl sm:text-2xl font-bold font-serif text-neutral-900 dark:text-neutral-100">
+                Security Inspection Terminated
+              </h1>
+              <p className="text-xs font-mono text-neutral-600 dark:text-neutral-400 leading-relaxed">
                 The threat verification pipeline encountered an unrecoverable failure or security boundary violation.
               </p>
             </div>
           </div>
 
-          <div className="p-4 bg-slate-950/80 border border-red-900/40 rounded-lg font-mono text-xs text-red-300">
-            <span className="text-slate-500 block mb-1">Failure Reason:</span>
-            <p className="font-semibold">{scan.errorMessage || 'Unknown execution error'}</p>
+          <div className="p-4 bg-neutral-50 dark:bg-[#141417] border border-neutral-200 dark:border-[#27272a] rounded-xl font-mono text-xs space-y-1.5">
+            <span className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+              Failure Reason:
+            </span>
+            <p className="font-semibold text-red-700 dark:text-red-400 break-all leading-relaxed">
+              {scan.errorMessage || 'Unknown execution error'}
+            </p>
           </div>
 
           <div className="pt-2">
             <Link
               href="/scanner"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-mono rounded-lg transition-colors"
+              className="btn-industrial px-5 py-2.5 rounded-full text-xs font-semibold cursor-pointer inline-flex items-center gap-2"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               Return to Scanner
@@ -438,6 +475,15 @@ export default function SecurityReportPage() {
             </span>
           </button>
           <button
+            onClick={handleDownloadPDF}
+            type="button"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-[#27272a] bg-neutral-100 dark:bg-[#121214] hover:bg-neutral-200 dark:hover:bg-[#18181b] text-xs font-mono text-black dark:text-white transition-colors cursor-pointer shadow-xs"
+            title="Download Forensic Report as PDF"
+          >
+            <Download className="w-3.5 h-3.5 text-cyan-500" />
+            <span>Download PDF</span>
+          </button>
+          <button
             onClick={handleShare}
             type="button"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-theme-border bg-theme-card hover:bg-theme-elevated text-xs font-mono text-theme-text transition-colors"
@@ -452,7 +498,7 @@ export default function SecurityReportPage() {
       </div>
 
       {/* Main Forensic Header Banner */}
-      <div className="bg-theme-card border border-theme-border rounded-xl p-6 shadow-card">
+      <div className="card-floating p-6 sm:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
           <div className="lg:col-span-2 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
@@ -547,8 +593,11 @@ export default function SecurityReportPage() {
         </div>
       )}
 
-      {/* Analyzer Pipeline Execution Matrix */}
-      {scan.analyzerStatuses && (
+      {/* Authenticated Forensic Deep Dive vs. Public Locked Teaser */}
+      {isAuthenticated ? (
+        <>
+          {/* Analyzer Pipeline Execution Matrix */}
+          {scan.analyzerStatuses && (
         <div className="bg-theme-card border border-theme-border rounded-xl p-5 space-y-3 shadow-xs">
           <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-theme-muted">
             SECURITY ANALYZER ENGINE STATUS
@@ -800,22 +849,26 @@ export default function SecurityReportPage() {
               {/* Linked Campaigns */}
               {relatedThreats.campaigns.length > 0 && (
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-rose-400 font-bold block mb-1.5">
+                  <span className="text-[10px] font-mono uppercase text-rose-700 dark:text-rose-400 font-bold block mb-1.5">
                     Associated Threat Campaigns ({relatedThreats.campaigns.length}):
                   </span>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                     {relatedThreats.campaigns.map((camp) => (
                       <div
                         key={camp._id}
-                        className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs font-mono space-y-1"
+                        className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/25 border border-rose-200 dark:border-rose-900/40 text-xs font-mono space-y-2 shadow-xs"
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-rose-300">{camp.name}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-rose-900 dark:text-rose-200 break-words">
+                            {camp.name}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 font-semibold shrink-0">
                             {camp.threatType}
                           </span>
                         </div>
-                        <p className="text-[11px] text-theme-muted line-clamp-2">{camp.summary}</p>
+                        <p className="text-[11px] text-neutral-700 dark:text-neutral-300 font-sans leading-relaxed line-clamp-2">
+                          {camp.summary}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -825,7 +878,7 @@ export default function SecurityReportPage() {
               {/* Related Scans */}
               {relatedThreats.relatedScans.filter((s) => s._id !== scan._id).length > 0 && (
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-theme-muted block mb-1.5">
+                  <span className="text-[10px] font-mono uppercase text-neutral-500 dark:text-neutral-400 font-semibold block mb-1.5">
                     Linked Scans Sharing Domain / IP:
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -836,9 +889,9 @@ export default function SecurityReportPage() {
                         <Link
                           key={rs._id}
                           href={`/reports/${rs._id}`}
-                          className="p-2.5 rounded-lg bg-theme-base border border-theme-border hover:border-theme-accent transition-colors flex items-center justify-between text-xs font-mono"
+                          className="p-2.5 rounded-xl bg-neutral-50 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a] hover:border-black dark:hover:border-white transition-colors flex items-center justify-between text-xs font-mono"
                         >
-                          <span className="truncate max-w-[150px] text-theme-text text-[11px]">
+                          <span className="truncate max-w-[150px] text-neutral-900 dark:text-neutral-100 font-medium text-[11px]">
                             {rs.submittedUrl}
                           </span>
                           <RiskBadge verdict={rs.verdict} size="sm" />
@@ -893,18 +946,18 @@ export default function SecurityReportPage() {
 
         {blockchainVerification?.verified ? (
           <div
-            className={`p-4 rounded-lg border space-y-3 font-mono text-xs ${
+            className={`p-4 rounded-xl border space-y-3 font-mono text-xs ${
               blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
-                ? 'bg-amber-500/10 border-amber-500/30'
-                : 'bg-emerald-500/10 border-emerald-500/30'
+                ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200'
+                : 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 text-emerald-900 dark:text-emerald-200'
             }`}
           >
             <div className="flex items-center justify-between">
               <span
                 className={`font-bold flex items-center gap-1.5 ${
                   blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
-                    ? 'text-amber-400'
-                    : 'text-emerald-400'
+                    ? 'text-amber-800 dark:text-amber-300'
+                    : 'text-emerald-800 dark:text-emerald-300'
                 }`}
               >
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -916,10 +969,10 @@ export default function SecurityReportPage() {
                 type="button"
                 onClick={handleVerifyOnChain}
                 disabled={verifyingChain}
-                className={`text-[11px] hover:underline flex items-center gap-1 ${
+                className={`text-[11px] hover:underline flex items-center gap-1 font-semibold ${
                   blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
-                    ? 'text-amber-300'
-                    : 'text-emerald-300'
+                    ? 'text-amber-700 dark:text-amber-300'
+                    : 'text-emerald-700 dark:text-emerald-300'
                 }`}
               >
                 {verifyingChain ? <RefreshCw className="w-3 h-3 animate-spin" /> : null}
@@ -928,57 +981,57 @@ export default function SecurityReportPage() {
             </div>
 
             {Boolean(blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED') && (
-              <p className="text-[11px] text-amber-300/80">
+              <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80 font-sans">
                 Note: This threat commitment was verified against the local tamper-evident cryptographic ledger (Simulated Mode). It was not anchored to a live EVM blockchain network.
               </p>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
               <div>
-                <span className="text-theme-muted block">Canonical SHA-256 Hash:</span>
+                <span className="text-neutral-500 dark:text-neutral-400 block">Canonical SHA-256 Hash:</span>
                 <code
                   className={`font-bold break-all block ${
                     blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
-                      ? 'text-amber-300'
-                      : 'text-emerald-300'
+                      ? 'text-amber-800 dark:text-amber-300'
+                      : 'text-emerald-800 dark:text-emerald-300'
                   }`}
                 >
                   {blockchainVerification.calculatedHash}
                 </code>
               </div>
               <div>
-                <span className="text-theme-muted block">
+                <span className="text-neutral-500 dark:text-neutral-400 block">
                   {blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
                     ? 'Ledger Reference ID:'
                     : 'Transaction Hash:'}
                 </span>
-                <code className="text-theme-text break-all block">
+                <code className="text-neutral-900 dark:text-neutral-100 font-semibold break-all block">
                   {blockchainVerification.txHash}
                 </code>
               </div>
             </div>
 
             <div
-              className={`grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t text-[10px] text-theme-muted ${
+              className={`grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t text-[10px] text-neutral-600 dark:text-neutral-400 ${
                 blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
-                  ? 'border-amber-500/20'
-                  : 'border-emerald-500/20'
+                  ? 'border-amber-200 dark:border-amber-800/30'
+                  : 'border-emerald-200 dark:border-emerald-800/30'
               }`}
             >
               <div>
-                <span className="text-theme-text">Block:</span>{' '}
+                <span className="text-neutral-900 dark:text-neutral-100 font-semibold">Block:</span>{' '}
                 {blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
                   ? 'Offline Ledger'
                   : `#${blockchainVerification.blockNumber || 1}`}
               </div>
               <div>
-                <span className="text-theme-text">Contract:</span>{' '}
+                <span className="text-neutral-900 dark:text-neutral-100 font-semibold">Contract:</span>{' '}
                 <span className="truncate inline-block max-w-[140px] align-bottom">
                   {blockchainVerification.contractAddress}
                 </span>
               </div>
               <div>
-                <span className="text-theme-text">Network:</span>{' '}
+                <span className="text-neutral-900 dark:text-neutral-100 font-semibold">Network:</span>{' '}
                 {blockchainVerification.networkName ||
                   (blockchainVerification.isSimulated
                     ? 'Simulated Ledger'
@@ -1010,6 +1063,10 @@ export default function SecurityReportPage() {
           </div>
         )}
       </section>
+        </>
+      ) : (
+        <LockedForensicPreviewGate onOpenAuthModal={() => openAuthModal('login')} />
+      )}
     </motion.div>
   );
 }

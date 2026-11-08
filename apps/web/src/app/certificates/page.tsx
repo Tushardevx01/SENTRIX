@@ -4,21 +4,13 @@ import React, { useState } from 'react';
 import {
   Lock,
   ShieldCheck,
-  Calendar,
-  Key,
-  Globe,
   CheckCircle2,
   AlertTriangle,
-  XCircle,
-  Hash,
   Search,
-  Server,
   Layers,
-  FileCheck,
-  Clock,
-  Sparkles,
+  Terminal,
+  Activity,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 export default function CertificateIntelligencePage() {
   const [domainInput, setDomainInput] = useState('');
@@ -103,27 +95,28 @@ export default function CertificateIntelligencePage() {
       : certificatesData[selectedPreset];
 
   return (
-    <div className="space-y-8 py-2 max-w-5xl mx-auto">
+    <div className="space-y-8 py-2 max-w-5xl mx-auto font-mono text-xs">
       {/* Header */}
-      <div className="space-y-2">
-        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-theme-accent/10 border border-theme-accent/20 text-theme-accent text-xs font-mono font-medium">
-          <Lock className="w-3.5 h-3.5" />
-          <span>X.509 Cryptographic Audit</span>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-neutral-200 dark:border-[#1f1f23] pb-6">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 dark:bg-[#121214] border border-neutral-300 dark:border-[#27272a] text-[11px] text-neutral-600 dark:text-neutral-300">
+            <Lock className="w-3.5 h-3.5" />
+            <span>[ TLS // X.509 CRYPTOGRAPHIC AUDIT ]</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-serif text-black dark:text-white">
+            Certificate Intelligence
+          </h1>
+          <p className="text-xs text-neutral-500 font-mono max-w-2xl">
+            Inspect SSL/TLS trust chains, public key parameters, Certificate Transparency logs, and CA/Browser Forum SC-081v3 compliance.
+          </p>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-theme-text font-mono tracking-tight">
-          CERTIFICATE INTELLIGENCE
-        </h1>
-        <p className="text-xs text-theme-muted font-mono max-w-2xl">
-          Inspect SSL/TLS certificate chains, public key parameters, Certificate Transparency logs,
-          and expiration countdowns in real-time.
-        </p>
       </div>
 
-      {/* Preset Selector & Domain Quick Lookup */}
-      <div className="p-5 rounded-xl border border-theme-border bg-theme-card shadow-xs space-y-4">
+      {/* Preset Selector & Normal Rounded Search Bar */}
+      <div className="p-5 rounded-xl border border-neutral-200 dark:border-[#27272a] bg-white dark:bg-[#0c0c0e] shadow-card space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-xs font-mono text-theme-muted shrink-0">Sample Targets:</span>
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <span className="text-xs text-neutral-400">Sample targets:</span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -131,13 +124,13 @@ export default function CertificateIntelligencePage() {
                   setSelectedPreset('cloudflare');
                   setDomainInput('');
                 }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all ${
+                className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
                   selectedPreset === 'cloudflare' && !domainInput
-                    ? 'bg-theme-accent text-white dark:text-slate-950 font-bold'
-                    : 'bg-theme-elevated text-theme-muted hover:text-theme-text'
+                    ? 'btn-industrial text-white'
+                    : 'bg-neutral-100 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a] text-neutral-600 dark:text-neutral-300'
                 }`}
               >
-                Cloudflare
+                Cloudflare ECC
               </button>
               <button
                 type="button"
@@ -145,13 +138,13 @@ export default function CertificateIntelligencePage() {
                   setSelectedPreset('google');
                   setDomainInput('');
                 }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all ${
+                className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
                   selectedPreset === 'google' && !domainInput
-                    ? 'bg-theme-accent text-white dark:text-slate-950 font-bold'
-                    : 'bg-theme-elevated text-theme-muted hover:text-theme-text'
+                    ? 'btn-industrial text-white'
+                    : 'bg-neutral-100 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a] text-neutral-600 dark:text-neutral-300'
                 }`}
               >
-                Google Auth
+                Google GTS Root
               </button>
               <button
                 type="button"
@@ -159,25 +152,26 @@ export default function CertificateIntelligencePage() {
                   setSelectedPreset('untrusted');
                   setDomainInput('');
                 }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all ${
+                className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
                   selectedPreset === 'untrusted' && !domainInput
-                    ? 'bg-theme-danger text-white font-bold'
-                    : 'bg-theme-elevated text-theme-muted hover:text-theme-text'
+                    ? 'bg-red-600 text-white font-bold'
+                    : 'bg-neutral-100 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a] text-neutral-600 dark:text-neutral-300'
                 }`}
               >
-                Untrusted Impersonator
+                Untrusted Phish
               </button>
             </div>
           </div>
 
+          {/* Normal Rounded Search Bar */}
           <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted" />
+            <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
             <input
               type="text"
-              placeholder="Lookup target domain..."
+              placeholder="Lookup domain cert..."
               value={domainInput}
               onChange={(e) => setDomainInput(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-xs font-mono bg-theme-bg border border-theme-border rounded-lg text-theme-text focus:outline-none focus:border-theme-accent"
+              className="w-full pl-9 pr-3 py-2 text-xs font-mono rounded-full border border-neutral-300 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] text-black dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-black dark:focus:border-white transition-all"
             />
           </div>
         </div>
@@ -186,171 +180,80 @@ export default function CertificateIntelligencePage() {
       {/* Main Certificate Dossier */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Trust Chain Hierarchy */}
-        <div className="p-5 rounded-xl border border-theme-border bg-theme-card shadow-xs space-y-4">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold text-theme-text">
-            <Layers className="w-4 h-4 text-theme-accent" />
-            <span>CERTIFICATE TRUST CHAIN</span>
+        <div className="p-5 rounded-xl border border-neutral-200 dark:border-[#27272a] bg-white dark:bg-[#0c0c0e] shadow-xs space-y-4">
+          <div className="flex items-center gap-2 text-xs font-bold text-black dark:text-white pb-2 border-b border-neutral-200 dark:border-[#1f1f23]">
+            <Layers className="w-4 h-4 text-black dark:text-white" />
+            <span>// 01. CERTIFICATE TRUST CHAIN</span>
           </div>
 
           <div className="space-y-3 font-mono text-xs">
             {/* Root CA */}
-            <div className="p-3 bg-theme-elevated rounded-lg border border-theme-borderSubtle space-y-1">
-              <span className="text-[10px] uppercase font-bold text-theme-muted block">
+            <div className="p-3 bg-neutral-50 dark:bg-[#121214] rounded-lg border border-neutral-200 dark:border-[#27272a] space-y-1">
+              <span className="text-[10px] uppercase font-bold text-neutral-400 block font-pixel">
                 01 / Root Authority (Trust Store)
               </span>
-              <span className="font-semibold text-theme-text block">{activeCert.rootCA}</span>
-              <span className="text-[11px] text-theme-success flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> System Trust Store Validated
-              </span>
+              <p className="text-black dark:text-white font-semibold truncate">{activeCert.rootCA}</p>
+              <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>Operating System Anchor</span>
+              </div>
             </div>
-
-            <div className="w-0.5 h-4 bg-theme-border mx-auto" />
 
             {/* Intermediate CA */}
-            <div className="p-3 bg-theme-elevated rounded-lg border border-theme-borderSubtle space-y-1">
-              <span className="text-[10px] uppercase font-bold text-theme-muted block">
-                02 / Intermediate Authority
+            <div className="p-3 bg-neutral-50 dark:bg-[#121214] rounded-lg border border-neutral-200 dark:border-[#27272a] space-y-1">
+              <span className="text-[10px] uppercase font-bold text-neutral-400 block font-pixel">
+                02 / Intermediate Signer
               </span>
-              <span className="font-semibold text-theme-text block">{activeCert.intermediateCA}</span>
-              <span className="text-[11px] text-theme-muted">Chain verification passed</span>
+              <p className="text-black dark:text-white font-semibold truncate">{activeCert.intermediateCA}</p>
+              <span className="text-[10px] text-neutral-500">Cross-Signed Authority</span>
             </div>
 
-            <div className="w-0.5 h-4 bg-theme-border mx-auto" />
-
             {/* Leaf Certificate */}
-            <div
-              className={`p-3 rounded-lg border space-y-1 ${
-                activeCert.hostnameMatched
-                  ? 'bg-theme-card border-theme-accent/40'
-                  : 'bg-theme-danger/10 border-theme-danger/40'
-              }`}
-            >
-              <span className="text-[10px] uppercase font-bold text-theme-muted block">
-                03 / End-Entity Leaf Certificate
+            <div className="p-3 bg-neutral-50 dark:bg-[#121214] rounded-lg border border-neutral-200 dark:border-[#27272a] space-y-1">
+              <span className="text-[10px] uppercase font-bold text-neutral-400 block font-pixel">
+                03 / End-Entity Subscriber Leaf
               </span>
-              <span className="font-bold text-theme-text block">{activeCert.domain}</span>
-              {activeCert.hostnameMatched ? (
-                <span className="text-[11px] text-theme-success flex items-center gap-1 font-semibold">
-                  <CheckCircle2 className="w-3 h-3" /> Matching SNI & Hostname
-                </span>
-              ) : (
-                <span className="text-[11px] text-theme-danger flex items-center gap-1 font-semibold">
-                  <XCircle className="w-3 h-3" /> Hostname Mismatch Alert
-                </span>
-              )}
+              <p className="text-black dark:text-white font-semibold truncate">{activeCert.domain}</p>
+              <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>Hostname Matched</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Cryptographic Parameters & Validity Countdown */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Validity & Expiration Card */}
-          <div className="p-5 rounded-xl border border-theme-border bg-theme-card shadow-xs space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-theme-borderSubtle">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-theme-accent" />
-                <h3 className="text-sm font-bold font-mono text-theme-text">VALIDITY & EXPIRATION</h3>
-              </div>
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold ${
-                  activeCert.daysRemaining > 30
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                    : activeCert.daysRemaining > 0
-                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                    : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                }`}
-              >
-                {activeCert.daysRemaining > 0
-                  ? `${activeCert.daysRemaining} Days Remaining`
-                  : `Expired (${Math.abs(activeCert.daysRemaining)} Days Ago)`}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
-              <div>
-                <span className="text-theme-muted block mb-1">Issue Timestamp</span>
-                <span className="font-semibold text-theme-text bg-theme-elevated p-2 rounded-lg block border border-theme-borderSubtle">
-                  {activeCert.validFrom}
-                </span>
-              </div>
-              <div>
-                <span className="text-theme-muted block mb-1">Expiration Timestamp</span>
-                <span className="font-semibold text-theme-text bg-theme-elevated p-2 rounded-lg block border border-theme-borderSubtle">
-                  {activeCert.validUntil}
-                </span>
-              </div>
-            </div>
+        {/* Cryptographic Parameters */}
+        <div className="lg:col-span-2 p-5 rounded-xl border border-neutral-200 dark:border-[#27272a] bg-white dark:bg-[#0c0c0e] shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-neutral-200 dark:border-[#1f1f23]">
+            <span className="font-bold uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
+              <Terminal className="w-4 h-4" />
+              // 02. CRYPTOGRAPHIC EVIDENCE & VALIDITY SCHEDULE
+            </span>
+            <span className="text-[10px] text-neutral-500 font-pixel">X.509 v3</span>
           </div>
 
-          {/* Cryptographic Properties Card */}
-          <div className="p-5 rounded-xl border border-theme-border bg-theme-card shadow-xs space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-theme-borderSubtle">
-              <Key className="w-4 h-4 text-theme-accent" />
-              <h3 className="text-sm font-bold font-mono text-theme-text">
-                CRYPTOGRAPHIC ATTRIBUTES & LOGGING
-              </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase text-neutral-400 block">Public Key Algorithm</span>
+              <p className="font-semibold text-black dark:text-white">{activeCert.keyAlgorithm}</p>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
-              <div>
-                <span className="text-theme-muted block mb-1">Public Key Algorithm</span>
-                <span className="font-semibold text-theme-text bg-theme-elevated p-2 rounded-lg block border border-theme-borderSubtle">
-                  {activeCert.keyAlgorithm}
-                </span>
-              </div>
-              <div>
-                <span className="text-theme-muted block mb-1">Signature Algorithm</span>
-                <span className="font-semibold text-theme-text bg-theme-elevated p-2 rounded-lg block border border-theme-borderSubtle">
-                  {activeCert.signatureAlgorithm}
-                </span>
-              </div>
-              <div>
-                <span className="text-theme-muted block mb-1">Certificate Transparency</span>
-                <span className="font-semibold text-theme-text bg-theme-elevated p-2 rounded-lg block border border-theme-borderSubtle flex items-center gap-1.5">
-                  {activeCert.ctLogging ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-theme-success" />
-                      <span>Embedded SCTs Verified</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="w-3.5 h-3.5 text-theme-danger" />
-                      <span>Missing SCT Proof</span>
-                    </>
-                  )}
-                </span>
-              </div>
-              <div>
-                <span className="text-theme-muted block mb-1">Revocation Status Check</span>
-                <span className="font-semibold text-theme-text bg-theme-elevated p-2 rounded-lg block border border-theme-borderSubtle truncate">
-                  {activeCert.revocationCheck}
-                </span>
-              </div>
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase text-neutral-400 block">Signature Digest Algorithm</span>
+              <p className="font-semibold text-black dark:text-white">{activeCert.signatureAlgorithm}</p>
             </div>
-
-            <div>
-              <span className="text-theme-muted text-xs font-mono block mb-1">
-                Subject Alternative Names (SANs)
-              </span>
-              <div className="flex flex-wrap gap-1.5 font-mono text-xs">
-                {activeCert.sanList.map((san) => (
-                  <span
-                    key={san}
-                    className="px-2 py-0.5 rounded bg-theme-elevated text-theme-text border border-theme-borderSubtle"
-                  >
-                    {san}
-                  </span>
-                ))}
-              </div>
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase text-neutral-400 block">Issuance Date</span>
+              <p className="text-neutral-600 dark:text-neutral-300">{activeCert.validFrom}</p>
             </div>
-
-            <div>
-              <span className="text-theme-muted text-xs font-mono block mb-1">
-                SHA-256 Fingerprint
-              </span>
-              <span className="block p-2 rounded-lg bg-theme-elevated border border-theme-borderSubtle font-mono text-[11px] text-theme-text break-all">
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase text-neutral-400 block">Expiration Timestamp</span>
+              <p className="text-neutral-600 dark:text-neutral-300">{activeCert.validUntil} ({activeCert.daysRemaining} days remaining)</p>
+            </div>
+            <div className="md:col-span-2 space-y-1">
+              <span className="text-[10px] uppercase text-neutral-400 block">SHA-256 Fingerprint</span>
+              <p className="p-2 rounded bg-neutral-50 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a] font-mono text-[11px] truncate text-black dark:text-white">
                 {activeCert.fingerprint}
-              </span>
+              </p>
             </div>
           </div>
         </div>

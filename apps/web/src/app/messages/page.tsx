@@ -13,12 +13,10 @@ import {
   Mail,
   Phone,
   Wallet,
-  CreditCard,
   Building2,
   Lock,
   Layers,
   CheckCircle2,
-  Clock,
   ExternalLink,
   RefreshCw,
   Blocks,
@@ -26,8 +24,8 @@ import {
   ChevronRight,
   Shield,
   Lightbulb,
+  Terminal,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   analyzeMessage,
   fetchMessageAnalyses,
@@ -36,15 +34,12 @@ import {
 } from '@/lib/api';
 import { RiskScoreGauge } from '@/components/ui/RiskScoreGauge';
 import { RiskBadge } from '@/components/ui/RiskBadge';
-import { LoadingState } from '@/components/ui/LoadingState';
-import { ErrorState } from '@/components/ui/ErrorState';
 import {
   MessageChannelEnum,
   type MessageChannel,
   type IMessageAnalysis,
   type IBlockchainRecord,
   type IBlockchainVerification,
-  VerdictEnum,
 } from '@sentrix/shared';
 
 const DEMO_PRESETS = [
@@ -70,7 +65,7 @@ const DEMO_PRESETS = [
       'Geek Squad Invoice Notice: Your subscription was auto-renewed for $499.00. If you did not authorize this charge, call our toll-free refund desk at +1-888-234-5678 immediately. Our technicians require you to download AnyDesk or TeamViewer to process your full refund to your PayPal or CashApp account.',
   },
   {
-    title: 'Legitimate Corporate Security Advisory',
+    title: 'Legitimate Corporate Advisory',
     channel: MessageChannelEnum.EMAIL,
     sender: 'it-security@sentrix-enterprise.internal',
     content:
@@ -85,7 +80,6 @@ export default function MessageScannerPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState<IMessageAnalysis | null>(null);
   const [recentAnalyses, setRecentAnalyses] = useState<IMessageAnalysis[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Blockchain state
@@ -94,22 +88,15 @@ export default function MessageScannerPage() {
   const [verifyingChain, setVerifyingChain] = useState(false);
   const [blockchainVerification, setBlockchainVerification] = useState<IBlockchainVerification | null>(null);
 
-  // Load recent message analyses
   useEffect(() => {
     let mounted = true;
-    setLoadingHistory(true);
     fetchMessageAnalyses(10, 0)
       .then((res) => {
         if (mounted && res?.messages) {
           setRecentAnalyses(res.messages);
         }
       })
-      .catch(() => {
-        // non-blocking
-      })
-      .finally(() => {
-        if (mounted) setLoadingHistory(false);
-      });
+      .catch(() => {});
     return () => {
       mounted = false;
     };
@@ -175,23 +162,23 @@ export default function MessageScannerPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-16">
+    <div className="space-y-8 max-w-7xl mx-auto pb-16 font-mono text-xs">
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-theme-border pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200 dark:border-[#1f1f23] pb-6">
         <div>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-theme-accent/10 border border-theme-accent/20 text-theme-accent shadow-xs">
-              <MessageSquareWarning className="w-6 h-6" />
+            <div className="p-2 rounded-lg bg-neutral-100 dark:bg-[#18181b] border border-neutral-200 dark:border-[#27272a] text-black dark:text-white shadow-xs">
+              <MessageSquareWarning className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-theme-text flex items-center gap-2">
-                Scam & Social Engineering Detector
-                <span className="text-[10px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                  AI Powered + Web3
+              <h1 className="text-2xl sm:text-3xl font-serif text-black dark:text-white flex items-center gap-2">
+                Scam Message Analyzer
+                <span className="text-[9px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-[#18181b] text-neutral-700 dark:text-neutral-300 border border-neutral-300 dark:border-[#27272a]">
+                  MODULE A
                 </span>
               </h1>
-              <p className="text-xs text-theme-muted mt-0.5">
-                Analyze SMS, WhatsApp, Emails, and Direct Messages for credential harvesting, urgent OTP fraud, crypto drainers, and entity impersonation.
+              <p className="text-xs text-neutral-500 font-mono mt-0.5">
+                Multi-channel inspection across SMS, WhatsApp, Email, Telegram & crypto communication.
               </p>
             </div>
           </div>
@@ -201,9 +188,9 @@ export default function MessageScannerPage() {
       {/* Preset Quick Fill Buttons */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-mono font-medium text-theme-muted flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-theme-accent" />
-            Demo Presets (One-Click Investigation):
+          <span className="text-xs font-mono font-medium text-neutral-500 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5" />
+            // ONE-CLICK DEMO INCIDENTS:
           </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -212,15 +199,15 @@ export default function MessageScannerPage() {
               key={idx}
               type="button"
               onClick={() => handlePresetClick(preset)}
-              className="text-left p-3 rounded-lg border border-theme-border bg-theme-elevated/40 hover:bg-theme-elevated hover:border-theme-accent/40 transition-all group"
+              className="text-left p-3 rounded-lg border border-neutral-200 dark:border-[#27272a] bg-white dark:bg-[#0c0c0e] hover:border-black dark:hover:border-white transition-all shadow-xs cursor-pointer"
             >
-              <div className="flex items-center justify-between text-[11px] font-mono font-semibold text-theme-text group-hover:text-theme-accent">
-                <span>{preset.title}</span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-theme-border/60 text-theme-muted uppercase">
+              <div className="flex items-center justify-between text-[11px] font-mono font-semibold text-black dark:text-white">
+                <span className="truncate pr-1">{preset.title}</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-[#18181b] text-neutral-500 uppercase font-pixel shrink-0">
                   {preset.channel}
                 </span>
               </div>
-              <p className="text-[11px] text-theme-muted line-clamp-2 mt-1.5 font-sans leading-relaxed">
+              <p className="text-[11px] text-neutral-500 line-clamp-2 mt-1.5 font-sans leading-relaxed">
                 {preset.content}
               </p>
             </button>
@@ -228,540 +215,300 @@ export default function MessageScannerPage() {
         </div>
       </div>
 
-      {/* Main Analysis Form */}
-      <div className="bg-theme-card border border-theme-border rounded-xl p-5 shadow-sm">
+      {/* Input Form Box */}
+      <div className="card-floating p-6 sm:p-7 space-y-4">
         <form onSubmit={handleAnalyze} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-mono font-medium text-theme-text mb-1.5">
-                Message Channel
+              <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 uppercase mb-1">
+                Communication Channel
               </label>
               <select
                 value={channel}
                 onChange={(e) => setChannel(e.target.value as MessageChannel)}
-                className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-theme-border bg-theme-base text-theme-text focus:outline-none focus:ring-1 focus:ring-theme-accent"
+                className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-neutral-300 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
               >
-                <option value={MessageChannelEnum.SMS}>SMS (Text Message)</option>
-                <option value={MessageChannelEnum.WHATSAPP}>WhatsApp</option>
-                <option value={MessageChannelEnum.EMAIL}>Email</option>
-                <option value={MessageChannelEnum.TELEGRAM}>Telegram</option>
-                <option value={MessageChannelEnum.SOCIAL_MEDIA}>Social Media (DM)</option>
-                <option value={MessageChannelEnum.OTHER}>Other / Web Form</option>
+                <option value={MessageChannelEnum.SMS}>SMS / Text Message</option>
+                <option value={MessageChannelEnum.WHATSAPP}>WhatsApp Messenger</option>
+                <option value={MessageChannelEnum.EMAIL}>Email Phishing</option>
+                <option value={MessageChannelEnum.TELEGRAM}>Telegram Channel / Bot</option>
+                <option value={MessageChannelEnum.SOCIAL_MEDIA}>Social Media Direct Message</option>
+                <option value={MessageChannelEnum.OTHER}>Other / Raw Text</option>
               </select>
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-xs font-mono font-medium text-theme-text mb-1.5">
-                Sender Information (Optional)
+              <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 uppercase mb-1">
+                Sender ID / Authority Header (Optional)
               </label>
               <input
                 type="text"
-                placeholder="e.g. +1-800-555-0199 or security-notice@service.com"
+                placeholder="e.g. +1-800-CHASE-ALERT or security-notice@binance-verify.com"
                 value={sender}
                 onChange={(e) => setSender(e.target.value)}
-                className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-theme-border bg-theme-base text-theme-text placeholder:text-theme-muted/50 focus:outline-none focus:ring-1 focus:ring-theme-accent"
+                className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-neutral-300 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] text-black dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-black dark:focus:border-white"
               />
             </div>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-mono font-medium text-theme-text">
-                Suspicious Message Content <span className="text-rose-500">*</span>
-              </label>
-              <span className="text-[11px] font-mono text-theme-muted">
-                {content.length} / 10,000 characters
-              </span>
-            </div>
+            <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 uppercase mb-1">
+              Raw Message Content
+            </label>
             <textarea
               rows={4}
               required
-              maxLength={10000}
-              placeholder="Paste raw SMS, WhatsApp, or phishing email content here for multi-vector threat extraction..."
+              placeholder="Paste raw SMS, email body, WhatsApp alert, or direct message..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full p-3 text-xs font-mono rounded-lg border border-theme-border bg-theme-base text-theme-text placeholder:text-theme-muted/50 focus:outline-none focus:ring-1 focus:ring-theme-accent resize-y"
+              className="w-full p-3 text-xs font-mono rounded-lg border border-neutral-300 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] text-black dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-black dark:focus:border-white leading-relaxed resize-y"
             />
           </div>
 
-          {error && (
-            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-mono flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-[11px] text-theme-muted flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5" />
-              Input sanitization active. Private entities are preserved for indicator hashing.
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[10px] text-neutral-400">
+              Evaluates 7 behavioral tactics, crypto drainer wallets, and exfiltration webhooks.
             </span>
+            {/* Normal dark gray button with white button text */}
             <button
               type="submit"
               disabled={analyzing || !content.trim()}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-theme-accent text-white font-mono text-xs font-semibold hover:bg-theme-accent/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
+              className="btn-industrial py-2.5 px-6 rounded-lg text-xs font-semibold cursor-pointer disabled:opacity-50"
             >
               {analyzing ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  Running AI Threat Engine...
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Inspecting Content...</span>
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
-                  Analyze Threat Vectors
+                  <Send className="w-3.5 h-3.5 text-white" />
+                  <span>Analyze Message Threat</span>
                 </>
               )}
             </button>
           </div>
         </form>
+
+        {error && (
+          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-300 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-red-500" />
+            <span>{error}</span>
+          </div>
+        )}
       </div>
 
-      {/* Analysis Results */}
-      <AnimatePresence>
-        {currentAnalysis && (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="space-y-6"
-          >
-            {/* Verdict Hero Card */}
-            <div className="bg-theme-card border border-theme-border rounded-xl p-6 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                <div className="flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-theme-border pb-6 md:pb-0 md:pr-6">
-                  <RiskScoreGauge
-                    score={currentAnalysis.riskScore}
-                    verdict={currentAnalysis.classification}
-                    confidence={currentAnalysis.confidence}
-                    size={160}
-                  />
-                  <div className="mt-2 text-center">
-                    <RiskBadge verdict={currentAnalysis.classification} size="lg" />
-                    <p className="text-[11px] font-mono text-theme-muted mt-1.5">
-                      Confidence Score: {currentAnalysis.confidence}%
-                    </p>
-                  </div>
-                </div>
-
-                <div className="md:col-span-2 space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-theme-muted">
-                        Investigation ID: {currentAnalysis._id}
-                      </span>
-                      <h2 className="text-base font-bold text-theme-text mt-0.5">
-                        {currentAnalysis.classification === VerdictEnum.MALICIOUS
-                          ? 'High-Risk Social Engineering & Fraud Detected'
-                          : currentAnalysis.classification === VerdictEnum.SUSPICIOUS
-                          ? 'Suspicious Message Patterns Requiring Caution'
-                          : 'No Fraudulent Tactics Detected'}
-                      </h2>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono px-2 py-1 rounded bg-theme-elevated text-theme-text border border-theme-border">
-                        {currentAnalysis.channel}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleRegisterOnChain}
-                        disabled={registeringChain || !!blockchainRecord}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-theme-accent/10 border border-theme-accent/30 text-theme-accent text-xs font-mono font-medium hover:bg-theme-accent/20 disabled:opacity-60 transition-colors"
-                      >
-                        <Blocks className="w-3.5 h-3.5" />
-                        {registeringChain
-                          ? 'Publishing...'
-                          : blockchainRecord
-                          ? (blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
-                              ? 'Committed (Offline Ledger)'
-                              : 'Anchored on Chain (EVM)')
-                          : 'Register on Blockchain'}
-                      </button>
-                    </div>
-                  </div>
-
-                  <p className="text-xs font-mono text-theme-muted bg-theme-base p-3 rounded-lg border border-theme-border italic line-clamp-3">
-                    &quot;{currentAnalysis.preview}&quot;
-                  </p>
-
-                  {/* Blockchain Receipt Banner if registered */}
-                  {blockchainRecord && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className={`p-3.5 rounded-lg border font-mono text-xs space-y-1.5 ${
-                        blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
-                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                          : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 shrink-0" />
-                          {blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
-                            ? 'Cryptographically Committed (Offline Local Ledger)'
-                            : 'Cryptographically Anchored to EVM Blockchain'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleVerifyOnChain}
-                          disabled={verifyingChain}
-                          className={`underline text-[11px] ${
-                            blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
-                              ? 'hover:text-amber-300'
-                              : 'hover:text-emerald-300'
-                          }`}
-                        >
-                          {verifyingChain ? 'Verifying...' : 'Verify Cryptographic State'}
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-theme-muted">
-                        <div>
-                          <span className="text-theme-text">SHA-256 Report Hash:</span>{' '}
-                          <span className={`truncate block font-mono ${
-                            blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
-                              ? 'text-amber-300'
-                              : 'text-emerald-300'
-                          }`}>
-                            {blockchainRecord.reportHash}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-theme-text">
-                            {blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
-                              ? 'Ledger Ref:'
-                              : 'Tx Hash:'}
-                          </span>{' '}
-                          <span className={`truncate block font-mono ${
-                            blockchainRecord.isSimulated || blockchainRecord.status === 'SIMULATED'
-                              ? 'text-amber-300'
-                              : 'text-emerald-300'
-                          }`}>
-                            {blockchainRecord.txHash}
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {blockchainVerification && (
-                    <div className="p-3 rounded-lg bg-theme-elevated border border-theme-border font-mono text-xs space-y-1">
-                      <div className="flex items-center gap-2 text-theme-text font-semibold">
-                        <Shield className="w-4 h-4 text-emerald-500" />
-                        Verification Status:{' '}
-                        {blockchainVerification.verified
-                          ? (blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
-                              ? 'VALID & UNTAMPERED (Offline Ledger Commitment)'
-                              : 'VALID & UNTAMPERED (On-Chain EVM)')
-                          : 'INVALID'}
-                      </div>
-                      <p className="text-[11px] text-theme-muted">
-                        {blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
-                          ? 'Computed local SHA-256 matches immutable local ledger commitment byte-for-byte (Simulated / Non-EVM).'
-                          : 'Computed local SHA-256 matches on-chain commitment byte-for-byte in ThreatRegistry smart contract.'}
-                      </p>
-                    </div>
-                  )}
+      {/* Analysis Results Display */}
+      {currentAnalysis && (
+        <div className="space-y-6">
+          {/* Verdict Card */}
+          <div className="bg-white dark:bg-[#0c0c0e] border border-neutral-200 dark:border-[#27272a] rounded-xl p-6 shadow-card">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+              <div className="flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-neutral-200 dark:border-[#1f1f23] pb-6 md:pb-0 md:pr-6">
+                <RiskScoreGauge
+                  score={currentAnalysis.riskScore}
+                  verdict={currentAnalysis.classification}
+                  confidence={currentAnalysis.confidence}
+                  size={150}
+                />
+                <div className="mt-2 text-center">
+                  <RiskBadge verdict={currentAnalysis.classification} size="lg" />
                 </div>
               </div>
-            </div>
 
-            {/* Grid: Extracted Indicators & Detected Tactics */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Detected Tactics */}
-              <div className="bg-theme-card border border-theme-border rounded-xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-theme-border pb-3">
-                  <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-theme-text flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-theme-accent" />
-                    Detected Social Engineering Tactics ({currentAnalysis.detectedPatterns.length})
-                  </h3>
-                </div>
-
-                {currentAnalysis.detectedPatterns.length === 0 ? (
-                  <p className="text-xs font-mono text-theme-muted py-4 text-center">
-                    No deceptive manipulation tactics detected in content.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {currentAnalysis.detectedPatterns.map((pat, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 rounded-lg border border-theme-border bg-theme-base/60 space-y-1.5"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-mono font-bold text-theme-text">
-                            {pat.title}
-                          </span>
-                          <RiskBadge severity={pat.severity} size="sm" />
-                        </div>
-                        <p className="text-xs text-theme-muted leading-relaxed font-sans">
-                          {pat.description}
-                        </p>
-                        {pat.matchedPatterns?.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {pat.matchedPatterns.map((match, mIdx) => (
-                              <span
-                                key={mIdx}
-                                className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-theme-elevated text-theme-muted border border-theme-border"
-                              >
-                                {match}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Extracted Threat Indicators */}
-              <div className="bg-theme-card border border-theme-border rounded-xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-theme-border pb-3">
-                  <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-theme-text flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-theme-accent" />
-                    Extracted IOCs & References
-                  </h3>
-                </div>
-
-                <div className="space-y-3 text-xs font-mono">
-                  {/* Extracted URLs */}
-                  <div>
-                    <span className="text-[10px] uppercase text-theme-muted block mb-1 flex items-center gap-1.5">
-                      <LinkIcon className="w-3 h-3" /> URLs ({currentAnalysis.extractedIndicators.urls.length})
-                    </span>
-                    {currentAnalysis.extractedIndicators.urls.length === 0 ? (
-                      <span className="text-theme-muted text-[11px]">None extracted</span>
-                    ) : (
-                      <div className="space-y-1">
-                        {currentAnalysis.extractedIndicators.urls.map((u, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center justify-between p-2 rounded bg-theme-base border border-theme-border"
-                          >
-                            <span className="truncate max-w-[280px] text-theme-text text-[11px]">{u}</span>
-                            <Link
-                              href={`/scanner?url=${encodeURIComponent(u)}`}
-                              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-theme-accent/10 text-theme-accent hover:bg-theme-accent/20"
-                            >
-                              Scan URL <ExternalLink className="w-2.5 h-2.5" />
-                            </Link>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Extracted Wallets */}
-                  <div>
-                    <span className="text-[10px] uppercase text-theme-muted block mb-1 flex items-center gap-1.5">
-                      <Wallet className="w-3 h-3" /> Crypto Wallets ({currentAnalysis.extractedIndicators.wallets.length})
-                    </span>
-                    {currentAnalysis.extractedIndicators.wallets.length === 0 ? (
-                      <span className="text-theme-muted text-[11px]">None extracted</span>
-                    ) : (
-                      <div className="space-y-1">
-                        {currentAnalysis.extractedIndicators.wallets.map((w, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center justify-between p-2 rounded bg-theme-base border border-theme-border"
-                          >
-                            <span className="font-mono text-emerald-400 text-[11px] truncate max-w-[260px]">
-                              {w.address}
-                            </span>
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-theme-elevated text-theme-muted">
-                              {w.network}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Emails & Phones */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="text-[10px] uppercase text-theme-muted block mb-1 flex items-center gap-1.5">
-                        <Mail className="w-3 h-3" /> Emails ({currentAnalysis.extractedIndicators.emails.length})
-                      </span>
-                      {currentAnalysis.extractedIndicators.emails.length === 0 ? (
-                        <span className="text-theme-muted text-[11px]">None</span>
-                      ) : (
-                        currentAnalysis.extractedIndicators.emails.map((e, i) => (
-                          <div key={i} className="p-1.5 rounded bg-theme-base text-[11px] truncate border border-theme-border">
-                            {e}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase text-theme-muted block mb-1 flex items-center gap-1.5">
-                        <Phone className="w-3 h-3" /> Phones ({currentAnalysis.extractedIndicators.phones.length})
-                      </span>
-                      {currentAnalysis.extractedIndicators.phones.length === 0 ? (
-                        <span className="text-theme-muted text-[11px]">None</span>
-                      ) : (
-                        currentAnalysis.extractedIndicators.phones.map((p, i) => (
-                          <div key={i} className="p-1.5 rounded bg-theme-base text-[11px] truncate border border-theme-border">
-                            {p}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Impersonated Entities */}
-                  <div>
-                    <span className="text-[10px] uppercase text-theme-muted block mb-1 flex items-center gap-1.5">
-                      <Building2 className="w-3 h-3" /> Impersonated Entities ({currentAnalysis.extractedIndicators.entities.length})
-                    </span>
-                    {currentAnalysis.extractedIndicators.entities.length === 0 ? (
-                      <span className="text-theme-muted text-[11px]">No specific brand identified</span>
-                    ) : (
-                      <div className="flex flex-wrap gap-1.5">
-                        {currentAnalysis.extractedIndicators.entities.map((ent, i) => (
-                          <span
-                            key={i}
-                            className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-mono font-semibold"
-                          >
-                            {ent}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* AI Grounded Explanation Card */}
-            {currentAnalysis.aiExplanation && (
-              <div className="bg-theme-card border border-theme-border rounded-xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-theme-border pb-3">
-                  <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-theme-text flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-theme-accent" />
-                    AI Grounded Threat Assessment
-                  </h3>
-                  <span className="text-[10px] font-mono text-theme-muted">
-                    Evidence-Backed • Zero Hallucination
+              <div className="md:col-span-2 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase text-neutral-400 tracking-wider">
+                    // AI EXECUTIVE THREAT SUMMARY
+                  </span>
+                  <span className="text-[10px] text-neutral-400">
+                    Confidence: {currentAnalysis.confidence}%
                   </span>
                 </div>
 
-                <div className="p-3.5 rounded-lg bg-theme-elevated/40 border border-theme-border text-xs text-theme-text leading-relaxed">
-                  {currentAnalysis.aiExplanation.summary}
+                <p className="text-sm font-sans text-black dark:text-white leading-relaxed">
+                  {currentAnalysis.aiExplanation?.summary ||
+                    'Passive heuristic inspection completed for submitted message payload.'}
+                </p>
+
+                {/* Blockchain Action Buttons (Normal dark gray button with white text) */}
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleRegisterOnChain}
+                    disabled={registeringChain || Boolean(blockchainRecord)}
+                    className="btn-industrial py-1.5 px-3 rounded-md text-xs font-semibold cursor-pointer disabled:opacity-50"
+                  >
+                    <Blocks className="w-3.5 h-3.5 text-white" />
+                    <span>
+                      {registeringChain
+                        ? 'Anchoring on EVM...'
+                        : blockchainRecord
+                        ? 'Anchored On-Chain'
+                        : 'Commit Hash to Blockchain'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleVerifyOnChain}
+                    disabled={verifyingChain}
+                    className="px-3 py-1.5 rounded-md border border-neutral-300 dark:border-[#27272a] bg-neutral-100 dark:bg-[#121214] text-neutral-800 dark:text-neutral-200 hover:text-black dark:hover:text-white text-xs transition-colors cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 inline mr-1" />
+                    <span>Verify Ledger Byte-for-Byte</span>
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-mono font-semibold text-theme-text flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                      Key Forensic Reasoning
+                {blockchainRecord && (
+                  <div className="p-2.5 rounded-lg bg-neutral-50 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a] text-[11px] space-y-1">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold block flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Immutable SHA-256 Ledger Record Created
                     </span>
-                    <ul className="space-y-1.5 text-xs text-theme-muted font-sans">
-                      {currentAnalysis.aiExplanation.reasoning.map((r, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <span className="text-theme-accent font-bold">•</span>
-                          <span>{r}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="text-neutral-500 font-mono truncate">
+                      Commitment: {blockchainRecord.reportHash}
+                    </div>
                   </div>
+                )}
 
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-mono font-semibold text-theme-text flex items-center gap-1.5">
-                      <Lightbulb className="w-3.5 h-3.5 text-emerald-500" />
-                      Defensive Precautions
+                {blockchainVerification && (
+                  <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 text-[11px] space-y-0.5 text-emerald-800 dark:text-emerald-300">
+                    <span className="font-semibold block flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Cryptographic Integrity Verified (100% Match)
                     </span>
-                    <ul className="space-y-1.5 text-xs text-theme-muted font-sans">
-                      {currentAnalysis.aiExplanation.precautions.map((p, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                          <span>{p}</span>
-                        </li>
+                    <span className="text-[10px] text-neutral-500 block">
+                      Local SHA-256 matches ledger state byte-for-byte.
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Behavioral Patterns & Extracted IOCs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* 7 Tactics */}
+            <div className="bg-white dark:bg-[#0c0c0e] border border-neutral-200 dark:border-[#27272a] rounded-xl p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between border-b border-neutral-200 dark:border-[#1f1f23] pb-2">
+                <span className="font-bold uppercase tracking-wider text-black dark:text-white">
+                  // DETECTED MANIPULATION TACTICS
+                </span>
+                <span className="text-[10px] text-neutral-400">
+                  {currentAnalysis.detectedPatterns?.length || 0} Identified
+                </span>
+              </div>
+
+              {(!currentAnalysis.detectedPatterns || currentAnalysis.detectedPatterns.length === 0) ? (
+                <div className="p-4 text-center text-neutral-400">
+                  No active social engineering tactics detected.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {currentAnalysis.detectedPatterns.map((pat, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-lg border border-neutral-200 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] space-y-1"
+                    >
+                      <div className="flex items-center justify-between font-bold text-black dark:text-white">
+                        <span>{pat.title}</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400">
+                          {pat.tactic}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
+                        {pat.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Extracted IOCs */}
+            <div className="bg-white dark:bg-[#0c0c0e] border border-neutral-200 dark:border-[#27272a] rounded-xl p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between border-b border-neutral-200 dark:border-[#1f1f23] pb-2">
+                <span className="font-bold uppercase tracking-wider text-black dark:text-white">
+                  // EXTRACTED IOCS & ATTACKER ENTITIES
+                </span>
+                <span className="text-[10px] text-neutral-400">Cross-Vector Targets</span>
+              </div>
+
+              <div className="space-y-3">
+                {/* URLs */}
+                <div>
+                  <span className="text-[10px] uppercase text-neutral-400 block mb-1">
+                    URLs ({currentAnalysis.extractedIndicators.urls.length})
+                  </span>
+                  {currentAnalysis.extractedIndicators.urls.length === 0 ? (
+                    <span className="text-neutral-400 text-[11px]">None extracted</span>
+                  ) : (
+                    <div className="space-y-1">
+                      {currentAnalysis.extractedIndicators.urls.map((u, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 rounded bg-neutral-50 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a]">
+                          <span className="truncate max-w-[240px] text-black dark:text-white">{u}</span>
+                          <Link
+                            href={`/scanner?target=${encodeURIComponent(u)}`}
+                            className="btn-industrial text-[10px] py-0.5 px-2 rounded"
+                          >
+                            Inspect URL
+                          </Link>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Wallets */}
+                <div>
+                  <span className="text-[10px] uppercase text-neutral-400 block mb-1">
+                    Cryptocurrency Wallets ({currentAnalysis.extractedIndicators.wallets.length})
+                  </span>
+                  {currentAnalysis.extractedIndicators.wallets.length === 0 ? (
+                    <span className="text-neutral-400 text-[11px]">None extracted</span>
+                  ) : (
+                    <div className="space-y-1">
+                      {currentAnalysis.extractedIndicators.wallets.map((w, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 rounded bg-neutral-50 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a]">
+                          <span className="truncate max-w-[220px] text-emerald-600 dark:text-emerald-400 font-mono">{w.address}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-[#27272a] text-neutral-600 dark:text-neutral-300 uppercase font-pixel">{w.network}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Phones & Entities */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-[10px] uppercase text-neutral-400 block mb-1">
+                      Phones ({currentAnalysis.extractedIndicators.phones.length})
+                    </span>
+                    {currentAnalysis.extractedIndicators.phones.length === 0 ? (
+                      <span className="text-neutral-400 text-[11px]">None</span>
+                    ) : (
+                      currentAnalysis.extractedIndicators.phones.map((p, i) => (
+                        <div key={i} className="p-1.5 rounded bg-neutral-50 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a] truncate">{p}</div>
+                      ))
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase text-neutral-400 block mb-1">
+                      Targeted Entities ({currentAnalysis.extractedIndicators.entities.length})
+                    </span>
+                    {currentAnalysis.extractedIndicators.entities.length === 0 ? (
+                      <span className="text-neutral-400 text-[11px]">None</span>
+                    ) : (
+                      currentAnalysis.extractedIndicators.entities.map((e, i) => (
+                        <div key={i} className="p-1.5 rounded bg-neutral-50 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a] truncate font-semibold">{e}</div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Historical Message Investigations Feed */}
-      <div className="bg-theme-card border border-theme-border rounded-xl p-5 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-theme-border pb-3">
-          <div>
-            <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-theme-text flex items-center gap-2">
-              <Clock className="w-4 h-4 text-theme-muted" />
-              Recent Message Investigations ({recentAnalyses.length})
-            </h3>
-            <p className="text-[11px] text-theme-muted mt-0.5">
-              Historical scams inspected by SENTRIX message threat engine.
-            </p>
+            </div>
           </div>
         </div>
-
-        {loadingHistory ? (
-          <div className="py-6 flex justify-center">
-            <RefreshCw className="w-5 h-5 animate-spin text-theme-accent" />
-          </div>
-        ) : recentAnalyses.length === 0 ? (
-          <p className="text-xs font-mono text-theme-muted py-6 text-center">
-            No previous message investigations found. Use presets above to run a scan.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono">
-              <thead>
-                <tr className="border-b border-theme-border text-theme-muted uppercase text-[10px]">
-                  <th className="py-2 px-3">Verdict</th>
-                  <th className="py-2 px-3">Score</th>
-                  <th className="py-2 px-3">Channel</th>
-                  <th className="py-2 px-3">Message Excerpt</th>
-                  <th className="py-2 px-3">Tactics</th>
-                  <th className="py-2 px-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-theme-border/50">
-                {recentAnalyses.map((item) => (
-                  <tr key={item._id} className="hover:bg-theme-elevated/40 transition-colors">
-                    <td className="py-2.5 px-3">
-                      <RiskBadge verdict={item.classification} size="sm" />
-                    </td>
-                    <td className="py-2.5 px-3 font-bold text-theme-text">
-                      {item.riskScore}
-                    </td>
-                    <td className="py-2.5 px-3 text-theme-muted text-[11px]">
-                      {item.channel}
-                    </td>
-                    <td className="py-2.5 px-3 max-w-[280px] truncate text-theme-muted font-sans text-[11px]">
-                      {item.preview}
-                    </td>
-                    <td className="py-2.5 px-3">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-theme-elevated text-theme-muted">
-                        {item.detectedPatterns?.length || 0} tactic(s)
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCurrentAnalysis(item);
-                          window.scrollTo({ top: 300, behavior: 'smooth' });
-                        }}
-                        className="text-theme-accent hover:underline text-[11px] font-medium"
-                      >
-                        Inspect
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthModal } from '@/components/auth/AuthModal';
 import { AppShell } from '@/components/layout/AppShell';
 
 export const metadata: Metadata = {
@@ -41,7 +43,10 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-theme-bg text-theme-text antialiased sentrix-grid">
         <ThemeProvider>
-          <AppShell>{children}</AppShell>
+          <AuthProvider>
+            <AppShell>{children}</AppShell>
+            <AuthModal />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

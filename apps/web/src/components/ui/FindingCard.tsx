@@ -14,7 +14,7 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding }) => {
   const hasEvidence = finding.evidence && Object.keys(finding.evidence).length > 0;
 
   return (
-    <div className="bg-theme-card border border-theme-border rounded-xl p-4 transition-all hover:border-theme-accent/40 shadow-xs">
+    <div className="card-floating p-5 transition-all">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <RiskBadge severity={finding.severity} />
