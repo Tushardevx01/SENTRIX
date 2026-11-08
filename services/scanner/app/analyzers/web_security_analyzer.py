@@ -728,4 +728,51 @@ class WebSecurityAnalyzer:
                             confidence=90.0,
                         ))
 
+            # 5. Parked or Placeholder Landing Page Detection (Phase 7.3 Informational Infrastructure)
+            page_title = (soup.title.string or "").strip().lower() if soup.title and soup.title.string else ""
+            body_text = soup.body.get_text(separator=" ", strip=True).lower() if soup.body else ""
+
+            PARKED_PAGE_TITLE_PHRASES = [
+                "domain parked", "parked domain", "domain is parked",
+                "under construction", "coming soon", "default web site page",
+                "welcome to nginx", "apache2 ubuntu default page", "test page"
+            ]
+            PARKED_PAGE_BODY_PHRASES = [
+                "this domain has recently been registered",
+                "please check back soon",
+                "this page is parked",
+                "buy this domain",
+                "domain broker",
+                "domain is parked",
+                "website coming soon",
+            ]
+
+            is_parked_page = any(p in page_title for p in PARKED_PAGE_TITLE_PHRASES) or any(p in body_text for p in PARKED_PAGE_BODY_PHRASES)
+
+            # Ensure page has no active submission forms with password/seed inputs
+            has_credential_forms = bool(
+                soup.find("form") and (
+                    soup.find("input", attrs={"type": "password"}) or
+                    soup.find("textarea")
+                )
+            )
+
+            if is_parked_page and not has_credential_forms:
+                findings.append(RawFinding(
+                    category="DOMAIN_REPUTATION",
+                    severity="INFO",
+                    title="Parked or Placeholder Domain Page Detected",
+                    description=(
+                        "The destination resolves to a parked domain, registrar placeholder, or default landing page "
+                        "with no active business services or threat indicators."
+                    ),
+                    evidence={
+                        "signal": "PARKED_PAGE",
+                        "title": soup.title.get_text().strip() if soup.title else None,
+                        "isInformationalInfrastructure": True,
+                        "dedupKey": "INFRA_PARKED_PAGE",
+                    },
+                    confidence=90.0,
+                ))
+
         return findings, metadata

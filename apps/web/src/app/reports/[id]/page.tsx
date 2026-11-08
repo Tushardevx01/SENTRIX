@@ -425,6 +425,23 @@ export default function SecurityReportPage() {
         </div>
       )}
 
+      {/* Informational UNVERIFIED_INFRASTRUCTURE Notice Banner */}
+      {scan.verdict === VerdictEnum.UNVERIFIED_INFRASTRUCTURE && (
+        <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-300 dark:border-slate-700 rounded-xl p-5 text-slate-800 dark:text-slate-200">
+          <div className="flex items-start gap-3">
+            <Info className="w-5 h-5 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5" />
+            <div className="space-y-1.5">
+              <h3 className="text-sm font-bold font-mono text-slate-900 dark:text-slate-100">
+                UNVERIFIED INFRASTRUCTURE CLASSIFICATION
+              </h3>
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono">
+                This destination exhibits characteristics of unverified, parked, staging, or low-reputation infrastructure with no active weaponization observed. Unverified infrastructure is not confirmed malicious, but is not verified as safe for enterprise authentication or credential entry.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Streaming Response Truncation Notice */}
       {summary?.isTruncated && (
         <div className="bg-theme-elevated border border-theme-border rounded-xl px-4 py-3 text-xs font-mono text-theme-text flex items-center gap-2">
@@ -583,6 +600,17 @@ export default function SecurityReportPage() {
                 <li className="flex items-center gap-2 text-theme-text">
                   <CheckCircle2 className="w-3.5 h-3.5 text-theme-success shrink-0" />
                   <span>Monitor subsequent network connections to destination IP.</span>
+                </li>
+              </>
+            ) : scan.verdict === VerdictEnum.UNVERIFIED_INFRASTRUCTURE ? (
+              <>
+                <li className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                  <Info className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                  <span>Exercise caution: verify destination before submitting organizational credentials.</span>
+                </li>
+                <li className="flex items-center gap-2 text-theme-muted">
+                  <Clock className="w-3.5 h-3.5 shrink-0" />
+                  <span>Rescan periodically once production services are deployed.</span>
                 </li>
               </>
             ) : (

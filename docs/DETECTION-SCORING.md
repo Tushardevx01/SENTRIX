@@ -30,7 +30,8 @@ Verdict thresholds (unchanged):
 
 | Range | Verdict |
 | :--- | :--- |
-| `0 – 25` | `BENIGN` (only when analysis is `COMPLETE`) |
+| `0 – 25` | `BENIGN` (when analysis is `COMPLETE` and free of unverified infrastructure signals) |
+| `0 – 25` | `UNVERIFIED_INFRASTRUCTURE` (when analysis is `COMPLETE` and unverified/parked/staging signals are present) |
 | `26 – 69` | `SUSPICIOUS` |
 | `70 – 100` | `MALICIOUS` |
 | any score, analysis `PARTIAL`/`FAILED` | `INCONCLUSIVE` (zero-trust: missing analyzers are never proof of safety) |

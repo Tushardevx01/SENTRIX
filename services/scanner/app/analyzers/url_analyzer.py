@@ -38,7 +38,7 @@ def _split_tokens(text: str) -> Set[str]:
 
 ORDINARY_AUTH_TERMS: Set[str] = {
     "login", "signin", "account", "portal", "verify", "update",
-    "auth", "security", "authenticate", "secure", "verification"
+    "auth", "security", "authenticate", "secure", "verification", "credential"
 }
 
 RECOGNIZED_AUTHENTIC_DOMAINS: Set[str] = {
@@ -51,6 +51,7 @@ RECOGNIZED_AUTHENTIC_DOMAINS: Set[str] = {
     "wikipedia.org", "python.org", "mozilla.org", "stackoverflow.com",
     "nytimes.com", "mit.edu", "bbc.co.uk", "apache.org", "kernel.org",
     "debian.org", "w3.org", "archive.org", "redhat.com", "rust-lang.org",
+    "ruby-lang.org", "podman.io", "owasp.org",
     "cam.ac.uk", "nih.gov",
 
     # Financial institutions

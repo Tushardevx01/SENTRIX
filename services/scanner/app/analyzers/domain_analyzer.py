@@ -3,6 +3,18 @@ import unicodedata
 import tldextract
 from typing import List, Tuple, Set, Optional
 from app.schemas.response import RawFinding
+from app.analyzers.url_analyzer import RECOGNIZED_AUTHENTIC_DOMAINS
+
+GENERIC_INFRASTRUCTURE_TOKENS: Set[str] = {
+    "staging", "test-environment", "deployment-slot", "unverified-api",
+    "ingress-node", "ad-server", "tracking-pixel", "domain-broker",
+    "web-proxy", "traffic-redirect", "preview-environment", "ab-test",
+    "load-balancer", "ephemeral-storage", "subdomain-routing",
+    "content-stream", "lead-capture", "redirect-rotator", "maintenance-node",
+    "cdn-test", "tracker-gateway", "shortener-jump", "lead-funnel",
+    "placeholder-staging", "redirect-junction", "campaign-funnel",
+    "feature-preview", "pre-release-check", "sender-tracking", "bulk-email"
+}
 
 HIGH_RISK_TLDS: Set[str] = {
     "tk", "ml", "ga", "cf", "gq", "top", "buzz", "fit", "surf",
@@ -626,7 +638,28 @@ class DomainAnalyzer:
                     confidence=94.0 if is_typo_case else 92.0
                 ))
 
-        # 6. Informational domain taxonomy finding
+        # 6. Generic Staging or Ephemeral Infrastructure Pattern Detection (Phase 7.3)
+        matched_infra_tokens = [
+            tok for tok in GENERIC_INFRASTRUCTURE_TOKENS
+            if tok in normalized_domain.lower()
+        ]
+        if matched_infra_tokens and registered_domain not in RECOGNIZED_AUTHENTIC_DOMAINS:
+            findings.append(RawFinding(
+                category="DOMAIN_REPUTATION",
+                severity="INFO",
+                title="Generic Staging or Ephemeral Infrastructure Pattern",
+                description="Hostname exhibits naming conventions typical of unverified staging, development, or routing infrastructure.",
+                evidence={
+                    "signal": "STAGING_PATTERN",
+                    "matchedTokens": matched_infra_tokens,
+                    "registeredDomain": registered_domain,
+                    "isInformationalInfrastructure": True,
+                    "dedupKey": "INFRA_STAGING_PATTERN",
+                },
+                confidence=80.0,
+            ))
+
+        # 7. Informational domain taxonomy finding
         findings.append(RawFinding(
             category="DOMAIN_REPUTATION",
             severity="INFO",

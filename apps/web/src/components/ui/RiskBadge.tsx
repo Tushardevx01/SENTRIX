@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, AlertTriangle, ShieldAlert, AlertCircle, HelpCircle } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, ShieldAlert, AlertCircle, HelpCircle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   VerdictEnum,
@@ -40,6 +40,12 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({ verdict, severity, size = 
         style:
           'bg-slate-100 text-slate-700 border-slate-300 dark:bg-zinc-900/90 dark:text-zinc-300 dark:border-zinc-700',
         icon: HelpCircle,
+      },
+      [VerdictEnum.UNVERIFIED_INFRASTRUCTURE]: {
+        label: 'UNVERIFIED INFRASTRUCTURE',
+        style:
+          'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800/90 dark:text-slate-300 dark:border-slate-600',
+        icon: Info,
       },
     }[verdict] || {
       label: verdict,

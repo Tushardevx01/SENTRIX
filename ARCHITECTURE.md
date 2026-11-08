@@ -399,13 +399,17 @@ The migration manager provides:
 - **Limitations:** datasets are small (80 dev / 25 val) and synthetic-adjacent; validation numbers carry wide confidence intervals and must not be presented as production accuracy. Classification thresholds and severity weights were not altered during calibration.
 
 ### Verdict Classification & Zero-Trust Inconclusive State
-- `0 – 25`: **`BENIGN`** (Trusted destination, valid TLS, complete inspection, zero high-severity indicators)
+- `0 – 25`: **`BENIGN`** (Trusted destination, verified authentic identity or legitimate services, valid TLS, complete inspection, zero high-severity indicators)
+- `0 – 25`: **`UNVERIFIED_INFRASTRUCTURE`** (Informational classification: unverified staging, development, parked, registrar placeholder, or low-reputation infrastructure with zero active threat indicators. Distinguishable from BENIGN, SUSPICIOUS, and MALICIOUS)
 - `26 – 69`: **`SUSPICIOUS`** (Elevated risk, multiple anomalies, or missing cryptographic trust)
-- `70 – 100`: **`MALICIOUS`** (High confidence phishing, credential harvesting, or verified malware)
+- `70 – 100`: **`MALICIOUS`** (High confidence phishing, credential harvesting, seed-phrase collection, or verified malware)
 - **`INCONCLUSIVE`**: Assigned when analyzers fail, time out, or target is unreachable, and risk score is < 26.
 
 > [!IMPORTANT]
 > **Zero-Trust Invariant:** Missing or failed analyzer results are NEVER treated as proof that a website is safe. When an analyzer fails or a site is unreachable, the system assigns `analysisStatus = "PARTIAL"` or `"FAILED"`, marks `verdict = "INCONCLUSIVE"`, penalizes confidence ratings, and records explicit `inconclusiveReasons`. The frontend displays a dedicated warning banner to alert analysts to incomplete inspection data.
+
+> [!NOTE]
+> **Threat Override Invariant:** Strong phishing, brand impersonation, credential harvesting, seed-phrase collection, or malicious reputation evidence (score $\ge 70$) strictly overrides informational infrastructure classification, driving the verdict to `MALICIOUS`. Parked page titles or staging patterns never excuse confirmed hostile weaponization.
 
 ---
 

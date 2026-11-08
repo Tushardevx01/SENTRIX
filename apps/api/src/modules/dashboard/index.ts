@@ -11,6 +11,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
       maliciousCount,
       suspiciousCount,
       benignCount,
+      unverifiedCount,
       threatsReported,
       avgScoreResult,
       recentScans,
@@ -19,6 +20,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
       ScanModel.countDocuments({ status: 'COMPLETED', verdict: VerdictEnum.MALICIOUS }),
       ScanModel.countDocuments({ status: 'COMPLETED', verdict: VerdictEnum.SUSPICIOUS }),
       ScanModel.countDocuments({ status: 'COMPLETED', verdict: VerdictEnum.BENIGN }),
+      ScanModel.countDocuments({ status: 'COMPLETED', verdict: VerdictEnum.UNVERIFIED_INFRASTRUCTURE }),
       ThreatReportModel.countDocuments(),
       ScanModel.aggregate([
         { $match: { status: 'COMPLETED' } },
@@ -38,6 +40,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
       maliciousCount,
       suspiciousCount,
       benignCount,
+      unverifiedCount,
       averageRiskScore,
       threatsReported,
       recentScans,

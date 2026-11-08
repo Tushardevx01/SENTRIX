@@ -135,19 +135,36 @@ class RiskAggregationEngine:
             analysis_complete = False
             inconclusive_reasons.append("Critical failure: All network security analyzers failed or were unreachable.")
 
+        # Determine if unverified infrastructure signals are present (Phase 7.3)
+        has_unverified_infra_signal = any(
+            f.evidence.get("isInformationalInfrastructure") is True or
+            f.evidence.get("signal") in ("PARKED_PAGE", "STAGING_PATTERN", "UNVERIFIED_HOSTING") or
+            get_dedup_key(f).startswith("INFRA_") or
+            f.title in (
+                "Parked or Placeholder Domain Page Detected",
+                "Generic Staging or Ephemeral Infrastructure Pattern",
+                "Unverified Infrastructure / Plain HTTP Hosting",
+            )
+            for f in findings
+        )
+
         # Assign Verdict (Zero-Trust Rules: Incomplete results must NEVER be classified as confidently BENIGN)
         if risk_score >= 70:
             verdict = "MALICIOUS"
         elif risk_score >= 26:
             verdict = "SUSPICIOUS"
+        elif analysis_status != "COMPLETE":
+            # Missing or failed analyzer results must NEVER be taken as proof of safety or verified infrastructure!
+            verdict = "INCONCLUSIVE"
+            inconclusive_reasons.append("Low risk score cannot be confirmed due to incomplete analyzer execution.")
+        elif has_unverified_infra_signal:
+            verdict = "UNVERIFIED_INFRASTRUCTURE"
+            factor_desc = "Unverified / Parked Infrastructure (INFO)"
+            if factor_desc not in risk_factors:
+                risk_factors.append(factor_desc)
+            threat_types_set.add("DOMAIN_REPUTATION")
         else:
-            # Score is low (0 - 25)
-            if analysis_status == "COMPLETE":
-                verdict = "BENIGN"
-            else:
-                # Missing or failed analyzer results must NEVER be taken as proof of safety!
-                verdict = "INCONCLUSIVE"
-                inconclusive_reasons.append("Low risk score cannot be confirmed as BENIGN due to incomplete analyzer execution.")
+            verdict = "BENIGN"
 
         # Calculate Confidence with penalties for missing/failed analyzers
         if counted_findings > 0:

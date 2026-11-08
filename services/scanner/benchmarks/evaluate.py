@@ -132,6 +132,9 @@ async def run_benchmark(dataset_path: Path, output_report_path: Path) -> Dict[st
     print(f"Threat Binary F1:         {binary_threat['f1'] * 100:.2f}%")
     print(f"False Positive Rate:      {binary_threat['falsePositiveRate'] * 100:.2f}% (Threat Detection)")
     print(f"False Negative Rate:      {binary_threat['falseNegativeRate'] * 100:.2f}% (Threat Detection)")
+    info_counts = three_class.get('informationalCounts', {})
+    print(f"Informational (UNVERIFIED_INFRASTRUCTURE): {info_counts.get('UNVERIFIED_INFRASTRUCTURE', 0)}")
+    print(f"Informational (INCONCLUSIVE):              {info_counts.get('INCONCLUSIVE', 0)}")
     print(f"Latency P50: {latency['p50Ms']} ms | P90: {latency['p90Ms']} ms | Mean: {latency['meanMs']} ms")
 
     print(f"\n### 3x3 Confusion Matrix\n")

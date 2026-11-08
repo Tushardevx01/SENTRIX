@@ -64,6 +64,11 @@ def calculate_three_class_metrics(results: List[Dict[str, Any]]) -> Dict[str, An
     weighted_recall = sum(per_class[c]["recall"] * per_class[c]["support"] for c in CLASSES) / total_samples if total_samples else 0.0
     weighted_f1 = sum(per_class[c]["f1"] * per_class[c]["support"] for c in CLASSES) / total_samples if total_samples else 0.0
 
+    informational_counts = {
+        "UNVERIFIED_INFRASTRUCTURE": sum(1 for r in results if r.get("predictedVerdict") == "UNVERIFIED_INFRASTRUCTURE"),
+        "INCONCLUSIVE": sum(1 for r in results if r.get("predictedVerdict") == "INCONCLUSIVE"),
+    }
+
     return {
         "confusionMatrix": matrix,
         "perClass": per_class,
@@ -78,6 +83,7 @@ def calculate_three_class_metrics(results: List[Dict[str, Any]]) -> Dict[str, An
             "recall": round(weighted_recall, 4),
             "f1": round(weighted_f1, 4),
         },
+        "informationalCounts": informational_counts,
         "totalSamples": total_samples,
     }
 

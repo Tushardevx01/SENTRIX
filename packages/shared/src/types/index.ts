@@ -18,6 +18,7 @@ export const VerdictEnum = {
   SUSPICIOUS: 'SUSPICIOUS',
   MALICIOUS: 'MALICIOUS',
   INCONCLUSIVE: 'INCONCLUSIVE',
+  UNVERIFIED_INFRASTRUCTURE: 'UNVERIFIED_INFRASTRUCTURE',
 } as const;
 export type Verdict = (typeof VerdictEnum)[keyof typeof VerdictEnum];
 
@@ -185,6 +186,7 @@ export interface DashboardStats {
   maliciousCount: number;
   suspiciousCount: number;
   benignCount: number;
+  unverifiedCount?: number;
   averageRiskScore: number;
   threatsReported: number;
   recentScans: Array<{
