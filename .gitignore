@@ -16,6 +16,7 @@ lerna-debug.log*
 
 # Next.js
 .next/
+apps/web/.next-dev/
 out/
 build/
 dist/

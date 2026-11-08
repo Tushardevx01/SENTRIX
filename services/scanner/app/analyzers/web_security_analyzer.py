@@ -622,7 +622,7 @@ class WebSecurityAnalyzer:
 
                         findings.append(RawFinding(
                             category="URL_ANOMALY",
-                            severity="CRITICAL" if is_corroborated_threat else "HIGH",
+                            severity="CRITICAL" if is_corroborated_threat else "MEDIUM",
                             title="Client-Side Meta Refresh Redirect to Untrusted Destination" if is_corroborated_threat else "Client-Side Meta Refresh Redirect to External Host",
                             description=(
                                 f"Page executes an automatic client-side redirect via <meta http-equiv='refresh'> to high-risk destination '{refresh_parsed.hostname}'."
@@ -636,7 +636,7 @@ class WebSecurityAnalyzer:
                                 "suspiciousTLD": has_suspicious_tld,
                                 "payloadPath": has_payload_path,
                             },
-                            confidence=95.0 if is_corroborated_threat else 90.0,
+                            confidence=95.0 if is_corroborated_threat else 85.0,
                         ))
 
                         # CAL-06: separately-evidenced destination-reputation finding,

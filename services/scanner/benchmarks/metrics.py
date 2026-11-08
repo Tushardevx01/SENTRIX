@@ -3,41 +3,49 @@ import statistics
 
 
 CLASSES = ["BENIGN", "SUSPICIOUS", "MALICIOUS"]
+FOUR_CLASSES = ["BENIGN", "UNVERIFIED_INFRASTRUCTURE", "SUSPICIOUS", "MALICIOUS"]
+ALL_PRED_CLASSES = ["BENIGN", "SUSPICIOUS", "MALICIOUS", "UNVERIFIED_INFRASTRUCTURE", "INCONCLUSIVE"]
 
 
 def calculate_three_class_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Computes standard multi-class evaluation metrics for BENIGN, SUSPICIOUS, and MALICIOUS verdicts:
-    - 3x3 confusion matrix
-    - Per-class TP, FP, FN, TN, Precision, Recall, F1, Support
+    - 3x3 (with informational unverified columns) confusion matrix
+    - Per-class TP, FP, FN, TN, Precision, Recall, F1, Support with consistent denominators
     - Macro-averaged and Weighted-averaged Precision, Recall, F1
-    - Overall 3-class Accuracy
+    - Overall 3-class Accuracy (unverified predictions count as incorrect against 3-class GT)
     """
     matrix: Dict[str, Dict[str, int]] = {
-        actual: {pred: 0 for pred in CLASSES} for actual in CLASSES
+        actual: {pred: 0 for pred in ALL_PRED_CLASSES} for actual in CLASSES
     }
 
     # Count actual vs predicted
     for r in results:
         actual = r["groundTruth"]
         pred = r["predictedVerdict"]
-        if actual in matrix and pred in matrix[actual]:
+        if actual in matrix:
+            if pred not in matrix[actual]:
+                matrix[actual][pred] = 0
             matrix[actual][pred] += 1
-        elif actual in matrix:
-            # e.g. INCONCLUSIVE predicted
-            pass
 
     total_samples = len(results)
-    correct_samples = sum(matrix[c][c] for c in CLASSES)
+    correct_samples = sum(matrix[c].get(c, 0) for c in CLASSES)
     accuracy = correct_samples / total_samples if total_samples > 0 else 0.0
 
     per_class = {}
     for c in CLASSES:
-        tp = matrix[c][c]
-        fn = sum(matrix[c][p] for p in CLASSES if p != c)
-        fp = sum(matrix[a][c] for a in CLASSES if a != c)
-        tn = sum(matrix[a][p] for a in CLASSES if a != c for p in CLASSES if p != c)
-        support = sum(matrix[c][p] for p in CLASSES)
+        tp = matrix[c].get(c, 0)
+        # Support is strictly the total actual ground truth cases of class c
+        support = sum(1 for r in results if r["groundTruth"] == c)
+        # FN is all cases where ground truth was c but predicted was not c
+        fn = support - tp
+        # FP is all cases where ground truth was NOT c but predicted was c
+        fp = sum(matrix[a].get(c, 0) for a in CLASSES if a != c)
+        # TN is all cases where ground truth was NOT c and predicted was NOT c
+        tn = sum(
+            sum(v for p, v in matrix[a].items() if p != c)
+            for a in CLASSES if a != c
+        )
 
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
@@ -59,7 +67,7 @@ def calculate_three_class_metrics(results: List[Dict[str, Any]]) -> Dict[str, An
     macro_recall = sum(per_class[c]["recall"] for c in CLASSES) / len(CLASSES)
     macro_f1 = sum(per_class[c]["f1"] for c in CLASSES) / len(CLASSES)
 
-    # Weighted averages
+    # Weighted averages (strictly normalized by total_samples == sum of supports)
     weighted_precision = sum(per_class[c]["precision"] * per_class[c]["support"] for c in CLASSES) / total_samples if total_samples else 0.0
     weighted_recall = sum(per_class[c]["recall"] * per_class[c]["support"] for c in CLASSES) / total_samples if total_samples else 0.0
     weighted_f1 = sum(per_class[c]["f1"] * per_class[c]["support"] for c in CLASSES) / total_samples if total_samples else 0.0
@@ -84,6 +92,82 @@ def calculate_three_class_metrics(results: List[Dict[str, Any]]) -> Dict[str, An
             "f1": round(weighted_f1, 4),
         },
         "informationalCounts": informational_counts,
+        "totalSamples": total_samples,
+    }
+
+
+def calculate_four_class_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Computes 4-class evaluation metrics where UNVERIFIED_INFRASTRUCTURE is an explicit ground-truth class:
+    - 4x4 confusion matrix
+    - Per-class TP, FP, FN, TN, Precision, Recall, F1, Support
+    - Macro and weighted averages
+    - 4-class overall accuracy
+    """
+    matrix: Dict[str, Dict[str, int]] = {
+        actual: {pred: 0 for pred in FOUR_CLASSES} for actual in FOUR_CLASSES
+    }
+
+    for r in results:
+        actual = r["groundTruth"]
+        pred = r["predictedVerdict"]
+        if actual in matrix:
+            if pred not in matrix[actual]:
+                matrix[actual][pred] = 0
+            matrix[actual][pred] += 1
+
+    total_samples = len(results)
+    correct_samples = sum(matrix[c].get(c, 0) for c in FOUR_CLASSES)
+    accuracy = correct_samples / total_samples if total_samples > 0 else 0.0
+
+    per_class = {}
+    for c in FOUR_CLASSES:
+        tp = matrix[c].get(c, 0)
+        support = sum(1 for r in results if r["groundTruth"] == c)
+        fn = support - tp
+        fp = sum(matrix[a].get(c, 0) for a in FOUR_CLASSES if a != c)
+        tn = sum(
+            sum(v for p, v in matrix[a].items() if p != c)
+            for a in FOUR_CLASSES if a != c
+        )
+
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+
+        per_class[c] = {
+            "tp": tp,
+            "fp": fp,
+            "fn": fn,
+            "tn": tn,
+            "precision": round(precision, 4),
+            "recall": round(recall, 4),
+            "f1": round(f1, 4),
+            "support": support,
+        }
+
+    macro_precision = sum(per_class[c]["precision"] for c in FOUR_CLASSES) / len(FOUR_CLASSES)
+    macro_recall = sum(per_class[c]["recall"] for c in FOUR_CLASSES) / len(FOUR_CLASSES)
+    macro_f1 = sum(per_class[c]["f1"] for c in FOUR_CLASSES) / len(FOUR_CLASSES)
+
+    weighted_precision = sum(per_class[c]["precision"] * per_class[c]["support"] for c in FOUR_CLASSES) / total_samples if total_samples else 0.0
+    weighted_recall = sum(per_class[c]["recall"] * per_class[c]["support"] for c in FOUR_CLASSES) / total_samples if total_samples else 0.0
+    weighted_f1 = sum(per_class[c]["f1"] * per_class[c]["support"] for c in FOUR_CLASSES) / total_samples if total_samples else 0.0
+
+    return {
+        "confusionMatrix": matrix,
+        "perClass": per_class,
+        "accuracy": round(accuracy, 4),
+        "macro": {
+            "precision": round(macro_precision, 4),
+            "recall": round(macro_recall, 4),
+            "f1": round(macro_f1, 4),
+        },
+        "weighted": {
+            "precision": round(weighted_precision, 4),
+            "recall": round(weighted_recall, 4),
+            "f1": round(weighted_f1, 4),
+        },
         "totalSamples": total_samples,
     }
 

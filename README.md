@@ -113,6 +113,8 @@ npm run dev:api       # Starts Fastify on :8000
 npm run dev:web       # Starts Next.js on :3000
 ```
 
+The Next.js dev server uses a separate `.next-dev` output directory from production builds, so the two can run at the same time.
+
 ### 4. Or Run with Docker Compose
 
 ```bash

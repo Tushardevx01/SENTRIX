@@ -638,11 +638,22 @@ class DomainAnalyzer:
                     confidence=94.0 if is_typo_case else 92.0
                 ))
 
-        # 6. Generic Staging or Ephemeral Infrastructure Pattern Detection (Phase 7.3)
-        matched_infra_tokens = [
-            tok for tok in GENERIC_INFRASTRUCTURE_TOKENS
-            if tok in normalized_domain.lower()
-        ]
+        # 6. Generic Staging or Ephemeral Infrastructure Pattern Detection (Phase 7.3 & 7.3.1)
+        # Token-aware matching prevents substrings (e.g. "investaging") from triggering.
+        # Informational signal records naming conventions without independently overriding active web context.
+        domain_labels = normalized_domain.lower().split(".")
+        matched_infra_tokens = []
+        for tok in GENERIC_INFRASTRUCTURE_TOKENS:
+            if tok in all_tokens:
+                matched_infra_tokens.append(tok)
+            elif "-" in tok:
+                tok_parts = tok.split("-")
+                for label in domain_labels:
+                    label_parts = label.split("-")
+                    for i in range(len(label_parts) - len(tok_parts) + 1):
+                        if label_parts[i:i + len(tok_parts)] == tok_parts:
+                            matched_infra_tokens.append(tok)
+                            break
         if matched_infra_tokens and registered_domain not in RECOGNIZED_AUTHENTIC_DOMAINS:
             findings.append(RawFinding(
                 category="DOMAIN_REPUTATION",
@@ -653,7 +664,6 @@ class DomainAnalyzer:
                     "signal": "STAGING_PATTERN",
                     "matchedTokens": matched_infra_tokens,
                     "registeredDomain": registered_domain,
-                    "isInformationalInfrastructure": True,
                     "dedupKey": "INFRA_STAGING_PATTERN",
                 },
                 confidence=80.0,

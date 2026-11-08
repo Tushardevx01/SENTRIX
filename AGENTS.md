@@ -46,6 +46,7 @@ There is **no lint/format toolchain** — do not invent one. Verification = `npm
 ## Gotchas (things you would otherwise get wrong)
 
 - **`@sentrix/shared` must be built before anything else.** After `npm install`, after editing `packages/shared/src`, or on a fresh clone, run `npm run build:shared` or api/web builds and dev servers fail to resolve the package. `npm run build` handles the order.
+- Next.js development uses `apps/web/.next-dev`; production builds use `apps/web/.next` so `npm run build` can run without corrupting an active dev server.
 - **`apps/api/scripts/test.js` hardcodes the list of 7 test files.** A new `src/test/*.test.ts` file will NOT run until you add it there. Root `npm test` runs only API tests — scanner tests are a separate command.
 - **API tests need a root `.env` and live MongoDB.** Config validation (`src/config/index.ts`) fails at import without `MONGODB_URI` and `SCANNER_API_SECRET` (≥16 chars). Integration suites connect to `mongodb://127.0.0.1:27017/...` (override with `TEST_MONGODB_URI`). Start Mongo first: `docker run -d --name sentrix-mongo -p 27017:27017 mongo:7.0`.
 - **Single root `.env` policy — never create per-service `.env` files.** All three services resolve the repo-root `.env` themselves (paths are cwd-independent). Keys are documented in `README.md`; required: `MONGODB_URI`, `SCANNER_API_SECRET`, `SCANNER_INTERNAL_URL`, `NEXT_PUBLIC_API_URL`. Production additionally requires a non-default `JWT_SECRET` (≥32 chars).

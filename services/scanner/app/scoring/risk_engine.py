@@ -34,7 +34,8 @@ MAX_POSTURE_CONTRIBUTION = 15
 
 def is_posture_finding(f: RawFinding) -> bool:
     """Identifies defense-in-depth posture observations vs active security threat indicators."""
-    if f.evidence.get("isPosture") or f.evidence.get("is_posture"):
+    ev = getattr(f, "evidence", None)
+    if isinstance(ev, dict) and (ev.get("isPosture") or ev.get("is_posture")):
         return True
     if f.title in POSTURE_TITLES:
         return True
@@ -47,10 +48,12 @@ def is_posture_finding(f: RawFinding) -> bool:
 
 def get_dedup_key(f: RawFinding) -> str:
     """Returns a stable deduplication identity for overlapping security characteristics."""
-    if "dedupKey" in f.evidence:
-        return str(f.evidence["dedupKey"])
-    if "dedup_key" in f.evidence:
-        return str(f.evidence["dedup_key"])
+    ev = getattr(f, "evidence", None)
+    if isinstance(ev, dict):
+        if "dedupKey" in ev:
+            return str(ev["dedupKey"])
+        if "dedup_key" in ev:
+            return str(ev["dedup_key"])
     norm_title = f.title.strip().lower()
     return f"{f.category}:{norm_title}"
 
@@ -135,14 +138,23 @@ class RiskAggregationEngine:
             analysis_complete = False
             inconclusive_reasons.append("Critical failure: All network security analyzers failed or were unreachable.")
 
-        # Determine if unverified infrastructure signals are present (Phase 7.3)
+        # Determine if unverified infrastructure signals are present (Phase 7.3 / 7.3.1)
+        # Contextual requirement: Generic tokens alone do not suffice without corroborating
+        # infrastructure evidence (e.g. parked/placeholder page, unverified plain HTTP hosting).
+        def _is_unverified_signal(f: RawFinding) -> bool:
+            ev = getattr(f, "evidence", None)
+            if not isinstance(ev, dict):
+                return False
+            if ev.get("isInformationalInfrastructure") is True:
+                return True
+            if ev.get("signal") in ("PARKED_PAGE", "UNVERIFIED_HOSTING"):
+                return True
+            return False
+
         has_unverified_infra_signal = any(
-            f.evidence.get("isInformationalInfrastructure") is True or
-            f.evidence.get("signal") in ("PARKED_PAGE", "STAGING_PATTERN", "UNVERIFIED_HOSTING") or
-            get_dedup_key(f).startswith("INFRA_") or
+            _is_unverified_signal(f) or
             f.title in (
                 "Parked or Placeholder Domain Page Detected",
-                "Generic Staging or Ephemeral Infrastructure Pattern",
                 "Unverified Infrastructure / Plain HTTP Hosting",
             )
             for f in findings
