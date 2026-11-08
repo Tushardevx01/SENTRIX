@@ -5,19 +5,17 @@ import Link from 'next/link';
 import {
   Network,
   Search,
-  Layers,
-  AlertTriangle,
-  ShieldAlert,
-  ShieldCheck,
-  ExternalLink,
-  RefreshCw,
-  FolderTree,
-  Activity,
   Globe,
   Wallet,
   Mail,
   Phone,
   Hash,
+  ArrowRight,
+  Terminal,
+  Activity,
+  Layers,
+  ChevronRight,
+  ShieldAlert,
 } from 'lucide-react';
 import {
   fetchThreatCampaigns,
@@ -81,275 +79,232 @@ export default function CorrelationPage() {
     switch (type) {
       case IndicatorTypeEnum.DOMAIN:
       case IndicatorTypeEnum.IP:
-        return <Globe className="w-3.5 h-3.5 text-sky-400" />;
+        return <Globe className="w-3.5 h-3.5 text-black dark:text-white" />;
       case IndicatorTypeEnum.WALLET:
-        return <Wallet className="w-3.5 h-3.5 text-emerald-400" />;
+        return <Wallet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />;
       case IndicatorTypeEnum.EMAIL:
-        return <Mail className="w-3.5 h-3.5 text-indigo-400" />;
+        return <Mail className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />;
       case IndicatorTypeEnum.PHONE:
-        return <Phone className="w-3.5 h-3.5 text-amber-400" />;
+        return <Phone className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />;
       default:
-        return <Hash className="w-3.5 h-3.5 text-theme-muted" />;
+        return <Hash className="w-3.5 h-3.5 text-neutral-400" />;
     }
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-16">
+    <div className="space-y-8 max-w-7xl mx-auto pb-16 font-mono text-xs">
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-theme-border pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200 dark:border-[#1f1f23] pb-6">
         <div>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-theme-accent/10 border border-theme-accent/20 text-theme-accent shadow-xs">
-              <Network className="w-6 h-6" />
+            <div className="p-2 rounded-lg bg-neutral-100 dark:bg-[#18181b] border border-neutral-200 dark:border-[#27272a] text-black dark:text-white shadow-xs">
+              <Network className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-theme-text flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-serif text-black dark:text-white flex items-center gap-2">
                 Threat Correlation & Campaign Graph
-                <span className="text-[10px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-full bg-theme-accent/10 text-theme-accent border border-theme-accent/20">
-                  Cross-Vector IOC Graph
+                <span className="text-[9px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-[#18181b] text-neutral-700 dark:text-neutral-300 border border-neutral-300 dark:border-[#27272a]">
+                  MODULE B
                 </span>
               </h1>
-              <p className="text-xs text-theme-muted mt-0.5">
-                Automatically connects recurring domains, shared IPs, crypto wallet addresses, and social engineering patterns across scans and scam messages.
+              <p className="text-xs text-neutral-500 font-mono mt-0.5">
+                Automatically links shared hosting IPs, cryptocurrency drainer wallets, and attacker infrastructure.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Target Correlation Search */}
-      <div className="bg-theme-card border border-theme-border rounded-xl p-5 shadow-sm space-y-4">
+      {/* Target Correlation Search Box with Normal Rounded Search Bar */}
+      <div className="bg-white dark:bg-[#0c0c0e] border border-neutral-200 dark:border-[#27272a] rounded-xl p-5 sm:p-6 shadow-card space-y-3">
         <div>
-          <h2 className="text-xs font-mono font-semibold uppercase tracking-wider text-theme-text flex items-center gap-2">
-            <Search className="w-4 h-4 text-theme-accent" />
-            Query Cross-Vector Threat Graph
+          <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
+            <Terminal className="w-4 h-4" />
+            // 01. QUERY CROSS-VECTOR THREAT GRAPH
           </h2>
-          <p className="text-[11px] text-theme-muted mt-0.5">
-            Enter a domain, IP address, cryptocurrency wallet, email, or telephone number to uncover linked campaigns and incidents.
+          <p className="text-[11px] text-neutral-500 mt-0.5">
+            Enter a domain, IP address, cryptocurrency wallet, email, or telephone number to uncover linked incidents.
           </p>
         </div>
 
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <input
-            type="text"
-            required
-            placeholder="e.g. login-secure-auth.com or 0x71C84183... or +1-800-555-0199"
-            value={searchTarget}
-            onChange={(e) => setSearchTarget(e.target.value)}
-            className="flex-1 px-3 py-2 text-xs font-mono rounded-lg border border-theme-border bg-theme-base text-theme-text placeholder:text-theme-muted/50 focus:outline-none focus:ring-1 focus:ring-theme-accent"
-          />
+        {/* Normal Rounded Search Bar Form */}
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="text"
+              required
+              placeholder="e.g. login-secure-auth.com or 0x71C84183... or +1-800-555-0199"
+              value={searchTarget}
+              onChange={(e) => setSearchTarget(e.target.value)}
+              className="w-full pl-11 pr-4 py-2.5 text-xs font-mono rounded-full border border-neutral-300 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] text-black dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-black dark:focus:border-white transition-all"
+            />
+          </div>
+          {/* Normal dark gray button with white button text */}
           <button
             type="submit"
-            disabled={searching || !searchTarget.trim()}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-theme-accent text-white font-mono text-xs font-semibold hover:bg-theme-accent/90 disabled:opacity-50 transition-all shadow-sm"
+            disabled={searching}
+            className="btn-industrial py-2.5 px-6 rounded-full text-xs font-semibold cursor-pointer disabled:opacity-50 shrink-0"
           >
-            {searching ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-            Trace IOCs
+            {searching ? 'Querying Graph...' : 'Trace Target IOC'}
           </button>
         </form>
+      </div>
 
-        {relatedResult && (
-          <div className="p-4 rounded-lg bg-theme-base border border-theme-border space-y-3 font-mono text-xs">
-            <div className="flex items-center justify-between border-b border-theme-border pb-2">
-              <span className="font-semibold text-theme-text">
-                Correlation Results for: <span className="text-theme-accent">{relatedResult.target}</span>
-              </span>
-              <span className="text-[10px] text-theme-muted">
-                {relatedResult.relatedScans.length} Related Scans • {relatedResult.relatedMessages.length} Messages • {relatedResult.campaigns.length} Campaigns
-              </span>
-            </div>
+      {/* Related Threats Search Result */}
+      {relatedResult && (
+        <div className="p-5 rounded-xl border border-neutral-200 dark:border-[#27272a] bg-white dark:bg-[#0c0c0e] shadow-card space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-[#1f1f23]">
+            <span className="font-bold text-black dark:text-white uppercase tracking-wider">
+              // CORRELATION RESULT FOR &quot;{relatedResult.target}&quot;
+            </span>
+            <span className="text-[10px] text-neutral-500">
+              {relatedResult.campaigns.length} Campaigns Linked
+            </span>
+          </div>
 
-            {/* Campaign links */}
-            {relatedResult.campaigns.length > 0 && (
-              <div>
-                <span className="text-[10px] uppercase text-rose-400 font-bold block mb-1">
-                  Active Campaign Matches:
-                </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span className="text-[10px] uppercase text-neutral-400 block mb-1">
+                Linked Scan Incidents ({relatedResult.relatedScans.length})
+              </span>
+              {relatedResult.relatedScans.length === 0 ? (
+                <div className="text-neutral-400 p-2">No linked web scans found.</div>
+              ) : (
                 <div className="space-y-1">
-                  {relatedResult.campaigns.map((camp) => (
-                    <div
-                      key={camp._id}
-                      className="p-2 rounded bg-rose-500/10 border border-rose-500/20 text-theme-text text-[11px]"
-                    >
-                      <span className="font-bold text-rose-300">{camp.name}</span> — {camp.summary}
+                  {relatedResult.relatedScans.map((s) => (
+                    <div key={s._id} className="p-2 rounded bg-neutral-50 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a] flex items-center justify-between">
+                      <span className="truncate max-w-[200px] text-black dark:text-white">{s.submittedUrl}</span>
+                      <RiskBadge verdict={s.verdict} />
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Related Scans */}
-            {relatedResult.relatedScans.length > 0 && (
-              <div>
-                <span className="text-[10px] uppercase text-theme-muted block mb-1">
-                  Correlated URL Scans:
-                </span>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-                  {relatedResult.relatedScans.map((sc) => (
-                    <Link
-                      key={sc._id}
-                      href={`/reports/${sc._id}`}
-                      className="p-2 rounded bg-theme-elevated border border-theme-border hover:border-theme-accent flex items-center justify-between"
-                    >
-                      <span className="truncate max-w-[200px] text-[11px] text-theme-text">
-                        {sc.submittedUrl}
-                      </span>
-                      <RiskBadge verdict={sc.verdict} size="sm" />
-                    </Link>
+            <div>
+              <span className="text-[10px] uppercase text-neutral-400 block mb-1">
+                Linked Scam Messages ({relatedResult.relatedMessages.length})
+              </span>
+              {relatedResult.relatedMessages.length === 0 ? (
+                <div className="text-neutral-400 p-2">No linked messages found.</div>
+              ) : (
+                <div className="space-y-1">
+                  {relatedResult.relatedMessages.map((m) => (
+                    <div key={m._id} className="p-2 rounded bg-neutral-50 dark:bg-[#121214] border border-neutral-200 dark:border-[#27272a] flex items-center justify-between">
+                      <span className="truncate max-w-[200px] text-black dark:text-white">{m.preview}</span>
+                      <RiskBadge verdict={m.classification} />
+                    </div>
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-theme-border pb-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab('campaigns')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-colors ${
-            activeTab === 'campaigns'
-              ? 'bg-theme-accent text-white'
-              : 'text-theme-muted hover:text-theme-text hover:bg-theme-elevated'
-          }`}
-        >
-          Correlated Campaigns ({campaigns.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('indicators')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-colors ${
-            activeTab === 'indicators'
-              ? 'bg-theme-accent text-white'
-              : 'text-theme-muted hover:text-theme-text hover:bg-theme-elevated'
-          }`}
-        >
-          Tracked Threat Indicators ({indicators.length})
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="py-12 flex justify-center">
-          <RefreshCw className="w-6 h-6 animate-spin text-theme-accent" />
-        </div>
-      ) : activeTab === 'campaigns' ? (
-        campaigns.length === 0 ? (
-          <div className="bg-theme-card border border-theme-border rounded-xl p-8 text-center">
-            <FolderTree className="w-8 h-8 text-theme-muted mx-auto mb-2 opacity-50" />
-            <p className="text-xs font-mono text-theme-muted">
-              No correlated threat campaigns active yet. As repetitive attacks occur across multiple scans and message vectors, the engine will group them here automatically.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {campaigns.map((camp) => (
-              <div
-                key={camp._id}
-                className="bg-theme-card border border-theme-border rounded-xl p-5 shadow-sm space-y-4 hover:border-theme-accent/50 transition-all"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 uppercase font-semibold">
-                      {camp.threatType}
-                    </span>
-                    <h3 className="text-sm font-bold text-theme-text mt-1.5">
-                      {camp.name}
-                    </h3>
-                  </div>
-                  <span className="text-[11px] font-mono font-semibold text-theme-accent bg-theme-accent/10 px-2 py-0.5 rounded border border-theme-accent/20">
-                    Confidence: {camp.confidence}%
-                  </span>
-                </div>
-
-                <p className="text-xs text-theme-muted font-sans leading-relaxed">
-                  {camp.summary}
-                </p>
-
-                <div className="space-y-2 pt-2 border-t border-theme-border text-xs font-mono">
-                  <span className="text-[10px] uppercase text-theme-muted block">
-                    Shared Campaign Indicators:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {camp.indicators?.map((ind, i) => (
-                      <span
-                        key={i}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-theme-base border border-theme-border text-[11px] text-theme-text"
-                      >
-                        {getIndicatorIcon(ind.type)}
-                        <span className="truncate max-w-[150px]">{ind.value}</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 pt-2 border-t border-theme-border text-xs font-mono">
-                  <span className="text-[10px] uppercase text-theme-muted block">
-                    Linked Incidents ({camp.relatedIncidents?.length || 0}):
-                  </span>
-                  <div className="space-y-1">
-                    {camp.relatedIncidents?.slice(0, 3).map((inc, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between p-1.5 rounded bg-theme-base/60 text-[11px]"
-                      >
-                        <span className="truncate max-w-[200px] text-theme-text">{inc.target}</span>
-                        <RiskBadge verdict={inc.verdict} size="sm" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )
-      ) : (
-        /* Indicators Tab */
-        <div className="bg-theme-card border border-theme-border rounded-xl p-5 shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono">
-              <thead>
-                <tr className="border-b border-theme-border text-theme-muted uppercase text-[10px]">
-                  <th className="py-2 px-3">Type</th>
-                  <th className="py-2 px-3">Normalized Indicator</th>
-                  <th className="py-2 px-3">Severity</th>
-                  <th className="py-2 px-3">Occurrences</th>
-                  <th className="py-2 px-3">First Seen</th>
-                  <th className="py-2 px-3">Last Seen</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-theme-border/50">
-                {indicators.map((ind) => (
-                  <tr key={ind._id} className="hover:bg-theme-elevated/40 transition-colors">
-                    <td className="py-2.5 px-3">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-theme-text">
-                        {getIndicatorIcon(ind.type)}
-                        {ind.type}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-3 text-theme-text font-bold truncate max-w-[260px]">
-                      {ind.value}
-                    </td>
-                    <td className="py-2.5 px-3">
-                      <RiskBadge severity={ind.severity} size="sm" />
-                    </td>
-                    <td className="py-2.5 px-3 text-theme-accent font-bold">
-                      {ind.occurrences}x
-                    </td>
-                    <td className="py-2.5 px-3 text-theme-muted text-[10px]">
-                      {new Date(ind.firstSeen).toLocaleDateString()}
-                    </td>
-                    <td className="py-2.5 px-3 text-theme-muted text-[10px]">
-                      {new Date(ind.lastSeen).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              )}
+            </div>
           </div>
         </div>
       )}
+
+      {/* Tabs: Campaigns vs Tracked Atomic Indicators */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-[#1f1f23] pb-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('campaigns')}
+            className={`px-4 py-1.5 rounded-full text-xs font-mono transition-colors cursor-pointer ${
+              activeTab === 'campaigns'
+                ? 'btn-industrial'
+                : 'text-neutral-500 hover:text-black dark:hover:text-white'
+            }`}
+          >
+            Active Attack Campaigns ({campaigns.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('indicators')}
+            className={`px-4 py-1.5 rounded-full text-xs font-mono transition-colors cursor-pointer ${
+              activeTab === 'indicators'
+                ? 'btn-industrial'
+                : 'text-neutral-500 hover:text-black dark:hover:text-white'
+            }`}
+          >
+            Tracked Atomic IOCs ({indicators.length})
+          </button>
+        </div>
+
+        {activeTab === 'campaigns' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {campaigns.length === 0 ? (
+              <div className="col-span-full p-8 text-center text-neutral-400 border border-neutral-200 dark:border-[#27272a] rounded-xl bg-white dark:bg-[#0c0c0e]">
+                No threat campaigns identified yet. Run scans or message audits to cluster attacker infrastructure.
+              </div>
+            ) : (
+              campaigns.map((camp) => (
+                <div
+                  key={camp.campaignId}
+                  className="card-floating p-5 space-y-3"
+                >
+                  <div className="flex items-center justify-between pb-2 border-b border-neutral-200 dark:border-[#1f1f23]">
+                    <span className="font-bold text-black dark:text-white truncate pr-2">
+                      {camp.name}
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-[#18181b] text-neutral-500 uppercase font-pixel shrink-0">
+                      {camp.threatType}
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
+                    {camp.summary}
+                  </p>
+
+                  <div className="pt-2 border-t border-neutral-100 dark:border-[#1f1f23] flex items-center justify-between text-[10px] text-neutral-400">
+                    <span>{camp.relatedIncidents?.length || 0} linked events</span>
+                    <span>Confidence: {camp.confidence}%</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-[#0c0c0e] border border-neutral-200 dark:border-[#27272a] rounded-xl overflow-hidden shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left font-mono text-xs">
+                <thead>
+                  <tr className="border-b border-neutral-200 dark:border-[#1f1f23] text-neutral-400 text-[10px] uppercase bg-neutral-50 dark:bg-[#121214]">
+                    <th className="py-2.5 px-4">Indicator Type</th>
+                    <th className="py-2.5 px-4">Normalized Value</th>
+                    <th className="py-2.5 px-4 text-center">Occurrences</th>
+                    <th className="py-2.5 px-4">Severity</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100 dark:divide-[#18181b]">
+                  {indicators.map((ind) => (
+                    <tr key={ind._id} className="hover:bg-neutral-50 dark:hover:bg-[#141416]">
+                      <td className="py-2.5 px-4 flex items-center gap-2">
+                        {getIndicatorIcon(ind.type)}
+                        <span className="font-semibold text-black dark:text-white">{ind.type}</span>
+                      </td>
+                      <td className="py-2.5 px-4 max-w-[280px] truncate text-neutral-600 dark:text-neutral-300">
+                        {ind.normalizedValue}
+                      </td>
+                      <td className="py-2.5 px-4 text-center font-bold">
+                        {ind.occurrences}
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-pixel ${
+                          ind.severity === 'CRITICAL' ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400' :
+                          ind.severity === 'HIGH' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' :
+                          'bg-neutral-200 text-neutral-700 dark:bg-[#27272a] dark:text-neutral-300'
+                        }`}>
+                          {ind.severity}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

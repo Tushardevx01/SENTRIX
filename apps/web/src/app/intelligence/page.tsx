@@ -7,18 +7,12 @@ import {
   Radio,
   Search,
   ShieldAlert,
-  ArrowUpRight,
+  ArrowRight,
   Globe,
   AlertTriangle,
-  Filter,
-  Layers,
-  Database,
   ExternalLink,
-  Shield,
-  Activity,
-  CheckCircle2,
+  Terminal,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { fetchThreats } from '@/lib/api';
 import { RiskBadge } from '@/components/ui/RiskBadge';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -63,169 +57,109 @@ function ThreatIntelligenceContent() {
   };
 
   return (
-    <div className="space-y-8 py-2">
+    <div className="space-y-8 py-2 max-w-6xl mx-auto font-mono text-xs">
       {/* Page Header */}
-      <div className="space-y-2">
-        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-theme-accent/10 border border-theme-accent/20 text-theme-accent text-xs font-mono font-medium">
-          <Radio className="w-3.5 h-3.5" />
-          <span>Global IOC Telemetry Feed</span>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-neutral-200 dark:border-[#1f1f23] pb-6">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 dark:bg-[#121214] border border-neutral-300 dark:border-[#27272a] text-[11px] text-neutral-600 dark:text-neutral-300">
+            <Radio className="w-3.5 h-3.5" />
+            <span>[ INTEL // GLOBAL IOC FEED ]</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-serif text-black dark:text-white">
+            Threat Intelligence Repository
+          </h1>
+          <p className="text-xs text-neutral-500 font-mono max-w-2xl">
+            Verified database of high-threat domains, deceptive hostnames, credential harvesting portals, and community alerts.
+          </p>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-theme-text font-mono tracking-tight">
-          THREAT INTELLIGENCE REPOSITORY
-        </h1>
-        <p className="text-xs text-theme-muted font-mono max-w-2xl">
-          Verified database of high-threat domains, deceptive hostnames, credential harvesting portals,
-          and community peer alerts.
-        </p>
       </div>
 
-      {/* Search Input Bar */}
+      {/* Normal Rounded Search Bar */}
       <form onSubmit={handleSearch} className="max-w-2xl">
-        <div className="flex items-center gap-2 p-2 bg-theme-card border border-theme-border rounded-xl shadow-xs focus-within:border-theme-accent transition-all">
-          <Search className="w-4 h-4 text-theme-muted ml-2 shrink-0" />
+        <div className="relative flex items-center">
+          <Search className="w-4 h-4 absolute left-4 text-neutral-400" />
           <input
             type="text"
             placeholder="Search domain, hostname, or threat keyword (e.g. paypal, .xyz, auth)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-transparent text-theme-text text-xs font-mono placeholder:text-theme-muted focus:outline-none py-1.5"
+            className="w-full pl-11 pr-28 py-2.5 text-xs font-mono rounded-full border border-neutral-300 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] text-black dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-black dark:focus:border-white transition-all"
           />
-          {query && (
-            <button
-              type="button"
-              onClick={() => {
-                setQuery('');
-                loadData('');
-              }}
-              className="text-xs font-mono text-theme-muted hover:text-theme-text px-2"
-            >
-              Clear
-            </button>
-          )}
+          {/* Normal dark gray button with white button text */}
           <button
             type="submit"
-            className="px-4 py-2 bg-theme-accent text-white dark:text-slate-950 font-bold rounded-lg text-xs font-mono transition-opacity hover:opacity-90 shrink-0"
+            className="btn-industrial absolute right-1.5 py-1.5 px-4 rounded-full text-xs font-semibold cursor-pointer"
           >
-            Filter Feed
+            Search
           </button>
         </div>
       </form>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl border border-theme-border bg-theme-card">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-theme-muted block mb-1">
-            Active Threat Indicators
-          </span>
-          <span className="text-2xl font-black font-mono text-theme-text block">
-            {threats.length}
-          </span>
-          <span className="text-[10px] font-mono text-theme-muted mt-1 block">Verified malicious / suspicious</span>
-        </div>
-        <div className="p-4 rounded-xl border border-theme-border bg-theme-card">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-theme-muted block mb-1">
-            Community Alerts
-          </span>
-          <span className="text-2xl font-black font-mono text-theme-accentSec block">
-            {communityThreats.length}
-          </span>
-          <span className="text-[10px] font-mono text-theme-muted mt-1 block">Confirmed peer submissions</span>
-        </div>
-        <div className="p-4 rounded-xl border border-theme-border bg-theme-card">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-theme-muted block mb-1">
-            External Feed Ingestion
-          </span>
-          <span className="text-2xl font-black font-mono text-theme-success block flex items-center gap-1.5">
-            <CheckCircle2 className="w-5 h-5 text-theme-success" /> URLhaus Sync
-          </span>
-          <span className="text-[10px] font-mono text-theme-muted mt-1 block">Continuous feed ingestion</span>
-        </div>
-      </div>
-
+      {/* Content */}
       {loading ? (
-        <LoadingState message="Querying Threat Intelligence Registry..." />
+        <LoadingState message="Querying Global Threat Feed..." />
       ) : error ? (
-        <ErrorState message={error} onRetry={() => loadData(query)} />
+        <ErrorState title="Threat Intel Error" message={error} onRetry={() => loadData(query)} />
       ) : (
         <div className="space-y-8">
-          {/* Flagged Scan Threats Grid */}
-          <div className="space-y-4">
-            <h2 className="text-sm font-bold font-mono text-theme-text flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-theme-danger" />
-              <span>VERIFIED MALICIOUS & SUSPICIOUS ENDPOINTS ({threats.length})</span>
-            </h2>
+          {/* Verified Threats Table */}
+          <div className="bg-white dark:bg-[#0c0c0e] border border-neutral-200 dark:border-[#27272a] rounded-xl overflow-hidden shadow-xs space-y-3 p-5">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-[#1f1f23]">
+              <span className="font-bold uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
+                <Terminal className="w-4 h-4" />
+                // 01. ACTIVE SUSPICIOUS & MALICIOUS HOSTS
+              </span>
+              <span className="text-[10px] text-neutral-500 font-pixel">
+                {threats.length} IDENTIFIED
+              </span>
+            </div>
 
             {threats.length === 0 ? (
-              <div className="p-8 rounded-xl border border-dashed border-theme-border text-center text-xs font-mono text-theme-muted">
-                No active threat records match your search criteria. Try a broader search term.
+              <div className="py-8 text-center text-neutral-400">
+                No active threats found matching your query.
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {threats.map((threat) => (
-                  <div
-                    key={threat._id}
-                    className="p-5 rounded-xl bg-theme-card border border-theme-border hover:border-theme-accent/40 transition-all flex flex-col justify-between shadow-xs space-y-3"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <RiskBadge verdict={threat.verdict} size="sm" />
-                        <span className="text-xs font-mono font-bold text-theme-text px-2 py-0.5 rounded bg-theme-elevated border border-theme-borderSubtle">
-                          Risk: {threat.riskScore}
-                        </span>
-                      </div>
-                      <h3 className="font-mono text-sm font-bold text-theme-text break-all mb-1">
-                        {threat.submittedUrl}
-                      </h3>
-                      <p className="text-xs font-mono text-theme-muted flex items-center gap-1">
-                        <Globe className="w-3.5 h-3.5 text-theme-accent" />
-                        Domain: <strong className="text-theme-text">{threat.normalizedDomain}</strong>
-                      </p>
-                    </div>
-
-                    <div className="pt-3 border-t border-theme-borderSubtle flex items-center justify-between text-xs font-mono">
-                      <span className="text-theme-muted">
-                        {new Date(threat.createdAt).toLocaleDateString()}
-                      </span>
-                      <Link
-                        href={`/reports/${threat._id}`}
-                        className="text-theme-accent hover:underline inline-flex items-center gap-1 font-semibold"
-                      >
-                        Inspect Report <ArrowUpRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left font-mono text-xs">
+                  <thead>
+                    <tr className="border-b border-neutral-200 dark:border-[#1f1f23] text-neutral-400 text-[10px] uppercase bg-neutral-50 dark:bg-[#121214]">
+                      <th className="py-2.5 px-3">Target Domain</th>
+                      <th className="py-2.5 px-3">Submitted URL</th>
+                      <th className="py-2.5 px-3 text-center">Score</th>
+                      <th className="py-2.5 px-3">Verdict</th>
+                      <th className="py-2.5 px-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100 dark:divide-[#18181b]">
+                    {threats.map((t) => (
+                      <tr key={t._id} className="hover:bg-neutral-50 dark:hover:bg-[#141416]">
+                        <td className="py-2.5 px-3 font-bold text-black dark:text-white max-w-[200px] truncate">
+                          {t.normalizedDomain}
+                        </td>
+                        <td className="py-2.5 px-3 text-neutral-500 max-w-[240px] truncate">
+                          {t.submittedUrl}
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-bold">
+                          {t.riskScore}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <RiskBadge verdict={t.verdict} />
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                          <Link
+                            href={`/reports/${t._id}`}
+                            className="btn-industrial text-[10px] py-1 px-2.5 rounded"
+                          >
+                            Inspect
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
-
-          {/* Confirmed Community Threats */}
-          {communityThreats.length > 0 && (
-            <div className="space-y-4 pt-4 border-t border-theme-border">
-              <h2 className="text-sm font-bold font-mono text-theme-text flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-theme-warning" />
-                <span>CONFIRMED PEER COMMUNITY THREATS ({communityThreats.length})</span>
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {communityThreats.map((rep) => (
-                  <div
-                    key={rep._id}
-                    className="p-5 rounded-xl bg-theme-card border border-theme-border text-xs font-mono space-y-2 shadow-xs"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold uppercase border border-amber-500/20 text-[10px]">
-                        {rep.category}
-                      </span>
-                      <span className="text-theme-muted">Verifications: {rep.reportCount}</span>
-                    </div>
-                    <p className="text-theme-text font-bold break-all">{rep.submittedUrl}</p>
-                    <p className="text-theme-muted text-[11px] leading-relaxed">{rep.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
@@ -234,7 +168,7 @@ function ThreatIntelligenceContent() {
 
 export default function ThreatIntelligencePage() {
   return (
-    <Suspense fallback={<div className="p-12 text-center text-xs font-mono text-theme-muted">Loading threat intelligence...</div>}>
+    <Suspense fallback={<div className="p-8 text-center font-mono text-xs text-neutral-500">Loading intelligence feed...</div>}>
       <ThreatIntelligenceContent />
     </Suspense>
   );

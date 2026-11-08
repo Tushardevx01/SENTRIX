@@ -3,23 +3,14 @@
 import React, { useState } from 'react';
 import {
   Settings,
-  User,
   Sun,
   Moon,
-  Bell,
   Shield,
-  Key,
-  Database,
   CheckCircle2,
-  Lock,
+  Terminal,
   Save,
-  RotateCcw,
-  Sparkles,
-  Server,
-  Layers,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { motion } from 'framer-motion';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -27,8 +18,6 @@ export default function SettingsPage() {
   // Settings State
   const [analystName, setAnalystName] = useState('Senior Security Analyst');
   const [analystEmail, setAnalystEmail] = useState('analyst@sentrix.internal');
-  const [alertEmail, setAlertEmail] = useState(true);
-  const [slackWebhook, setSlackWebhook] = useState(false);
   const [strictZeroTrust, setStrictZeroTrust] = useState(true);
   const [sessionTimeout, setSessionTimeout] = useState('30m');
   const [saved, setSaved] = useState(false);
@@ -40,53 +29,58 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-8 py-2 max-w-4xl mx-auto">
+    <div className="space-y-8 py-2 max-w-4xl mx-auto font-mono text-xs">
       {/* Header */}
-      <div className="space-y-2">
-        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-theme-accent/10 border border-theme-accent/20 text-theme-accent text-xs font-mono font-medium">
-          <Settings className="w-3.5 h-3.5" />
-          <span>Platform Configuration</span>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-neutral-200 dark:border-[#1f1f23] pb-6">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 dark:bg-[#121214] border border-neutral-300 dark:border-[#27272a] text-[11px] text-neutral-600 dark:text-neutral-300">
+            <Settings className="w-3.5 h-3.5" />
+            <span>[ CONFIG // PLATFORM SETTINGS ]</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-serif text-black dark:text-white">
+            Platform Configuration
+          </h1>
+          <p className="text-xs text-neutral-500 font-mono max-w-2xl">
+            Manage visual appearance, alert thresholds, security policies, and session controls.
+          </p>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-theme-text font-mono tracking-tight">
-          PLATFORM & ANALYST SETTINGS
-        </h1>
-        <p className="text-xs text-theme-muted font-mono max-w-2xl">
-          Manage visual appearance, alert thresholds, security policies, and session controls.
-        </p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Appearance & Theme Selector */}
-        <div className="p-6 rounded-xl border border-theme-border bg-theme-card shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-theme-borderSubtle">
-            <Sun className="w-4 h-4 text-theme-accent" />
-            <h3 className="text-sm font-bold font-mono text-theme-text">APPEARANCE & THEME</h3>
+        <div className="p-6 rounded-xl border border-neutral-200 dark:border-[#27272a] bg-white dark:bg-[#0c0c0e] shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-[#1f1f23]">
+            <span className="font-bold uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
+              <Sun className="w-4 h-4" />
+              // 01. APPEARANCE & THEME (MINIMAL BLACK & WHITE)
+            </span>
+            <span className="text-[10px] text-neutral-500 font-pixel">UI_STYLE</span>
           </div>
 
           <div>
-            <label className="block text-xs font-mono font-semibold text-theme-text mb-3">
-              Theme Mode (Light Mode is Default)
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+              Theme Mode
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Light Theme Option */}
               <button
                 type="button"
                 onClick={() => setTheme('light')}
-                className={`p-4 rounded-xl border text-left transition-all ${
+                className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
                   theme === 'light'
-                    ? 'border-theme-accent bg-theme-accent/5 ring-2 ring-theme-accent/20'
-                    : 'border-theme-border bg-theme-elevated/40 hover:border-theme-muted'
+                    ? 'border-black dark:border-white bg-neutral-100 dark:bg-[#18181b]'
+                    : 'border-neutral-200 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] text-neutral-500'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <Sun className="w-4 h-4 text-amber-500" />
-                    <span className="text-xs font-bold font-mono text-theme-text">Light Theme</span>
+                    <Sun className="w-4 h-4 text-black dark:text-white" />
+                    <span className="text-xs font-bold text-black dark:text-white">Minimal Light Theme</span>
                   </div>
-                  {theme === 'light' && <CheckCircle2 className="w-4 h-4 text-theme-accent" />}
+                  {theme === 'light' && <CheckCircle2 className="w-4 h-4 text-black dark:text-white" />}
                 </div>
-                <p className="text-[11px] font-mono text-theme-muted">
-                  Clean, high-contrast white aesthetic optimized for daytime SOC environments.
+                <p className="text-[11px] text-neutral-500 leading-relaxed font-sans">
+                  Stark high-contrast clean white and dark gray minimal aesthetic.
                 </p>
               </button>
 
@@ -94,163 +88,74 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setTheme('dark')}
-                className={`p-4 rounded-xl border text-left transition-all ${
+                className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
                   theme === 'dark'
-                    ? 'border-theme-accent bg-theme-accent/5 ring-2 ring-theme-accent/20'
-                    : 'border-theme-border bg-theme-elevated/40 hover:border-theme-muted'
+                    ? 'border-black dark:border-white bg-neutral-100 dark:bg-[#18181b]'
+                    : 'border-neutral-200 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] text-neutral-500'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <Moon className="w-4 h-4 text-theme-accent" />
-                    <span className="text-xs font-bold font-mono text-theme-text">Dark Theme</span>
+                    <Moon className="w-4 h-4 text-black dark:text-white" />
+                    <span className="text-xs font-bold text-black dark:text-white">Industrial Void Dark</span>
                   </div>
-                  {theme === 'dark' && <CheckCircle2 className="w-4 h-4 text-theme-accent" />}
+                  {theme === 'dark' && <CheckCircle2 className="w-4 h-4 text-black dark:text-white" />}
                 </div>
-                <p className="text-[11px] font-mono text-theme-muted">
-                  Technical, low-fatigue cybersecurity aesthetic with electric accents.
+                <p className="text-[11px] text-neutral-500 leading-relaxed font-sans">
+                  Deep pure black industrial cybersecurity console with white typography.
                 </p>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Analyst Profile */}
-        <div className="p-6 rounded-xl border border-theme-border bg-theme-card shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-theme-borderSubtle">
-            <User className="w-4 h-4 text-theme-accent" />
-            <h3 className="text-sm font-bold font-mono text-theme-text">OPERATOR PROFILE</h3>
+        {/* Security Policies */}
+        <div className="p-6 rounded-xl border border-neutral-200 dark:border-[#27272a] bg-white dark:bg-[#0c0c0e] shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-[#1f1f23]">
+            <span className="font-bold uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              // 02. ZERO-TRUST PERIMETER INVARIANTS
+            </span>
+            <span className="text-[10px] text-neutral-500 font-pixel">POLICIES</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
-            <div>
-              <label className="block text-theme-text font-semibold mb-1">Display Name</label>
-              <input
-                type="text"
-                value={analystName}
-                onChange={(e) => setAnalystName(e.target.value)}
-                className="w-full bg-theme-bg border border-theme-border rounded-lg p-2.5 text-theme-text focus:outline-none focus:border-theme-accent"
-              />
-            </div>
-            <div>
-              <label className="block text-theme-text font-semibold mb-1">Analyst Email</label>
-              <input
-                type="email"
-                value={analystEmail}
-                onChange={(e) => setAnalystEmail(e.target.value)}
-                className="w-full bg-theme-bg border border-theme-border rounded-lg p-2.5 text-theme-text focus:outline-none focus:border-theme-accent"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Alert Notifications */}
-        <div className="p-6 rounded-xl border border-theme-border bg-theme-card shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-theme-borderSubtle">
-            <Bell className="w-4 h-4 text-theme-accent" />
-            <h3 className="text-sm font-bold font-mono text-theme-text">ALERTING & NOTIFICATIONS</h3>
-          </div>
-
-          <div className="space-y-3 text-xs font-mono">
-            <label className="flex items-start gap-3 p-3 bg-theme-elevated rounded-lg cursor-pointer">
-              <input
-                type="checkbox"
-                checked={alertEmail}
-                onChange={(e) => setAlertEmail(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-theme-border text-theme-accent focus:ring-theme-accent"
-              />
-              <div>
-                <span className="font-semibold text-theme-text block">
-                  Critical Threat Email Notifications
+          <div className="space-y-3">
+            <label className="flex items-center justify-between p-3 rounded-lg border border-neutral-200 dark:border-[#27272a] bg-neutral-50 dark:bg-[#121214] cursor-pointer">
+              <div className="space-y-0.5">
+                <span className="font-semibold text-black dark:text-white block">
+                  Strict Zero-Trust Downgrade (Fail-Safe)
                 </span>
-                <span className="text-theme-muted text-[11px]">
-                  Dispatch automated alerts when a scan triggers MALICIOUS or brand typosquatting.
+                <span className="text-[11px] text-neutral-500 block font-sans">
+                  Unreachable analyzers automatically mark candidate scans as INCONCLUSIVE.
                 </span>
               </div>
-            </label>
-
-            <label className="flex items-start gap-3 p-3 bg-theme-elevated rounded-lg cursor-pointer">
-              <input
-                type="checkbox"
-                checked={slackWebhook}
-                onChange={(e) => setSlackWebhook(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-theme-border text-theme-accent focus:ring-theme-accent"
-              />
-              <div>
-                <span className="font-semibold text-theme-text block">
-                  Collaborative Threat Intel Webhook
-                </span>
-                <span className="text-theme-muted text-[11px]">
-                  Broadcast confirmed peer threat alerts to incident response communication channels.
-                </span>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        {/* Security Policy & Zero-Trust Invariant */}
-        <div className="p-6 rounded-xl border border-theme-border bg-theme-card shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-theme-borderSubtle">
-            <Shield className="w-4 h-4 text-theme-accent" />
-            <h3 className="text-sm font-bold font-mono text-theme-text">SECURITY POLICY CONTROLS</h3>
-          </div>
-
-          <div className="space-y-3 text-xs font-mono">
-            <label className="flex items-start gap-3 p-3 bg-theme-elevated rounded-lg cursor-pointer">
               <input
                 type="checkbox"
                 checked={strictZeroTrust}
                 onChange={(e) => setStrictZeroTrust(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-theme-border text-theme-accent focus:ring-theme-accent"
+                className="w-4 h-4 rounded text-black focus:ring-0 cursor-pointer"
               />
-              <div>
-                <span className="font-semibold text-theme-text block">
-                  Strict Zero-Trust Fail-Safe Mode
-                </span>
-                <span className="text-theme-muted text-[11px]">
-                  Incomplete or unreachable scans are strictly flagged as INCONCLUSIVE and never marked as
-                  benign.
-                </span>
-              </div>
             </label>
-
-            <div className="flex items-center justify-between p-3 bg-theme-elevated rounded-lg">
-              <div>
-                <span className="font-semibold text-theme-text block">Analyst Session Timeout</span>
-                <span className="text-theme-muted text-[11px]">
-                  Re-authenticate session after period of inactivity.
-                </span>
-              </div>
-              <select
-                value={sessionTimeout}
-                onChange={(e) => setSessionTimeout(e.target.value)}
-                className="bg-theme-card border border-theme-border rounded-lg p-2 text-xs font-mono text-theme-text focus:outline-none"
-              >
-                <option value="15m">15 Minutes</option>
-                <option value="30m">30 Minutes</option>
-                <option value="1h">1 Hour</option>
-                <option value="4h">4 Hours</option>
-              </select>
-            </div>
           </div>
         </div>
 
-        {/* Save Bar */}
+        {/* Save Actions */}
         <div className="flex items-center justify-between pt-2">
           {saved ? (
-            <span className="text-xs font-mono text-theme-success flex items-center gap-1.5 font-semibold">
-              <CheckCircle2 className="w-4 h-4" /> Preferences Saved Successfully
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4" /> Configuration changes saved.
             </span>
           ) : (
-            <span className="text-xs font-mono text-theme-muted">Settings persist to local browser storage.</span>
+            <span className="text-neutral-400">Settings persist to browser local storage.</span>
           )}
 
+          {/* Normal dark gray button with white button text */}
           <button
             type="submit"
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-theme-accent text-white dark:text-slate-950 font-bold rounded-lg text-xs font-mono transition-opacity hover:opacity-90 shadow-sm"
+            className="btn-industrial py-2.5 px-6 rounded-full text-xs font-semibold cursor-pointer"
           >
-            <Save className="w-4 h-4" />
-            <span>Save Preferences</span>
+            <Save className="w-3.5 h-3.5 text-white" />
+            <span>Save Settings</span>
           </button>
         </div>
       </form>

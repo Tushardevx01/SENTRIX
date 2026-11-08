@@ -1,61 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Silkscreen&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* LIGHT MODE (DEFAULT) */
-    --bg-main: #F7F9FC;
-    --bg-sidebar: #FFFFFF;
+    /* MINIMAL MONOCHROME LIGHT THEME (PRIMARY) */
+    --bg-main: #FFFFFF;
+    --bg-sidebar: #000000;
     --bg-card: #FFFFFF;
-    --bg-elevated: #F0F4F8;
-    --border-color: #E3E9F0;
-    --border-subtle: #EDF2F7;
-    --text-primary: #172033;
-    --text-secondary: #68758A;
-    --text-muted: #94A3B8;
-    --accent-primary: #5278E8;
-    --accent-secondary: #16B8B0;
-    --accent-purple: #7457D5;
-    --status-success: #16A36A;
-    --status-warning: #E99A32;
-    --status-danger: #E34E5B;
-    --status-info: #3B82F6;
+    --bg-elevated: #F4F4F5;
+    --border-color: #E4E4E7;
+    --border-subtle: #F4F4F5;
+    --text-primary: #09090B;
+    --text-secondary: #52525B;
+    --text-muted: #71717A;
+    --accent-primary: #18181B;
+    --accent-secondary: #27272A;
+    --accent-purple: #18181B;
+    --status-success: #15803D;
+    --status-warning: #B45309;
+    --status-danger: #B91C1C;
+    --status-info: #0284C7;
   }
 
   .dark {
-    /* DARK MODE (SECONDARY) */
-    --bg-main: #090B0E;
-    --bg-sidebar: #0D1014;
-    --bg-card: #11161C;
-    --bg-elevated: #171D24;
-    --border-color: #252D35;
-    --border-subtle: #1C232B;
-    --text-primary: #F4F7FA;
-    --text-secondary: #929EAD;
-    --text-muted: #64748B;
-    --accent-primary: #B6F36B;
-    --accent-secondary: #43D9E8;
-    --accent-purple: #9D7BFF;
-    --status-success: #42C98A;
-    --status-warning: #FFB547;
-    --status-danger: #FF4D5A;
+    /* MINIMAL MONOCHROME DARK THEME (INDUSTRIAL VOID) */
+    --bg-main: #000000;
+    --bg-sidebar: #09090B;
+    --bg-card: #0C0C0E;
+    --bg-elevated: #18181B;
+    --border-color: #27272A;
+    --border-subtle: #18181B;
+    --text-primary: #FAFAFA;
+    --text-secondary: #A1A1AA;
+    --text-muted: #71717A;
+    --accent-primary: #FAFAFA;
+    --accent-secondary: #E4E4E7;
+    --accent-purple: #FAFAFA;
+    --status-success: #22C55E;
+    --status-warning: #F59E0B;
+    --status-danger: #EF4444;
     --status-info: #38BDF8;
   }
 
   body {
     background-color: var(--bg-main);
     color: var(--text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: background-color 0.15s ease, color 0.15s ease;
     overflow-x: hidden;
   }
 }
 
-/* Custom scrollbars */
+/* Typography Utility Classes */
+.font-serif-display {
+  font-family: 'Instrument Serif', Georgia, serif;
+}
+
+.font-mono-code {
+  font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+.font-pixel {
+  font-family: 'Silkscreen', 'Geist Mono', monospace;
+}
+
+/* Custom minimal scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -63,25 +78,223 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
+  background: #3F3F46;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: #71717A;
 }
 
-/* Subtle pattern for subtle technical depth */
+/* Industrial ASCII & Grid Pattern */
 .sentrix-grid {
-  background-size: 32px 32px;
+  background-size: 24px 24px;
   background-image:
-    linear-gradient(to right, rgba(0, 0, 0, 0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
 }
 
 .dark .sentrix-grid {
-  background-size: 32px 32px;
+  background-size: 24px 24px;
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
 }
+
+/* Industrial Button Component (Normal dark gray button with white button text) */
+.btn-industrial {
+  background-color: #18181B;
+  color: #FFFFFF;
+  border: 1px solid #27272A;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-industrial:hover {
+  background-color: #27272A;
+  border-color: #3F3F46;
+  color: #FFFFFF;
+}
+
+.btn-industrial:active {
+  transform: scale(0.99);
+}
+
+.dark .btn-industrial {
+  background-color: #18181B;
+  color: #FAFAFA;
+  border: 1px solid #27272A;
+}
+
+.dark .btn-industrial:hover {
+  background-color: #27272A;
+  border-color: #52525B;
+  color: #FFFFFF;
+}
+
+/* Rounded Search Bar Class */
+.search-bar-rounded {
+  border-radius: 9999px;
+  border: 1px solid #E4E4E7;
+  background-color: #FFFFFF;
+  color: #09090B;
+  padding: 0.625rem 1.25rem 0.625rem 2.75rem;
+  font-size: 0.8125rem;
+  font-family: 'Geist Mono', monospace;
+  outline: none;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.search-bar-rounded:focus {
+  border-color: #18181B;
+  box-shadow: 0 0 0 2px rgba(24, 24, 27, 0.1);
+}
+
+.dark .search-bar-rounded {
+  border: 1px solid #27272A;
+  background-color: #0C0C0E;
+  color: #FAFAFA;
+}
+
+.dark .search-bar-rounded:focus {
+  border-color: #FAFAFA;
+  box-shadow: 0 0 0 2px rgba(250, 250, 250, 0.1);
+}
+
+/* ==============================================================================
+   Floating / Lifted Panel UI Effect (Industrial Design Spec)
+   ============================================================================== */
+.card-floating,
+.lifted-panel {
+  border-radius: 22px;
+  background-color: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 1px 2px 0 rgba(0, 0, 0, 0.02),
+    0 8px 24px -4px rgba(0, 0, 0, 0.07),
+    0 20px 40px -8px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+.card-floating:hover,
+.lifted-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 2px 6px 0 rgba(0, 0, 0, 0.03),
+    0 14px 32px -4px rgba(0, 0, 0, 0.1),
+    0 28px 56px -8px rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 0, 0, 0.14);
+}
+
+.dark .card-floating,
+.dark .lifted-panel {
+  background-color: #0E0E11;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 1px 2px 0 rgba(0, 0, 0, 0.4),
+    0 10px 28px -4px rgba(0, 0, 0, 0.7),
+    0 24px 52px -8px rgba(0, 0, 0, 0.85);
+}
+
+.dark .card-floating:hover,
+.dark .lifted-panel:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    0 2px 6px 0 rgba(0, 0, 0, 0.5),
+    0 16px 36px -4px rgba(0, 0, 0, 0.85),
+    0 32px 64px -8px rgba(0, 0, 0, 0.95);
+}
+
+/* Text highlight pill matching reference design ("content" blue selection pill) */
+.badge-highlight,
+.token-highlight {
+  display: inline-block;
+  background-color: #2563EB;
+  color: #FFFFFF !important;
+  font-weight: 500;
+  padding: 0 5px;
+  border-radius: 4px;
+}
+
+/* ==============================================================================
+   Executive Forensic Report Print / PDF Styles
+   ============================================================================== */
+@media print {
+  @page {
+    margin: 1.5cm;
+    size: auto;
+  }
+
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+
+  header,
+  footer,
+  aside,
+  nav,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .shadow-card,
+  .shadow-xl,
+  .shadow-2xl,
+  .shadow-subtle {
+    box-shadow: none !important;
+  }
+
+  .border,
+  .border-b,
+  .border-t {
+    border-color: #D1D5DB !important;
+  }
+
+  .bg-white,
+  .bg-neutral-50,
+  .bg-neutral-100,
+  .dark\:bg-\[\#0c0c0e\],
+  .dark\:bg-\[\#121214\],
+  .dark\:bg-\[\#000000\] {
+    background-color: #FFFFFF !important;
+    color: #000000 !important;
+  }
+
+  .text-white,
+  .dark\:text-white,
+  .text-neutral-200,
+  .dark\:text-neutral-200 {
+    color: #000000 !important;
+  }
+
+  .text-neutral-500,
+  .text-neutral-400 {
+    color: #4B5563 !important;
+  }
+
+  /* Force page breaks cleanly between forensic sections */
+  .break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
