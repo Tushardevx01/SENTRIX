@@ -1,7 +1,8 @@
 import re
 import ipaddress
+import tldextract
 from urllib.parse import urlparse, unquote
-from typing import List
+from typing import List, Set
 from app.schemas.response import RawFinding
 
 SUSPICIOUS_KEYWORDS = {
@@ -12,9 +13,40 @@ SUSPICIOUS_KEYWORDS = {
     "cvv", "otp", "claim", "airdrop", "lottery", "recruitment", "salary"
 }
 
+ORDINARY_AUTH_TERMS: Set[str] = {
+    "login", "signin", "account", "portal", "verify", "update",
+    "auth", "security", "authenticate", "secure", "verification"
+}
+
+RECOGNIZED_AUTHENTIC_DOMAINS: Set[str] = {
+    # Major tech & identity providers
+    "google.com", "github.com", "amazon.com", "paypal.com", "apple.com",
+    "microsoft.com", "live.com", "office.com", "azure.com", "docker.com",
+    "atlassian.com", "gitlab.com", "steampowered.com", "netflix.com",
+    "facebook.com", "meta.com", "instagram.com", "whatsapp.com",
+    "box.com", "openai.com", "cloudflare.com", "bitbucket.org",
+    "wikipedia.org", "python.org", "mozilla.org", "stackoverflow.com",
+    "nytimes.com", "mit.edu", "bbc.co.uk", "apache.org", "kernel.org",
+    "debian.org", "w3.org", "archive.org", "redhat.com", "rust-lang.org",
+    "cam.ac.uk", "nih.gov",
+
+    # Financial institutions
+    "chase.com", "bankofamerica.com", "bofa.com", "wellsfargo.com",
+    "citi.com", "citibank.com", "barclays.co.uk", "barclays.com",
+    "hsbc.com", "hsbc.co.uk", "santander.com", "santanderbank.com",
+    "sbi.co.in", "onlinesbi.sbi", "onlinesbi.com", "hdfcbank.com",
+    "icicibank.com", "stripe.com", "razorpay.com", "revolut.com",
+    "venmo.com", "cash.app", "binance.com", "coinbase.com",
+    "spotify.com", "adobe.com", "dhl.com", "dropbox.com", "ebay.com",
+    "linkedin.com", "indeed.com", "workday.com", "glassdoor.com",
+}
+
 
 class UrlAnalyzer:
     """Analyzes URL structure, lexical patterns, and obfuscation heuristics."""
+
+    def __init__(self):
+        self.extract = tldextract.TLDExtract(cache_dir=None)
 
     def analyze(self, target_url: str, normalized_domain: str) -> List[RawFinding]:
         findings: List[RawFinding] = []
@@ -22,6 +54,12 @@ class UrlAnalyzer:
         path_lower = parsed.path.lower()
         query_lower = parsed.query.lower()
         hostname = (parsed.hostname or normalized_domain).lower()
+
+        # Public Suffix List-aware domain extraction
+        ext = self.extract(hostname)
+        domain = ext.domain.lower() if ext.domain else ""
+        suffix = ext.suffix.lower() if ext.suffix else ""
+        registered_domain = f"{domain}.{suffix}" if domain and suffix else hostname
 
         # 1. Check if hostname is raw IP address
         try:
@@ -31,14 +69,15 @@ class UrlAnalyzer:
                 severity="HIGH",
                 title="Direct IP Address in URL",
                 description="The target URL utilizes an explicit IP address rather than a registered domain name, a common phishing tactic to evade domain reputation filters.",
-                evidence={"hostname": hostname},
+                evidence={"hostname": hostname, "dedupKey": "HOST_RAW_IP"},
                 confidence=95.0
             ))
         except ValueError:
             pass
 
         # 2. Punycode / Internationalized Domain Name (Homograph Risk)
-        if hostname.startswith("xn--") or ".xn--" in hostname:
+        is_punycode = hostname.startswith("xn--") or ".xn--" in hostname
+        if is_punycode:
             findings.append(RawFinding(
                 category="URL_ANOMALY",
                 severity="MEDIUM",
@@ -49,7 +88,8 @@ class UrlAnalyzer:
             ))
 
         # 3. Embedded userinfo in URL (e.g. http://google.com@phishing.com)
-        if parsed.username or parsed.password or "@" in parsed.netloc:
+        has_userinfo = bool(parsed.username or parsed.password or "@" in parsed.netloc)
+        if has_userinfo:
             findings.append(RawFinding(
                 category="URL_ANOMALY",
                 severity="CRITICAL",
@@ -79,16 +119,37 @@ class UrlAnalyzer:
                 confidence=60.0
             ))
 
-        # 5. Suspicious keywords in subdomains or path
-        matched_keywords = [kw for kw in SUSPICIOUS_KEYWORDS if kw in path_lower or kw in query_lower or kw in hostname]
-        if matched_keywords:
-            severity = "HIGH" if len(matched_keywords) >= 2 else "MEDIUM"
+        # 5. Context-Aware Authentication and Phishing Keyword Analysis (CAL-02)
+        # Check if destination resides on an authentic recognized platform without deceptive evasions
+        is_authentic_recognized_domain = (
+            registered_domain in RECOGNIZED_AUTHENTIC_DOMAINS
+            and not is_punycode
+            and not has_userinfo
+        )
+
+        matched_keywords = [
+            kw for kw in SUSPICIOUS_KEYWORDS
+            if kw in path_lower or kw in query_lower or kw in hostname
+        ]
+
+        if is_authentic_recognized_domain:
+            # On authentic domains, suppress penalties for ordinary authentication endpoints (/login, /signin)
+            # and ignore the brand's own registered domain name (e.g. "paypal" in paypal.com)
+            filtered_keywords = [
+                kw for kw in matched_keywords
+                if kw not in ORDINARY_AUTH_TERMS and kw != domain
+            ]
+        else:
+            filtered_keywords = matched_keywords
+
+        if filtered_keywords:
+            severity = "HIGH" if len(filtered_keywords) >= 2 else "MEDIUM"
             findings.append(RawFinding(
                 category="PHISHING_INDICATOR",
                 severity=severity,
                 title="Sensitive Authentication Keywords in URL",
-                description=f"Detected high-risk deceptive terms ({', '.join(matched_keywords)}) in the URL path, parameters, or domain.",
-                evidence={"keywords": matched_keywords, "url": target_url},
+                description=f"Detected high-risk deceptive terms ({', '.join(filtered_keywords)}) in the URL path, parameters, or domain.",
+                evidence={"keywords": filtered_keywords, "url": target_url},
                 confidence=80.0
             ))
 

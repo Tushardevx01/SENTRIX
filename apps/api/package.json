@@ -10,7 +10,8 @@
     "start": "node dist/server.js",
     "test": "node scripts/test.js",
     "migrate:indexes": "tsx src/scripts/migrateIndexes.ts",
-    "migrate:indexes:dry-run": "tsx src/scripts/migrateIndexes.ts --dry-run"
+    "migrate:indexes:dry-run": "tsx src/scripts/migrateIndexes.ts --dry-run",
+    "create:admin": "tsx src/scripts/createAdmin.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",

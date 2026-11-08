@@ -327,6 +327,25 @@ The migration manager provides:
 10. **Community Voting Anti-Abuse Controls:**
     - Replaces client-controlled session IDs with deterministic, server-derived voter identities (`sha256(voter:${request.ip})`) enforced by MongoDB's unique compound index `{ reportId: 1, userId: 1 }`.
     - Applies dedicated route-level rate limiting (20 votes per minute per IP) with 429 response enforcement to prevent voting manipulation.
+11. **Authentication, RBAC & Privilege Escalation Immunity:**
+    - **Public Registration Immunity:** The public registration endpoint (`POST /api/v1/auth/register`) strictly assigns `role: 'user'`. Any client-supplied role parameters or unexpected properties are stripped at schema parsing (`UserRegisterSchema.strip()`) and database insertion to prevent privilege escalation and mass assignment.
+    - **Non-blocking Bounded Password Hashing:** Uses asynchronous `crypto.scrypt` with OWASP-recommended parameters (`N=16384, r=8, p=1`, 64-byte keylen) and random 16-byte salts formatted as `scrypt$v=1$n=16384,r=8,p=1$<saltHex>$<derivedKeyHex>`, with backward-compatible verification for legacy hashes. Input password length is bounded to 128 characters across both registration and login to protect against scrypt computation DoS. Hashing operations are bounded by `ScryptConcurrencyLimiter` (max 10 parallel operations) with an async queue to strictly cap memory consumption and prevent thread pool starvation.
+    - **Timing-Safe Login & Rate Limiting:** Login route enforces 10 req/min rate limiting, uses generic error responses ("Invalid email address or password"), and executes constant-time dummy scrypt verification on unknown usernames to eliminate enumeration and timing side-channels.
+    - **Operator CLI Bootstrap:** Administrators can only be provisioned via the operator CLI (`npm run create:admin`), which enforces strong passwords (>= 12 characters, rejects common passwords), supports interactive masked password prompts to avoid plaintext disclosure in process tables (`ps`) or shell history, wipes environment credentials from memory immediately after reading, and runs idempotently with duplicate-key race safety.
+    - **Authentication vs Authorization Boundary:** The system strictly separates stateless authentication (verifying JWT signatures, expiration, and format via `authenticate`) from stateful authorization (verifying live database existence, active roles, and non-revocation via `requireRole`).
+    - **Role Revocation via `roleVersion`:** User models and JWT claims include an integer `roleVersion`. When an administrator updates a user's role via `PATCH /api/v1/auth/users/:id/role`, `roleVersion` is incremented in MongoDB, causing `requireRole` middleware to immediately reject stale tokens without requiring external caching services (Redis).
+    - **Atomic Last Administrator Invariant:** Prevents demoting the last remaining active administrator account. To eliminate concurrency race conditions (write skew where two simultaneous demotions evaluate `count > 1` concurrently and demote both), mutations are serialized under a distributed atomic lock in MongoDB (`_auth_locks`). Failed demotion attempts abort without incrementing `roleVersion`, guaranteeing at least one active administrator is perpetually preserved.
+12. **TLS Trust Engine & CA/Browser Forum SC-081v3 Compliance:**
+    - **Dynamic Validity Limits:** Implements the phased certificate lifetime limits mandated by CA/Browser Forum Ballot SC-081v3:
+      - Issued before 15 March 2026: max 398 days
+      - Issued 15 March 2026 – 14 March 2027: max 200 days
+      - Issued 15 March 2027 – 14 March 2029: max 100 days
+      - Issued 15 March 2029 onward: max 47 days
+    - **End-Entity Scope Enforcement:** Subscriber validity checks are strictly scoped to public end-entity certificates (`issuer != subject and not is_ca`), preventing false positives on internal test roots or intermediate CAs.
+    - **Separation of Policy Violations vs Expiration:** The analyzer clearly separates non-expired validity duration violations from actual expiration (`notAfter < now`), supplying detailed forensic evidence (`issuanceDate`, `expirationDate`, `calculatedLifetimeDays`, `maxAllowedDays`, `policyReference`).
+13. **Nuanced Certificate Transparency & CA Trust Analysis:**
+    - **CT Delivery Channels:** Acknowledges that Signed Certificate Timestamps (SCTs) can be delivered via TLS handshake extensions or OCSP stapling rather than embedded X.509 extensions. Missing embedded SCTs (`1.3.6.1.4.1.11129.2.4.3`) are classified as qualified low-severity informational observations rather than confirmed non-compliance.
+    - **CA Trust Verification:** Separates self-signed certificates masquerading as public CAs in their Subject line (`isSelfSigned: True`), unverified chain matches, and verified trust store anchors.
 
 ---
 
@@ -341,6 +360,27 @@ The migration manager provides:
   - `LOW`: +5 (e.g., missing HSTS, missing CSP, missing nosniff header, body truncation)
   - `INFO`: +0 (informational taxonomy findings)
 - Risk score is clamped between `0` and `100`.
+
+### Detection Calibration Architecture (Phase 6.3)
+1. **Contextual Security Posture Ceiling (CAL-01):**
+   - Defense-in-depth posture findings (missing HSTS, missing CSP, missing X-Frame-Options, missing X-Content-Type-Options, missing Referrer-Policy, server banner disclosure, and missing embedded leaf SCTs) are capped at a cumulative contribution ceiling of 15 points.
+   - Even if a site omits all posture headers and embedded SCTs, its cumulative score from posture findings cannot exceed 15 points. This prevents clean legacy and community websites from crossing the `SUSPICIOUS` threshold (`score >= 26`) solely due to missing defense-in-depth headers.
+2. **PSL-Aware Authentic Domain Context (CAL-02):**
+   - URL path keyword analysis uses Public Suffix List (PSL) parsing via `tldextract` to identify the genuine registrable root domain (`registered_domain`).
+   - Maintains an authentic brand domain registry (`RECOGNIZED_AUTHENTIC_DOMAINS`, e.g., `google.com`, `microsoft.com`, `apple.com`, `github.com`).
+   - When a known authentic brand serves standard authentication paths (`/login`, `/signin`, `/account`, `/oauth`), naive credential keyword penalties are suppressed provided the domain is free of punycode homoglyphs, deceptive userinfo (`user@host`), or subdomain stacking.
+3. **Token-Based Domain Segmentation & Leetspeak Matching (CAL-03 & CAL-04):**
+   - Registrable domain names are tokenized across hyphens (`-`) and dots (`.`).
+   - Short brands (<= 4 characters, e.g., `sbi`, `citi`, `bofa`, `chase`) require exact token or dehyphenated equality, preventing substring false alarms on legitimate domain words (e.g. `isbilling.com` != SBI, `simplicity.org` != Citi).
+   - Hyphen-tolerant matching enables multi-token brand detection (e.g. `wells-fargo` matches `wellsfargo`).
+   - Leetspeak engine generates multi-candidate character permutations (e.g. `1` -> `l`, `i`, `t`; `0` -> `o`; `5` -> `s`), detecting obfuscated impersonations such as `wha1sapp`, `spot1fy`, and `b0fa`.
+4. **Targeted Severity Calibration (CAL-05):**
+   - Form harvesting analysis escalates to `CRITICAL` (40 points) when forms harvest national IDs or financial credentials (`ssn`, `aadhaar`, `pan-number`, `bankaccount` + `routingnumber`).
+   - Client-side `<meta http-equiv="refresh">` redirects are calibrated: escalated to `CRITICAL` only when accompanied by corroborating threat indicators (high-risk TLD or credential harvesting path), and `HIGH` otherwise.
+   - Safe TLS exception handling: Safely inspects SSL verification errors without throwing `AttributeError` on missing `verify_message`.
+5. **Finding Deduplication & Risk Factor Aggregation (CAL-06):**
+   - Threat findings with common root causes are assigned structured deduplication keys (`dedup_key`, e.g., `HOST_RAW_IP`, `CRED_HARVEST`, `HOMOGLYPH_DOMAIN`).
+   - The risk engine groups active threat findings by `dedup_key`, retaining the single highest-severity finding per key. Overlapping observations are not double-counted in the raw risk score or in the risk factor summaries.
 
 ### Verdict Classification & Zero-Trust Inconclusive State
 - `0 – 25`: **`BENIGN`** (Trusted destination, valid TLS, complete inspection, zero high-severity indicators)

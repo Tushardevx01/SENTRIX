@@ -53,20 +53,33 @@ export const ThreatVoteCreateSchema = z.object({
 });
 export type ThreatVoteCreate = z.infer<typeof ThreatVoteCreateSchema>;
 
-export const UserRegisterSchema = z.object({
-  email: z.string().trim().email('Invalid email address format').max(255),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password must not exceed 128 characters'),
-  role: z.enum(['user', 'analyst', 'admin']).optional().default('user'),
-});
+export const UserRegisterSchema = z
+  .object({
+    email: z.string().trim().email('Invalid email address format').max(255),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .max(128, 'Password must not exceed 128 characters'),
+  })
+  .strip();
 export type UserRegister = z.infer<typeof UserRegisterSchema>;
 
-export const UserLoginSchema = z.object({
-  email: z.string().trim().email('Invalid email address format'),
-  password: z.string().min(1, 'Password is required'),
+export const UserRoleUpdateSchema = z.object({
+  role: z.enum(['user', 'analyst', 'admin'], {
+    errorMap: () => ({ message: "Role must be 'user', 'analyst', or 'admin'" }),
+  }),
 });
+export type UserRoleUpdate = z.infer<typeof UserRoleUpdateSchema>;
+
+export const UserLoginSchema = z
+  .object({
+    email: z.string().trim().email('Invalid email address format'),
+    password: z
+      .string()
+      .min(1, 'Password is required')
+      .max(128, 'Password must not exceed 128 characters'),
+  })
+  .strip();
 export type UserLogin = z.infer<typeof UserLoginSchema>;
 
 // ==========================================

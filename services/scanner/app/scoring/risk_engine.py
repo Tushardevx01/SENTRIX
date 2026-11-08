@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Set
 from app.schemas.response import RawFinding
 
 SEVERITY_WEIGHTS = {
@@ -17,6 +17,43 @@ EXPECTED_ANALYZERS = [
     "reputationAnalyzer",
 ]
 
+POSTURE_TITLES: Set[str] = {
+    "Missing Strict-Transport-Security (HSTS)",
+    "Missing Content-Security-Policy (CSP)",
+    "Missing Clickjacking Defenses",
+    "Missing X-Content-Type-Options Header",
+    "Missing Referrer-Policy Header",
+    "Server Header Leaks Exact Software Version",
+    "X-Powered-By Header Reveals Application Framework",
+    "Certificate Transparency: No Embedded SCTs in Leaf Certificate",
+    "No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+}
+
+MAX_POSTURE_CONTRIBUTION = 15
+
+
+def is_posture_finding(f: RawFinding) -> bool:
+    """Identifies defense-in-depth posture observations vs active security threat indicators."""
+    if f.evidence.get("isPosture") or f.evidence.get("is_posture"):
+        return True
+    if f.title in POSTURE_TITLES:
+        return True
+    if f.category == "WEB_SECURITY" and f.title.startswith("Missing "):
+        return True
+    if f.category == "TLS_SECURITY" and "SCT" in f.title:
+        return True
+    return False
+
+
+def get_dedup_key(f: RawFinding) -> str:
+    """Returns a stable deduplication identity for overlapping security characteristics."""
+    if "dedupKey" in f.evidence:
+        return str(f.evidence["dedupKey"])
+    if "dedup_key" in f.evidence:
+        return str(f.evidence["dedup_key"])
+    norm_title = f.title.strip().lower()
+    return f"{f.category}:{norm_title}"
+
 
 class RiskAggregationEngine:
     """
@@ -29,7 +66,6 @@ class RiskAggregationEngine:
         findings: List[RawFinding],
         analyzer_statuses: Dict[str, str]
     ) -> Tuple[int, str, int, str, bool, List[str], List[str], List[str]]:
-        raw_score = 0
         risk_factors: List[str] = []
         threat_types_set = set()
         inconclusive_reasons: List[str] = []
@@ -37,18 +73,44 @@ class RiskAggregationEngine:
         confidence_sum = 0.0
         counted_findings = 0
 
+        # Separate and deduplicate threat findings vs posture observations
+        threat_dedup_map: Dict[str, Tuple[int, RawFinding]] = {}
+        posture_dedup_map: Dict[str, Tuple[int, RawFinding]] = {}
+
         for f in findings:
             sev = f.severity.upper()
             weight = SEVERITY_WEIGHTS.get(sev, 0)
-            raw_score += weight
             confidence_sum += f.confidence
             counted_findings += 1
 
+            dedup_key = get_dedup_key(f)
+
+            if is_posture_finding(f):
+                # Retain highest weight for this posture characteristic
+                if dedup_key not in posture_dedup_map or weight > posture_dedup_map[dedup_key][0]:
+                    posture_dedup_map[dedup_key] = (weight, f)
+            else:
+                # Active threat indicator
+                if dedup_key not in threat_dedup_map or weight > threat_dedup_map[dedup_key][0]:
+                    threat_dedup_map[dedup_key] = (weight, f)
+
+        # Compute threat score and extract factors from deduplicated active threats
+        for weight, f in threat_dedup_map.values():
+            sev = f.severity.upper()
             if sev in {"CRITICAL", "HIGH", "MEDIUM"}:
-                risk_factors.append(f"{f.title} ({sev})")
+                factor_desc = f"{f.title} ({sev})"
+                if factor_desc not in risk_factors:
+                    risk_factors.append(factor_desc)
                 threat_types_set.add(f.category)
 
-        # Cap risk score between 0 and 100
+        threat_score = sum(weight for weight, _ in threat_dedup_map.values())
+
+        # Compute bounded posture contribution (capped at 15 points)
+        raw_posture_score = sum(weight for weight, _ in posture_dedup_map.values())
+        capped_posture_score = min(MAX_POSTURE_CONTRIBUTION, raw_posture_score)
+
+        # Total combined risk score (0 to 100)
+        raw_score = threat_score + capped_posture_score
         risk_score = min(100, max(0, raw_score))
 
         # Determine Analyzer Execution Completeness (Zero-Trust Invariant: ONLY explicit SUCCESS is complete)

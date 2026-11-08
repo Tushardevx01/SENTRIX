@@ -6,7 +6,9 @@ process.env.NODE_ENV = 'test';
 const testFiles = [
   'src/test/security.test.ts',
   'src/test/auth.test.ts',
+  'src/test/authIntegration.test.ts',
   'src/test/asyncScan.test.ts',
+  'src/test/realMongoConcurrency.test.ts',
   'src/test/orphanCleanup.test.ts',
   'src/test/indexMigration.test.ts',
 ];

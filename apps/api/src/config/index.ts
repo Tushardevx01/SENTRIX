@@ -6,15 +6,34 @@ import { z } from 'zod';
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
-const EnvSchema = z.object({
-  PORT: z.coerce.number().default(8000),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
-  SCANNER_INTERNAL_URL: z.string().url('SCANNER_INTERNAL_URL must be a valid URL'),
-  SCANNER_API_SECRET: z.string().min(16, 'SCANNER_API_SECRET must be at least 16 characters'),
-  CORS_ORIGIN: z.string().default('http://localhost:3000'),
-  JWT_SECRET: z.string().default('sentrix-default-jwt-secret-key-32chars!!'),
-});
+const EnvSchema = z
+  .object({
+    PORT: z.coerce.number().default(8000),
+    NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+    MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
+    SCANNER_INTERNAL_URL: z.string().url('SCANNER_INTERNAL_URL must be a valid URL'),
+    SCANNER_API_SECRET: z.string().min(16, 'SCANNER_API_SECRET must be at least 16 characters'),
+    CORS_ORIGIN: z.string().default('http://localhost:3000'),
+    JWT_SECRET: z
+      .string()
+      .min(32, 'JWT_SECRET must be at least 32 characters for HMAC-SHA256')
+      .default('sentrix-default-jwt-secret-key-32chars!!'),
+  })
+  .refine(
+    (data) => {
+      if (data.NODE_ENV === 'production') {
+        return (
+          data.JWT_SECRET !== 'sentrix-default-jwt-secret-key-32chars!!' &&
+          data.JWT_SECRET.length >= 32
+        );
+      }
+      return true;
+    },
+    {
+      message: 'In production, JWT_SECRET must be explicitly configured with at least 32 characters.',
+      path: ['JWT_SECRET'],
+    }
+  );
 
 const rawConfig = {
   PORT: process.env.PORT || process.env.API_PORT || 8000,

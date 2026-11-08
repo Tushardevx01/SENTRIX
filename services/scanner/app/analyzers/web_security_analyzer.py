@@ -162,14 +162,14 @@ class WebSecurityAnalyzer:
                         metadata["finalUrl"] = current_url
                         metadata["responseTimeMs"] = round((time.time() - start_time) * 1000, 2)
 
-                        # Header Security Analysis
+                        # Header Security Analysis (Contextual Defense-in-Depth Posture CAL-01)
                         if "strict-transport-security" not in resp_headers:
                             findings.append(RawFinding(
                                 category="WEB_SECURITY",
                                 severity="LOW",
                                 title="Missing Strict-Transport-Security (HSTS)",
                                 description="The HTTP response lacks an HSTS header, leaving users vulnerable to SSL-stripping man-in-the-middle attacks.",
-                                evidence={"header": "Strict-Transport-Security"},
+                                evidence={"header": "Strict-Transport-Security", "isPosture": True, "dedupKey": "POSTURE_MISSING_HSTS"},
                                 confidence=90.0,
                             ))
 
@@ -179,7 +179,7 @@ class WebSecurityAnalyzer:
                                 severity="LOW",
                                 title="Missing Content-Security-Policy (CSP)",
                                 description="No Content-Security-Policy header was detected, increasing vulnerability to Cross-Site Scripting (XSS) and data injection.",
-                                evidence={"header": "Content-Security-Policy"},
+                                evidence={"header": "Content-Security-Policy", "isPosture": True, "dedupKey": "POSTURE_MISSING_CSP"},
                                 confidence=85.0,
                             ))
 
@@ -189,7 +189,7 @@ class WebSecurityAnalyzer:
                                 severity="LOW",
                                 title="Missing Clickjacking Defenses",
                                 description="Neither X-Frame-Options nor CSP frame-ancestors is present to protect the site from UI redress/clickjacking.",
-                                evidence={"header": "X-Frame-Options"},
+                                evidence={"header": "X-Frame-Options", "isPosture": True, "dedupKey": "POSTURE_MISSING_XFO"},
                                 confidence=85.0,
                             ))
 
@@ -199,7 +199,7 @@ class WebSecurityAnalyzer:
                                 severity="LOW",
                                 title="Missing X-Content-Type-Options Header",
                                 description="Lacks 'nosniff' directive, allowing browsers to MIME-sniff responses away from the declared content-type.",
-                                evidence={"header": "X-Content-Type-Options"},
+                                evidence={"header": "X-Content-Type-Options", "isPosture": True, "dedupKey": "POSTURE_MISSING_XCTO"},
                                 confidence=90.0,
                             ))
 
@@ -214,7 +214,7 @@ class WebSecurityAnalyzer:
                                     severity="LOW",
                                     title="Server Header Leaks Exact Software Version",
                                     description=f"The 'Server' response header discloses precise version information ('{server_header}'), assisting attacker exploit enumeration.",
-                                    evidence={"server": server_header},
+                                    evidence={"server": server_header, "isPosture": True, "dedupKey": "POSTURE_SERVER_VERSION"},
                                     confidence=95.0,
                                 ))
 
@@ -225,7 +225,7 @@ class WebSecurityAnalyzer:
                                 severity="LOW",
                                 title="X-Powered-By Header Reveals Application Framework",
                                 description=f"The 'X-Powered-By' header discloses the backend execution environment ('{powered_by}').",
-                                evidence={"xPoweredBy": powered_by},
+                                evidence={"xPoweredBy": powered_by, "isPosture": True, "dedupKey": "POSTURE_X_POWERED_BY"},
                                 confidence=95.0,
                             ))
 
@@ -382,16 +382,28 @@ class WebSecurityAnalyzer:
                             harvested_fields.append(kw)
 
                 if harvested_fields:
+                    is_critical_financial = (
+                        "cvv" in harvested_fields
+                        or "cvc" in harvested_fields
+                        or "cardnumber" in harvested_fields
+                        or "cc-number" in harvested_fields
+                        or "card-number" in harvested_fields
+                        or "creditcard" in harvested_fields
+                        or "ssn" in harvested_fields
+                        or "aadhaar" in harvested_fields
+                        or "pan-number" in harvested_fields
+                        or ("bankaccount" in harvested_fields and "routingnumber" in harvested_fields)
+                    )
                     findings.append(RawFinding(
                         category="PHISHING_INDICATOR",
-                        severity="CRITICAL" if ("cvv" in harvested_fields or "cardnumber" in harvested_fields) else "HIGH",
+                        severity="CRITICAL" if is_critical_financial else "HIGH",
                         title="Payment / Financial Credential Harvesting Form Detected",
                         description=f"Detected form collecting payment or sensitive identity markers ({', '.join(set(harvested_fields))}).",
                         evidence={"detectedFields": list(set(harvested_fields)), "formAction": action_url},
                         confidence=94.0,
                     ))
 
-            # 3. Client-Side Meta Refresh Redirect Detection
+            # 3. Client-Side Meta Refresh Redirect Detection (Evidence-Calibrated CAL-05)
             meta_refresh = soup.find("meta", attrs={"http-equiv": lambda v: v and v.lower() == "refresh"})
             if meta_refresh and meta_refresh.get("content"):
                 content_val = meta_refresh.get("content", "")
@@ -401,13 +413,36 @@ class WebSecurityAnalyzer:
                     refresh_url = urljoin(metadata["finalUrl"], refresh_target)
                     refresh_parsed = urlsplit(refresh_url)
                     if refresh_parsed.hostname and refresh_parsed.hostname != final_host:
+                        dest_host = refresh_parsed.hostname.lower()
+                        dest_path = refresh_parsed.path.lower()
+                        # Corroborate external destination risk factors before escalating to CRITICAL
+                        has_suspicious_tld = any(
+                            dest_host.endswith("." + t)
+                            for t in ("xyz", "top", "buzz", "biz", "live", "site", "online", "click", "cfd", "monster", "fit", "surf", "icu", "work", "cam")
+                        )
+                        has_payload_path = any(
+                            term in dest_path
+                            for term in ("login", "signin", "auth", "payload", "save", "collect", "verify", "drop", "stealer", "gate")
+                        )
+                        is_corroborated_threat = has_suspicious_tld or has_payload_path
+
                         findings.append(RawFinding(
                             category="URL_ANOMALY",
-                            severity="HIGH",
-                            title="Client-Side Meta Refresh Redirect to External Host",
-                            description=f"Page executes an automatic client-side redirect via <meta http-equiv='refresh'> to external host '{refresh_parsed.hostname}'.",
-                            evidence={"refreshTarget": refresh_url, "pageHost": final_host},
-                            confidence=92.0,
+                            severity="CRITICAL" if is_corroborated_threat else "HIGH",
+                            title="Client-Side Meta Refresh Redirect to Untrusted Destination" if is_corroborated_threat else "Client-Side Meta Refresh Redirect to External Host",
+                            description=(
+                                f"Page executes an automatic client-side redirect via <meta http-equiv='refresh'> to high-risk destination '{refresh_parsed.hostname}'."
+                                if is_corroborated_threat
+                                else f"Page executes an automatic client-side redirect via <meta http-equiv='refresh'> to external host '{refresh_parsed.hostname}'."
+                            ),
+                            evidence={
+                                "refreshTarget": refresh_url,
+                                "pageHost": final_host,
+                                "corroboratedThreat": is_corroborated_threat,
+                                "suspiciousTLD": has_suspicious_tld,
+                                "payloadPath": has_payload_path,
+                            },
+                            confidence=95.0 if is_corroborated_threat else 90.0,
                         ))
 
             # 4. Hidden IFrame detection

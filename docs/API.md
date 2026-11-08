@@ -287,12 +287,13 @@ Base URL: `http://localhost:8000/api/v1`
 ### 7.1 Register User Account
 - **Method:** `POST`
 - **Path:** `/api/v1/auth/register`
+- **Rate Limit:** 10 req / minute per IP
+- **Security:** Public registration is strictly scoped to the `user` role. Any client-supplied `role` parameter or unexpected fields are automatically stripped and ignored to prevent privilege escalation and mass assignment.
 - **Request Body:**
 ```json
 {
   "email": "analyst@sentrix.io",
-  "password": "SecurePassword123!",
-  "role": "analyst"
+  "password": "SecurePassword123!"
 }
 ```
 - **Response (201 Created):**
@@ -302,7 +303,7 @@ Base URL: `http://localhost:8000/api/v1`
   "user": {
     "_id": "6aef0e8840d8291a1005a711",
     "email": "analyst@sentrix.io",
-    "role": "analyst",
+    "role": "user",
     "createdAt": "2026-11-08T10:15:30.000Z"
   }
 }
@@ -311,6 +312,8 @@ Base URL: `http://localhost:8000/api/v1`
 ### 7.2 Authenticate / Login User
 - **Method:** `POST`
 - **Path:** `/api/v1/auth/login`
+- **Rate Limit:** 10 req / minute per IP
+- **Security:** Responds with generic authentication failure messages ("Invalid email address or password") and constant-time dummy password hashing on non-existent users to eliminate timing side-channel attacks and user enumeration.
 - **Request Body:**
 ```json
 {
@@ -325,7 +328,7 @@ Base URL: `http://localhost:8000/api/v1`
   "user": {
     "_id": "6aef0e8840d8291a1005a711",
     "email": "analyst@sentrix.io",
-    "role": "analyst",
+    "role": "user",
     "createdAt": "2026-11-08T10:15:30.000Z"
   }
 }
@@ -341,11 +344,57 @@ Base URL: `http://localhost:8000/api/v1`
   "user": {
     "_id": "6aef0e8840d8291a1005a711",
     "email": "analyst@sentrix.io",
-    "role": "analyst",
+    "role": "user",
     "createdAt": "2026-11-08T10:15:30.000Z"
   }
 }
 ```
+
+### 7.4 Update User Role (Admin Only)
+- **Method:** `PATCH`
+- **Path:** `/api/v1/auth/users/:id/role`
+- **Headers:** `Authorization: Bearer <admin-token>`
+- **Authorization:** Requires authenticated user with `role: "admin"`.
+- **Security Invariant:** Prevents demoting the last remaining active administrator account. To eliminate concurrency race conditions (write skew where two simultaneous demotions leave 0 administrators), mutations are serialized under a distributed atomic lock in MongoDB (`_auth_locks`). Failed demotion requests abort without incrementing `roleVersion`. When a role update succeeds, the user's `roleVersion` is atomically incremented in MongoDB, instantaneously invalidating existing issued JWT tokens.
+- **Request Body:**
+```json
+{
+  "role": "analyst"
+}
+```
+- **Response (200 OK):**
+```json
+{
+  "message": "User role updated successfully",
+  "user": {
+    "_id": "6aef0e8840d8291a1005a711",
+    "email": "analyst@sentrix.io",
+    "role": "analyst",
+    "roleVersion": 2,
+    "createdAt": "2026-11-08T10:15:30.000Z"
+  }
+}
+```
+- **Error Responses:**
+  - `400 Bad Request`: When attempting to demote the sole active administrator account (`"Cannot demote the last remaining administrator account."`).
+  - `403 Forbidden`: When a non-admin caller attempts to modify user roles.
+
+### 7.5 Operator Administrator Provisioning CLI
+For initial bootstrap and administrative provisioning in production, operator CLI tooling is available:
+```bash
+# Interactive secure prompt (masked password entry, zero exposure in process table or shell history)
+npm run create:admin -- --email admin@sentrix.io
+
+# Non-interactive automated execution (via environment variables or arguments)
+ADMIN_EMAIL=admin@sentrix.io ADMIN_PASSWORD=<SecurePassword123!> npm run create:admin
+```
+The CLI command:
+- Prompts interactively with hidden/masked keystrokes if `--password` is omitted.
+- Wipes `ADMIN_PASSWORD` from environment process memory immediately after reading.
+- Validates password complexity (minimum 12 characters, maximum 128 characters, rejects common default passwords).
+- Operates idempotently: reports existing administrators safely without modifying credentials unless `--force` is specified.
+- Safely handles concurrent duplicate provisioning runs via Mongo unique constraint guards.
+- Ensures complete database disconnection in all execution branches (`finally`).
 
 
 ### 6.1 Telemetry Metrics

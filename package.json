@@ -17,7 +17,8 @@
     "build": "npm run build:shared && npm run build:api && npm run build:web",
     "test": "npm --workspace=@sentrix/api test",
     "migrate:indexes": "npm --workspace=@sentrix/api run migrate:indexes",
-    "migrate:indexes:dry-run": "npm --workspace=@sentrix/api run migrate:indexes:dry-run"
+    "migrate:indexes:dry-run": "npm --workspace=@sentrix/api run migrate:indexes:dry-run",
+    "create:admin": "npm --workspace=@sentrix/api run create:admin"
   }
 }
 

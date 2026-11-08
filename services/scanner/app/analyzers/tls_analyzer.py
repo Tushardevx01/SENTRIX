@@ -23,6 +23,35 @@ DISTRUSTED_CA_PATTERNS = [
 ]
 
 
+def get_max_validity_days_sc081v3(not_before: datetime) -> int:
+    """
+    Returns the maximum allowable validity duration in days under CA/Browser Forum
+    Ballot SC-081v3 schedule for publicly-trusted TLS subscriber certificates based on
+    certificate issuance timestamp (notBefore).
+
+    Schedule:
+    - Before 15 March 2026 (post-Sept 1, 2020): 398 days
+    - 15 March 2026 to 14 March 2027: 200 days
+    - 15 March 2027 to 14 March 2029: 100 days
+    - From 15 March 2029: 47 days
+    """
+    # From 15 March 2029 00:00:00 UTC: maximum 47 days
+    if not_before >= datetime(2029, 3, 15, tzinfo=timezone.utc):
+        return 47
+    # 15 March 2027 00:00:00 UTC to 14 March 2029 23:59:59 UTC: maximum 100 days
+    elif not_before >= datetime(2027, 3, 15, tzinfo=timezone.utc):
+        return 100
+    # 15 March 2026 00:00:00 UTC to 14 March 2027 23:59:59 UTC: maximum 200 days
+    elif not_before >= datetime(2026, 3, 15, tzinfo=timezone.utc):
+        return 200
+    # Before 15 March 2026 (post-September 1, 2020): maximum 398 days
+    elif not_before >= datetime(2020, 9, 1, tzinfo=timezone.utc):
+        return 398
+    else:
+        # Prior to September 1, 2020: 825 days under earlier CA/B Forum guidelines
+        return 825
+
+
 class TlsAnalyzer:
     """
     Inspects TLS/SSL certificate health, certificate chain authenticity,
@@ -71,7 +100,7 @@ class TlsAnalyzer:
                     der_cert = ssock.getpeercert(binary_form=True)
                     cert_dict = ssock.getpeercert(binary_form=False) or {}
         except ssl.SSLCertVerificationError as e:
-            verification_error = str(e.verify_message or e)
+            verification_error = str(getattr(e, "verify_message", None) or e)
             hostname_matched = False
             error_code = getattr(e, "verify_code", None)
 
@@ -358,21 +387,42 @@ class TlsAnalyzer:
                     ))
 
                 # Certificate Transparency (CT) Signed Certificate Timestamps (SCTs)
+                has_scts = False
                 try:
                     x509_cert.extensions.get_extension_for_oid(ExtensionOID.PRECERT_SIGNED_CERTIFICATE_TIMESTAMPS)
                     has_scts = True
                 except x509.ExtensionNotFound:
-                    has_scts = False
+                    try:
+                        x509_cert.extensions.get_extension_for_oid(x509.ObjectIdentifier("1.3.6.1.4.1.11129.2.4.3"))
+                        has_scts = True
+                    except Exception:
+                        has_scts = False
 
-                # If public certificate without SCTs and not self-signed
-                if not has_scts and issuer_str != subject_str and verification_error is None:
+                if has_scts:
                     findings.append(RawFinding(
                         category="TLS_SECURITY",
-                        severity="MEDIUM",
-                        title="Missing Certificate Transparency (CT) Logging",
-                        description="The certificate lacks embedded Signed Certificate Timestamps (SCTs). Modern browsers require public certificates to be logged in public CT logs to detect unauthorized or rogue CA issuance.",
-                        evidence={"issuer": issuer_str, "hasSCTs": False},
-                        confidence=85.0,
+                        severity="INFO",
+                        title="Embedded Certificate Transparency (CT) Timestamps Present",
+                        description="The certificate embeds Signed Certificate Timestamps (SCTs) within its X.509 extensions, confirming CT log inclusion.",
+                        evidence={"hasEmbeddedSCTs": True, "inspectedSource": "leaf_x509_extensions"},
+                        confidence=100.0,
+                    ))
+                elif issuer_str != subject_str and verification_error is None:
+                    # Distinguish absence of embedded SCTs from confirmed non-compliance (SCTs may be in TLS handshake or OCSP)
+                    findings.append(RawFinding(
+                        category="TLS_SECURITY",
+                        severity="LOW",
+                        title="No Embedded Certificate Transparency (CT) SCTs in Leaf Certificate",
+                        description="The leaf certificate does not embed Signed Certificate Timestamps (SCTs) within its X.509 extensions. Note: Public CAs frequently deliver SCTs out-of-band via TLS extension handshake or OCSP stapling; absence in the leaf certificate alone does not confirm non-compliance.",
+                        evidence={
+                            "hasEmbeddedSCTs": False,
+                            "inspectedSource": "leaf_x509_extensions",
+                            "alternateDeliveryMethods": ["tls_handshake_extension", "ocsp_stapling"],
+                            "note": "Complete CT verification requires inspecting TLS handshake extensions and OCSP stapled responses.",
+                            "isPosture": True,
+                            "dedupKey": "POSTURE_MISSING_SCT",
+                        },
+                        confidence=80.0,
                     ))
 
                 # Basic Constraints Check (Leaf certificate cannot be CA)
@@ -391,22 +441,37 @@ class TlsAnalyzer:
                 except x509.ExtensionNotFound:
                     is_ca = False
 
-                # CA/Browser Forum Validity Duration Check (Max 398 days for certs issued after Sept 1, 2020)
+                # CA/Browser Forum SC-081v3 Validity Duration Policy Check
+                # Applies strictly to public TLS subscriber certificates (non-CA, non-self-signed)
                 try:
                     not_before = getattr(x509_cert, "not_valid_before_utc", None) or x509_cert.not_valid_before.replace(tzinfo=timezone.utc)
                     not_after = getattr(x509_cert, "not_valid_after_utc", None) or x509_cert.not_valid_after.replace(tzinfo=timezone.utc)
                     validity_days = (not_after - not_before).days
                     baseline_cutoff = datetime(2020, 9, 1, tzinfo=timezone.utc)
 
-                    if not_before >= baseline_cutoff and validity_days > 398:
-                        findings.append(RawFinding(
-                            category="TLS_SECURITY",
-                            severity="MEDIUM",
-                            title="Non-Compliant Certificate Validity Duration (> 398 days)",
-                            description=f"The certificate validity spans {validity_days} days. CA/Browser Forum baseline requirements mandate a maximum duration of 398 days for certificates issued after September 1, 2020.",
-                            evidence={"validityDays": validity_days, "maxAllowed": 398},
-                            confidence=90.0,
-                        ))
+                    # Only evaluate public subscriber certificates (not self-signed, not a CA)
+                    if issuer_str != subject_str and not is_ca and not_before >= baseline_cutoff:
+                        max_allowed_days = get_max_validity_days_sc081v3(not_before)
+                        if validity_days > max_allowed_days:
+                            findings.append(RawFinding(
+                                category="TLS_SECURITY",
+                                severity="MEDIUM",
+                                title=f"Non-Compliant Certificate Validity Duration ({validity_days} days > {max_allowed_days} days)",
+                                description=(
+                                    f"The certificate validity spans {validity_days} days, exceeding the CA/Browser Forum "
+                                    f"Ballot SC-081v3 maximum allowable limit of {max_allowed_days} days for subscriber "
+                                    f"certificates issued on {not_before.strftime('%Y-%m-%d')}."
+                                ),
+                                evidence={
+                                    "issuanceDate": not_before.isoformat(),
+                                    "expirationDate": not_after.isoformat(),
+                                    "calculatedLifetimeDays": validity_days,
+                                    "maxAllowedDays": max_allowed_days,
+                                    "policyReference": "CA/Browser Forum Ballot SC-081v3 (Baseline Requirements Section 6.3.2)",
+                                    "scope": "Public TLS Subscriber Certificate",
+                                },
+                                confidence=95.0,
+                            ))
                 except Exception:
                     pass
 
@@ -419,14 +484,65 @@ class TlsAnalyzer:
         for ca_term, ca_name, severity in DISTRUSTED_CA_PATTERNS:
             if ca_term in issuer_lower:
                 compromised_ca_risk = True
-                findings.append(RawFinding(
-                    category="TLS_SECURITY",
-                    severity=severity,
-                    title=f"Compromised / High-Risk Certificate Authority: {ca_name}",
-                    description=f"The certificate is issued by '{issuer_str}', matching known problematic CA authority '{ca_name}'. This poses an identity impersonation risk.",
-                    evidence={"issuer": issuer_str, "flaggedCA": ca_name, "pattern": ca_term},
-                    confidence=95.0,
-                ))
+                if issuer_str == subject_str:
+                    # Self-signed certificate mimicking a distrusted CA name
+                    findings.append(RawFinding(
+                        category="TLS_SECURITY",
+                        severity="HIGH",
+                        title=f"Self-Signed Certificate Claiming Distrusted CA Name: {ca_name}",
+                        description=(
+                            f"The certificate is self-signed and contains '{issuer_str}', mimicking the name of "
+                            f"distrusted CA '{ca_name}'. This indicates an adversary mimicking CA identifiers in an "
+                            f"unverified self-signed certificate, rather than authentic issuance."
+                        ),
+                        evidence={
+                            "issuer": issuer_str,
+                            "subject": subject_str,
+                            "flaggedCA": ca_name,
+                            "pattern": ca_term,
+                            "isSelfSigned": True,
+                            "verifiedChain": False,
+                        },
+                        confidence=95.0,
+                    ))
+                elif verification_error is not None:
+                    # Issuer name pattern match on an unverified certificate chain
+                    findings.append(RawFinding(
+                        category="TLS_SECURITY",
+                        severity="HIGH",
+                        title=f"Distrusted CA Name Pattern Match (Unverified Chain): {ca_name}",
+                        description=(
+                            f"The certificate issuer matches known problematic CA '{ca_name}', but chain verification "
+                            f"failed ({verification_error}). This is an unverified name pattern match, not proof of "
+                            f"cryptographic root signature."
+                        ),
+                        evidence={
+                            "issuer": issuer_str,
+                            "flaggedCA": ca_name,
+                            "pattern": ca_term,
+                            "verificationError": verification_error,
+                            "verifiedChain": False,
+                        },
+                        confidence=90.0,
+                    ))
+                else:
+                    # Verified root store signature from distrusted CA
+                    findings.append(RawFinding(
+                        category="TLS_SECURITY",
+                        severity=severity,
+                        title=f"Compromised / High-Risk Certificate Authority: {ca_name}",
+                        description=(
+                            f"The certificate is signed by '{issuer_str}', matching known problematic CA authority "
+                            f"'{ca_name}'. This authority is distrusted by root stores or subject to critical revocation."
+                        ),
+                        evidence={
+                            "issuer": issuer_str,
+                            "flaggedCA": ca_name,
+                            "pattern": ca_term,
+                            "verifiedChain": True,
+                        },
+                        confidence=95.0,
+                    ))
 
         cert_info = CertificateInfo(
             issuer=issuer_str,

