@@ -223,7 +223,7 @@ sequenceDiagram
 | **Fastify API** | `modules/community` | Crowdsourced threat submissions, deduplication via SHA-256 hash, and peer voting. | `apps/api/src/modules/community/` |
 | **Fastify API** | `modules/dashboard` | Real-time telemetry statistics computed directly from MongoDB. | `apps/api/src/modules/dashboard/` |
 | **Scanner** | `safety` | Pre-flight SSRF guard, IP subnet validation, and cloud metadata blocking. | `services/scanner/app/safety/` |
-| **Scanner** | `intelligence` | In-memory Tranco Top-10K domain intelligence provider, O(1) lookups, thread-safe zero-downtime atomic reload, bundled fallback. | `services/scanner/app/intelligence/` |
+| **Scanner** | `intelligence` | In-memory Tranco Top-10K domain intelligence provider, BIP-39 mnemonic vocabulary provider, O(1) lookups, thread-safe atomic reloads, bundled fallbacks. | `services/scanner/app/intelligence/` |
 | **Scanner** | `analyzers` | Modular analyzers: URL lexical, domain impersonation, TLS certificate, web security, reputation. | `services/scanner/app/analyzers/` |
 | **Scanner** | `scoring` | Weighted heuristic scoring engine mapping findings to verdicts and MITRE tactics. | `services/scanner/app/scoring/` |
 | **Shared** | `packages/shared` | Centralized TypeScript types, Zod schemas, micro-contracts, and URL utilities. | `packages/shared/src/` |

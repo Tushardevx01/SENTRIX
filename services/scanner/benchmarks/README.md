@@ -69,22 +69,24 @@ All commands run from `services/scanner/` with the project virtualenv (`.venv/bi
 
 ---
 
-## Current Results (Phase 7.1)
+## Current Results (Phase 7.2)
 
-| Metric | Baseline (6.1) dev | Calibrated dev | Baseline (6.1) val | Calibrated val | Expanded (6.4) val | Phase 7.1 Exp Val |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Total cases | 80 | 80 | 25 | 25 | 530 | **530** |
-| 3-class accuracy | 78.75% | 93.75% | 80.00% | 92.00% | 90.19% (478/530) | **91.89%** (487/530) |
-| Macro F1 | 67.12% | 88.88% | 68.40% | 85.86% | 86.47% | **88.44%** |
-| Weighted F1 | 79.95% | 93.63% | 81.14% | 92.00% | 89.76% | **91.34%** |
-| Binary threat F1 (SUS+MAL vs BENIGN) | 95.65% | 100.00% | 92.86% | 100.00% | 94.68% | **95.34%** |
-| Threat Precision / Recall | 93.6% / 97.8% | 100% / 100% | 92.9% / 92.9% | 100% / 100% | 97.53% / 92.00% | **98.92% / 92.00%** |
-| Benign false positives | 3 / 35 | 0 / 35 | 1 / 11 | 0 / 11 | 7 / 230 (3.04%) | **3 / 230 (1.30%)** |
-| Missed threats (BENIGN pred) | 1 / 45 | 0 / 45 | 1 / 14 | 0 / 14 | 24 / 300 (8.00%) | **24 / 300 (8.00%)** |
+| Metric | Baseline (6.1) dev | Calibrated dev | Baseline (6.1) val | Calibrated val | Expanded (6.4) val | Phase 7.1 Exp Val | Phase 7.2 Exp Val |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| Total cases | 80 | 80 | 25 | 25 | 530 | 530 | **530** |
+| 3-class accuracy | 78.75% | 93.75% | 80.00% | 92.00% | 90.19% (478/530) | 91.89% (487/530) | **92.64%** (491/530) |
+| Macro F1 | 67.12% | 88.88% | 68.40% | 85.86% | 86.47% | 88.44% | **89.38%** |
+| Weighted F1 | 79.95% | 93.63% | 81.14% | 92.00% | 89.76% | 91.34% | **92.06%** |
+| Strict Malicious Recall | 94.3% | 94.3% | 90.9% | 90.9% | 95.50% | 98.00% | **100.00%** (200/200) |
+| Strict Malicious F1 | 93.0% | 93.0% | 90.9% | 90.9% | 94.79% | 96.08% | **97.09%** |
+| Binary threat F1 (SUS+MAL vs BENIGN) | 95.65% | 100.00% | 92.86% | 100.00% | 94.68% | 95.34% | **95.34%** |
+| Threat Precision / Recall | 93.6% / 97.8% | 100% / 100% | 92.9% / 92.9% | 100% / 100% | 97.53% / 92.00% | 98.92% / 92.00% | **98.92% / 92.00%** |
+| Benign false positives | 3 / 35 | 0 / 35 | 1 / 11 | 0 / 11 | 7 / 230 (3.04%) | 3 / 230 (1.30%) | **3 / 230 (1.30%)** |
+| Missed threats (BENIGN pred) | 1 / 45 | 0 / 45 | 1 / 14 | 0 / 14 | 24 / 300 (8.00%) | 24 / 300 (8.00%) | **24 / 300 (8.00%)** |
 
-Phase 7.1 Tranco Top-10K domain intelligence integration resolved 100% of the legitimate SaaS false positives (JetBrains, Okta, Snowflake, Datadog, Login.gov, Coursera, Etsy) from SUSPICIOUS (score 35) to BENIGN (score 10) with zero regressions across malicious threats.
+Phase 7.2 Web3 phishing & seed-phrase detection resolved 100% of the known cryptocurrency phishing cases (`EXP-VAL-380`, `EXP-VAL-381`, `EXP-VAL-382`, `EXP-VAL-385`) from SUSPICIOUS (score 57-60) to MALICIOUS (score 100). Malicious class recall reached 100.00% (200/200 cases detected). Confirmed phishing category accuracy reached 100.0% (65/65). Zero false positives were introduced across educational, research, or legitimate dApp wallet interfaces.
 
-Remaining dev errors (5): DEV-057, DEV-066, DEV-072 (GT `SUSPICIOUS`, predicted `MALICIOUS` — stacked distinct deception indicators each scoring ≥ 70 under unchanged weights) and DEV-078, DEV-080 (GT `MALICIOUS`, predicted `SUSPICIOUS` — certificate trust/compliance failures that, per CAL-05, are not sufficient evidence of phishing or malware). Val errors (2): VAL-021 and VAL-024, the same two principled patterns. Remaining benign false alarms in 530-case validation corpus (3): EXP-VAL-207, EXP-VAL-210, EXP-VAL-221 (open-source documentation pages containing sensitive security terms on non-top-10k domains).
+Remaining dev errors (5): DEV-057, DEV-066, DEV-072 (GT `SUSPICIOUS`, predicted `MALICIOUS` — stacked distinct deception indicators each scoring ≥ 70 under unchanged weights) and DEV-078, DEV-080 (GT `MALICIOUS`, predicted `SUSPICIOUS` — certificate trust/compliance failures that, per CAL-05, are not sufficient evidence of phishing or malware). Val errors (2): VAL-021 and VAL-024, the same two principled patterns. Remaining benign false alarms in 530-case validation corpus (3): EXP-VAL-207, EXP-VAL-210, EXP-VAL-221 (open-source documentation pages containing sensitive security terms on non-top-10k domains). Remaining unverified infrastructure cases (24): empty staging nodes in `SUSPICIOUS_UNVERIFIED_INFRASTRUCTURE` lacking active weaponization slated for Phase 7.3.
 
 ---
 

@@ -1,12 +1,15 @@
 import time
 import ssl
 import socket
+import re
+import unicodedata
 from urllib.parse import urlsplit, urljoin, urlparse
 from typing import List, Dict, Any, Tuple, Optional, Set
 import httpx
 from bs4 import BeautifulSoup
 
 from app.schemas.response import RawFinding
+from app.intelligence.bip39_provider import get_bip39_provider, BIP39Provider
 from app.safety.ssrf_guard import (
     validate_url_syntax_and_authority,
     resolve_and_validate_hostname,
@@ -17,6 +20,23 @@ from app.safety.ssrf_guard import (
 MAX_RESPONSE_BYTES = 1024 * 1024  # 1 MB strictly bounded
 MAX_REDIRECTS = 5
 SAFE_CONTENT_TYPES = ("text/html", "application/xhtml+xml", "text/plain")
+
+# Web3 / BIP-39 cryptocurrency seed-phrase and recovery credential indicators
+SEED_PHRASE_FIELD_KEYWORDS = {
+    "seed_phrase", "seedphrase", "seed-phrase", "mnemonic", "recovery_phrase",
+    "recoveryphrase", "recovery-phrase", "secret_recovery_phrase", "secret_phrase",
+    "wallet_seed", "backup_phrase", "private_key", "privatekey", "private-key",
+    "keystore", "keystore_json", "secret_words", "passphrase"
+}
+
+SEED_PHRASE_CONTEXT_PHRASES = (
+    "mnemonic recovery phrase", "seed phrase", "recovery phrase",
+    "secret recovery phrase", "12 or 24 word", "12-word", "24-word",
+    "12 word", "24 word", "15 word", "18 word", "21 word",
+    "restore your wallet", "import your wallet", "wallet recovery",
+    "enter your seed", "enter your private key", "backup phrase",
+    "bip39", "bip-39", "mnemonic phrase"
+)
 
 # Evidence signals that a redirect / embedded-destination host is hostile
 # infrastructure (CAL-05: destinations are hostile only with corroborating
@@ -374,59 +394,123 @@ class WebSecurityAnalyzer:
             soup = BeautifulSoup(final_response_text, "html.parser")
             final_host = urlparse(metadata["finalUrl"]).hostname or normalized_domain
 
-            # 1. Password input form analysis
-            password_inputs = soup.find_all("input", attrs={"type": "password"})
-            if password_inputs:
-                for form in soup.find_all("form"):
-                    if form.find("input", attrs={"type": "password"}):
-                        action = form.get("action", "")
-                        action_url = urljoin(metadata["finalUrl"], action)
-                        action_parsed = urlsplit(action_url)
-
-                        if action_parsed.hostname and action_parsed.hostname != final_host:
-                            findings.append(RawFinding(
-                                category="PHISHING_INDICATOR",
-                                severity="CRITICAL",
-                                title="Credential Form Submits to External Host",
-                                description=f"A password input form targets external host '{action_parsed.hostname}' instead of destination '{final_host}'.",
-                                evidence={"pageHost": final_host, "formAction": action_url},
-                                confidence=95.0,
-                            ))
-
-                        if action_parsed.scheme == "http":
-                            findings.append(RawFinding(
-                                category="WEB_SECURITY",
-                                severity="HIGH",
-                                title="Insecure Form Submission (HTTP)",
-                                description="A password input form submits sensitive credentials over unencrypted plain HTTP.",
-                                evidence={"formAction": action_url},
-                                confidence=95.0,
-                            ))
-
-            # 2. Financial & Payment Data Harvesting Form Analysis
+            bip39_provider = get_bip39_provider()
             PAYMENT_FIELD_KEYWORDS = {"cvv", "cvc", "cardnumber", "cc-number", "card-number", "creditcard", "bankaccount", "accountnumber", "routingnumber", "ssn", "aadhaar", "pan-number"}
             EXFILTRATION_PATTERNS = ["discord.com/api/webhooks", "api.telegram.org", "formspree.io", "webhook.site", "pipedream.net"]
 
+            has_seed_phrase_form = False
+
             for form in soup.find_all("form"):
                 action = form.get("action", "")
-                action_url = urljoin(metadata["finalUrl"], action).lower()
+                action_url = urljoin(metadata["finalUrl"], action)
                 action_parsed = urlsplit(action_url)
+                action_url_lower = action_url.lower()
 
-                # Check for third-party webhook exfiltration
-                for exfil in EXFILTRATION_PATTERNS:
-                    if exfil in action_url:
-                        findings.append(RawFinding(
-                            category="PHISHING_INDICATOR",
-                            severity="CRITICAL",
-                            title="Form Exfiltrates Data to Third-Party Webhook / Messaging API",
-                            description=f"Form action '{action_url}' directs submitted form data to third-party relay service '{exfil}'. Commonly used by phishing kits to harvest credentials.",
-                            evidence={"formAction": action_url, "exfiltrationTarget": exfil},
-                            confidence=99.0,
-                        ))
+                form_text = form.get_text(separator=" ", strip=True).lower()
+                form_text_norm = unicodedata.normalize("NFKD", form_text)
 
-                # Check for sensitive payment / personal identity inputs
+                textareas = form.find_all("textarea")
                 inputs = form.find_all(["input", "select"])
-                harvested_fields = []
+
+                # Safeguards: skip inactive / readonly / code container forms
+                active_textareas = [
+                    t for t in textareas
+                    if not t.get("disabled") and not t.get("readonly") and not t.find_parent(["pre", "code"])
+                ]
+                active_inputs = [
+                    i for i in inputs
+                    if not i.get("disabled") and not i.get("readonly") and i.get("type", "text").lower() not in ("submit", "button", "reset", "hidden") and not i.find_parent(["pre", "code"])
+                ]
+
+                has_password_input = bool(form.find("input", attrs={"type": "password"}))
+
+                # --- 1. Web3 / BIP-39 Seed-Phrase Collection Analysis ---
+                matched_seed_fields: List[str] = []
+                collection_method = ""
+                matched_context_terms: List[str] = []
+
+                # 1a. Textarea recovery phrase analysis
+                for ta in active_textareas:
+                    name_attr = (ta.get("name") or "").lower()
+                    id_attr = (ta.get("id") or "").lower()
+                    ph_attr = (ta.get("placeholder") or "").lower()
+                    aria_attr = (ta.get("aria-label") or "").lower()
+                    class_attr = " ".join(ta.get("class") or []).lower()
+                    combined_attrs = f"{name_attr} {id_attr} {ph_attr} {aria_attr} {class_attr}"
+
+                    label_text = ""
+                    if ta.get("id"):
+                        lbl = soup.find("label", attrs={"for": ta.get("id")})
+                        if lbl:
+                            label_text = lbl.get_text(separator=" ", strip=True).lower()
+                    parent_lbl = ta.find_parent("label")
+                    if parent_lbl:
+                        label_text += " " + parent_lbl.get_text(separator=" ", strip=True).lower()
+
+                    eval_text = f"{combined_attrs} {label_text}".strip()
+                    eval_text_norm = unicodedata.normalize("NFKD", eval_text)
+
+                    field_matched = [kw for kw in SEED_PHRASE_FIELD_KEYWORDS if kw in eval_text_norm]
+                    context_matched = [term for term in SEED_PHRASE_CONTEXT_PHRASES if term in eval_text_norm or term in form_text_norm]
+
+                    if field_matched or context_matched:
+                        matched_seed_fields.append(ta.get("name") or ta.get("id") or "seed_phrase_textarea")
+                        collection_method = "mnemonic_textarea"
+                        matched_context_terms.extend(field_matched + context_matched)
+
+                # 1b. Discrete multi-input mnemonic grid analysis (e.g. 12, 15, 18, 21, 24 inputs)
+                mnemonic_grid_inputs = []
+                for inp in active_inputs:
+                    inp_name = (inp.get("name") or "").lower()
+                    inp_id = (inp.get("id") or "").lower()
+                    inp_ph = (inp.get("placeholder") or "").lower()
+                    inp_aria = (inp.get("aria-label") or "").lower()
+                    combined_inp = f"{inp_name} {inp_id} {inp_ph} {inp_aria}"
+                    combined_inp_norm = unicodedata.normalize("NFKD", combined_inp)
+
+                    if re.search(r"\b(word|phrase|mnemonic|seed)[-_]?\d+\b", combined_inp_norm) or re.search(r"\bword\s*#?\s*\d+\b", combined_inp_norm):
+                        mnemonic_grid_inputs.append(inp_name or inp_id or f"input_{len(mnemonic_grid_inputs)+1}")
+                    elif any(kw in combined_inp_norm for kw in ("private_key", "privatekey", "keystore")):
+                        matched_seed_fields.append(inp_name or inp_id or "private_key_input")
+                        collection_method = collection_method or "private_key_field"
+                        matched_context_terms.append("private_key")
+
+                if len(mnemonic_grid_inputs) >= 12:
+                    matched_seed_fields.extend(mnemonic_grid_inputs)
+                    collection_method = "multi_input_grid"
+                    matched_context_terms.append(f"{len(mnemonic_grid_inputs)}_word_grid")
+
+                is_seed_phrase_harvesting = bool(matched_seed_fields)
+                if is_seed_phrase_harvesting:
+                    has_seed_phrase_form = True
+                    is_external = bool(action_parsed.hostname and action_parsed.hostname != final_host)
+                    is_http = action_parsed.scheme == "http"
+                    unique_context = sorted(list(set(matched_context_terms)))
+
+                    findings.append(RawFinding(
+                        category="PHISHING_INDICATOR",
+                        severity="CRITICAL",
+                        title="Cryptocurrency Wallet Seed-Phrase Harvesting Form Detected",
+                        description=(
+                            "Detected web form configured to harvest cryptocurrency wallet seed phrases or secret recovery mnemonics. "
+                            f"Identified {collection_method} collecting sensitive recovery phrases ({', '.join(unique_context[:4])}). "
+                            "Legitimate Web3 applications never request raw seed phrases through website forms."
+                        ),
+                        evidence={
+                            "detectedFields": list(set(matched_seed_fields)),
+                            "collectionMethod": collection_method,
+                            "formAction": action_url,
+                            "isExternalSubmission": is_external,
+                            "isInsecureHttp": is_http,
+                            "corroboratingKeywords": unique_context,
+                            "pageHost": final_host,
+                            "dedupKey": "SEED_PHRASE_HARVESTING",
+                        },
+                        confidence=99.0 if (is_external or is_http) else 96.0,
+                    ))
+
+                # --- 2. Financial & Payment Harvesting Analysis ---
+                harvested_payment_fields = []
                 for inp in inputs:
                     name_attr = (inp.get("name") or "").lower()
                     id_attr = (inp.get("id") or "").lower()
@@ -436,28 +520,86 @@ class WebSecurityAnalyzer:
 
                     for kw in PAYMENT_FIELD_KEYWORDS:
                         if kw in combined_attrs:
-                            harvested_fields.append(kw)
+                            harvested_payment_fields.append(kw)
 
-                if harvested_fields:
+                if harvested_payment_fields:
                     is_critical_financial = (
-                        "cvv" in harvested_fields
-                        or "cvc" in harvested_fields
-                        or "cardnumber" in harvested_fields
-                        or "cc-number" in harvested_fields
-                        or "card-number" in harvested_fields
-                        or "creditcard" in harvested_fields
-                        or "ssn" in harvested_fields
-                        or "aadhaar" in harvested_fields
-                        or "pan-number" in harvested_fields
-                        or ("bankaccount" in harvested_fields and "routingnumber" in harvested_fields)
+                        "cvv" in harvested_payment_fields
+                        or "cvc" in harvested_payment_fields
+                        or "cardnumber" in harvested_payment_fields
+                        or "cc-number" in harvested_payment_fields
+                        or "card-number" in harvested_payment_fields
+                        or "creditcard" in harvested_payment_fields
+                        or "ssn" in harvested_payment_fields
+                        or "aadhaar" in harvested_payment_fields
+                        or "pan-number" in harvested_payment_fields
+                        or ("bankaccount" in harvested_payment_fields and "routingnumber" in harvested_payment_fields)
                     )
                     findings.append(RawFinding(
                         category="PHISHING_INDICATOR",
                         severity="CRITICAL" if is_critical_financial else "HIGH",
                         title="Payment / Financial Credential Harvesting Form Detected",
-                        description=f"Detected form collecting payment or sensitive identity markers ({', '.join(set(harvested_fields))}).",
-                        evidence={"detectedFields": list(set(harvested_fields)), "formAction": action_url},
+                        description=f"Detected form collecting payment or sensitive identity markers ({', '.join(set(harvested_payment_fields))}).",
+                        evidence={"detectedFields": list(set(harvested_payment_fields)), "formAction": action_url, "dedupKey": "FINANCIAL_HARVESTING"},
                         confidence=94.0,
+                    ))
+
+                # --- 3. Third-Party Webhook Exfiltration Analysis ---
+                for exfil in EXFILTRATION_PATTERNS:
+                    if exfil in action_url_lower:
+                        findings.append(RawFinding(
+                            category="PHISHING_INDICATOR",
+                            severity="CRITICAL",
+                            title="Form Exfiltrates Data to Third-Party Webhook / Messaging API",
+                            description=f"Form action '{action_url}' directs submitted form data to third-party relay service '{exfil}'. Commonly used by phishing kits to harvest credentials.",
+                            evidence={"formAction": action_url, "exfiltrationTarget": exfil, "dedupKey": f"WEBHOOK_EXFILTRATION:{exfil}"},
+                            confidence=99.0,
+                        ))
+
+                # --- 4. Cross-Form Credential Exfiltration & Transport Security ---
+                # Checks if ANY sensitive form (password, payment, or seed phrase) submits externally or over insecure HTTP
+                is_sensitive_form = has_password_input or bool(harvested_payment_fields) or is_seed_phrase_harvesting
+                if is_sensitive_form:
+                    if action_parsed.hostname and action_parsed.hostname != final_host:
+                        findings.append(RawFinding(
+                            category="PHISHING_INDICATOR",
+                            severity="CRITICAL",
+                            title="Credential Form Submits to External Host",
+                            description=f"A sensitive credential collection form targets external host '{action_parsed.hostname}' instead of destination '{final_host}'.",
+                            evidence={
+                                "pageHost": final_host,
+                                "formAction": action_url,
+                                "credentialType": "seed_phrase" if is_seed_phrase_harvesting else ("password" if has_password_input else "payment"),
+                                "dedupKey": f"EXTERNAL_CREDENTIAL_SUBMISSION:{action_parsed.hostname}",
+                            },
+                            confidence=96.0,
+                        ))
+
+                    if action_parsed.scheme == "http":
+                        findings.append(RawFinding(
+                            category="WEB_SECURITY",
+                            severity="HIGH",
+                            title="Insecure Form Submission (HTTP)",
+                            description="A form collecting sensitive credentials submits data over unencrypted plain HTTP.",
+                            evidence={"formAction": action_url, "dedupKey": "INSECURE_FORM_SUBMISSION"},
+                            confidence=95.0,
+                        ))
+
+            # --- 5. Educational / Reference Content Safeguard ---
+            # Educational articles mentioning BIP-39 without any interactive credential collection form must remain completely benign (INFO severity).
+            if not has_seed_phrase_form:
+                resp_text_lower = final_response_text.lower()
+                has_bip39_mention = any(
+                    term in resp_text_lower for term in ("bip-39", "bip39", "mnemonic wordlist", "seed phrase explanation", "recovery phrase guide")
+                )
+                if has_bip39_mention:
+                    findings.append(RawFinding(
+                        category="WEB_SECURITY",
+                        severity="INFO",
+                        title="BIP-39 Mnemonic Reference Content Observed",
+                        description="Page references BIP-39 cryptocurrency mnemonic concepts in an educational, documentation, or reference context without interactive credential collection forms.",
+                        evidence={"context": "educational_or_reference", "dedupKey": "BIP39_EDUCATIONAL_CONTENT"},
+                        confidence=85.0,
                     ))
 
             # 3. Client-Side Meta Refresh Redirect Detection (Evidence-Calibrated CAL-05)

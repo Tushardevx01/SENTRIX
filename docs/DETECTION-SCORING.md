@@ -75,6 +75,14 @@ Verdict thresholds (unchanged):
   dedup keys; the risk engine keeps the highest-severity finding per key so
   overlapping observations are counted once, while the report retains every raw
   finding. Each finding's `evidence["analyzer"]` is stamped at collection time.
+- **CAL-07 — Web3 Phishing & Seed-Phrase Harvesting Detection.** Contextual
+  detection for cryptocurrency mnemonic seed phrases (BIP-39 12/15/18/21/24-word
+  sequences, textareas, and multi-input grids) and private keys. Forms actively
+  collecting recovery phrases are classified as `CRITICAL` (40 pts) credential
+  harvesting (`PHISHING_INDICATOR`), escalated when submitting to external or
+  unencrypted destinations. Wordlist presence alone or generic textareas never
+  trigger penalties; educational content and documentation mentioning BIP-39
+  without active submission forms emit `INFO` observations (0 risk score points).
 
 ### Dedup key registry
 
@@ -85,6 +93,9 @@ Verdict thresholds (unchanged):
 | `HOSTILE_DESTINATION:<host>` | Hostile-destination findings from meta-refresh, hidden-iframe, and other redirect mechanisms for the same destination |
 | `HIDDEN_IFRAME` | Hidden-iframe concealment observation + hostile-payload escalation |
 | `POSTURE_*` | Per-header posture observations (also capped at 15 in aggregate) |
+| `SEED_PHRASE_HARVESTING` | Active Web3 seed-phrase collection forms on the inspected target |
+| `EXTERNAL_CREDENTIAL_SUBMISSION:<dest>` | Sensitive credential forms submitting to an external host |
+| `INSECURE_FORM_SUBMISSION` | Sensitive credential forms submitting over unencrypted plain HTTP |
 | `CATEGORY:title` (fallback) | Same-title findings within one category |
 
 ## 3. Measured Results

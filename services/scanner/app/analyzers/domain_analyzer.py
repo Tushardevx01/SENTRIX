@@ -80,6 +80,13 @@ TARGETED_BRANDS: List[Tuple[str, List[str]]] = [
     ("binance", ["binance.com"]),
     ("coinbase", ["coinbase.com"]),
     ("metamask", ["metamask.io"]),
+    ("trezor", ["trezor.io"]),
+    ("ledger", ["ledger.com"]),
+    ("exodus", ["exodus.com"]),
+    ("phantom", ["phantom.app"]),
+    ("trustwallet", ["trustwallet.com"]),
+    ("pancakeswap", ["pancakeswap.finance"]),
+    ("uniswap", ["uniswap.org"]),
 
     # Recruitment & Career Portals
     ("linkedin", ["linkedin.com"]),

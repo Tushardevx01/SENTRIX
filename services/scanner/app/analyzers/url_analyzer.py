@@ -60,6 +60,8 @@ RECOGNIZED_AUTHENTIC_DOMAINS: Set[str] = {
     "sbi.co.in", "onlinesbi.sbi", "onlinesbi.com", "hdfcbank.com",
     "icicibank.com", "stripe.com", "razorpay.com", "revolut.com",
     "venmo.com", "cash.app", "binance.com", "coinbase.com",
+    "metamask.io", "trezor.io", "ledger.com", "exodus.com",
+    "phantom.app", "trustwallet.com", "uniswap.org", "pancakeswap.finance",
     "spotify.com", "adobe.com", "dhl.com", "dropbox.com", "ebay.com",
     "linkedin.com", "indeed.com", "workday.com", "glassdoor.com",
 }
