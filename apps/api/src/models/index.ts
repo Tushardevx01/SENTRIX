@@ -4,3 +4,7 @@ export * from './Finding.js';
 export * from './Certificate.js';
 export * from './ThreatReport.js';
 export * from './ThreatVote.js';
+export * from './MessageAnalysis.js';
+export * from './ThreatIndicator.js';
+export * from './ThreatCampaign.js';
+export * from './BlockchainRecord.js';

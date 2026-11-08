@@ -18,6 +18,7 @@ const EnvSchema = z
       .string()
       .min(32, 'JWT_SECRET must be at least 32 characters for HMAC-SHA256')
       .default('sentrix-default-jwt-secret-key-32chars!!'),
+    LLM_API_KEY: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -43,6 +44,7 @@ const rawConfig = {
   SCANNER_API_SECRET: process.env.SCANNER_API_SECRET,
   CORS_ORIGIN: process.env.CORS_ORIGIN,
   JWT_SECRET: process.env.JWT_SECRET || process.env.SCANNER_API_SECRET || 'sentrix-default-jwt-secret-key-32chars!!',
+  LLM_API_KEY: process.env.LLM_API_KEY,
 };
 
 const parsed = EnvSchema.safeParse(rawConfig);

@@ -7,6 +7,14 @@ import {
   type ScanStatus,
   type ThreatCategory,
   type VoteType,
+  type IMessageAnalysis,
+  type MessageChannel,
+  type IRelatedThreats,
+  type IThreatCampaign,
+  type IThreatIndicator,
+  type IBlockchainRecord,
+  type IBlockchainVerification,
+  type IAIExplanation,
 } from '@sentrix/shared';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -124,5 +132,134 @@ export async function voteCommunityReport(
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   const res = await fetch(`${API_BASE_URL}/api/v1/dashboard/stats`);
+  return handleResponse(res);
+}
+
+// ==========================================
+// MODULE A: AI SCAM & MESSAGE ANALYSIS
+// ==========================================
+
+export async function analyzeMessage(payload: {
+  content: string;
+  channel?: MessageChannel;
+  sender?: string;
+  metadata?: Record<string, any>;
+}): Promise<IMessageAnalysis> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/messages/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function fetchMessageAnalysis(id: string): Promise<IMessageAnalysis> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/messages/${encodeURIComponent(id)}`);
+  return handleResponse(res);
+}
+
+export async function fetchMessageAnalyses(
+  limit: number = 20,
+  skip: number = 0
+): Promise<{ total: number; messages: IMessageAnalysis[] }> {
+  const params = new URLSearchParams();
+  params.set('limit', String(limit));
+  params.set('skip', String(skip));
+  const res = await fetch(`${API_BASE_URL}/api/v1/messages?${params.toString()}`);
+  return handleResponse(res);
+}
+
+// ==========================================
+// MODULE B: INTELLIGENT THREAT CORRELATION
+// ==========================================
+
+export async function fetchRelatedThreats(target: string): Promise<IRelatedThreats> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/correlations/related/${encodeURIComponent(target)}`);
+  return handleResponse(res);
+}
+
+export async function fetchThreatCampaigns(): Promise<{ total: number; campaigns: IThreatCampaign[] }> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/correlations/campaigns`);
+  return handleResponse(res);
+}
+
+export async function fetchThreatCampaign(id: string): Promise<IThreatCampaign> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/correlations/campaigns/${encodeURIComponent(id)}`);
+  return handleResponse(res);
+}
+
+export async function fetchThreatIndicators(
+  type?: string,
+  limit: number = 50
+): Promise<{ total: number; indicators: IThreatIndicator[] }> {
+  const params = new URLSearchParams();
+  if (type) params.set('type', type);
+  params.set('limit', String(limit));
+  const res = await fetch(`${API_BASE_URL}/api/v1/correlations/indicators?${params.toString()}`);
+  return handleResponse(res);
+}
+
+// ==========================================
+// MODULE C: BLOCKCHAIN DECENTRALIZED REGISTRY
+// ==========================================
+
+export async function registerOnBlockchain(
+  reportId: string,
+  reportType: 'SCAN' | 'MESSAGE' | 'THREAT_REPORT' = 'SCAN'
+): Promise<IBlockchainRecord> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/blockchain/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reportId, reportType }),
+  });
+  return handleResponse(res);
+}
+
+export async function verifyOnBlockchain(reportId: string): Promise<IBlockchainVerification> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/blockchain/verify/${encodeURIComponent(reportId)}`);
+  return handleResponse(res);
+}
+
+export async function fetchBlockchainRecords(
+  limit: number = 20,
+  skip: number = 0
+): Promise<{ total: number; records: IBlockchainRecord[] }> {
+  const params = new URLSearchParams();
+  params.set('limit', String(limit));
+  params.set('skip', String(skip));
+  const res = await fetch(`${API_BASE_URL}/api/v1/blockchain/records?${params.toString()}`);
+  return handleResponse(res);
+}
+
+export async function fetchBlockchainConfig(): Promise<{
+  enabled: boolean;
+  chainId: number;
+  rpcUrl?: string;
+  contractAddress?: string;
+  isSimulated: boolean;
+}> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/blockchain/config`);
+  return handleResponse(res);
+}
+
+// ==========================================
+// MODULE D: GROUNDED AI EXPLANATION
+// ==========================================
+
+export async function fetchAIExplanation(payload: {
+  contextType: 'SCAN' | 'MESSAGE' | 'CAMPAIGN';
+  scanId?: string;
+  messageId?: string;
+  target?: string;
+  riskScore?: number;
+  verdict?: string;
+  findingsSummary?: string[];
+  indicators?: Record<string, any>;
+}): Promise<{ explanation: IAIExplanation; modelUsed: string; groundedFindings: string[] }> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/ai/explain`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
   return handleResponse(res);
 }

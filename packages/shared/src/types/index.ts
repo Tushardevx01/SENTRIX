@@ -212,3 +212,194 @@ export interface ScanReportDetail {
     isTruncated?: boolean;
   };
 }
+
+// ==========================================
+// Module A: Message & Scam Analysis Types
+// ==========================================
+
+export const MessageChannelEnum = {
+  SMS: 'SMS',
+  WHATSAPP: 'WHATSAPP',
+  EMAIL: 'EMAIL',
+  TELEGRAM: 'TELEGRAM',
+  SOCIAL_MEDIA: 'SOCIAL_MEDIA',
+  OTHER: 'OTHER',
+} as const;
+export type MessageChannel = (typeof MessageChannelEnum)[keyof typeof MessageChannelEnum];
+
+export const SocialEngineeringTacticEnum = {
+  URGENCY_FEAR: 'URGENCY_FEAR',
+  AUTHORITY_IMPERSONATION: 'AUTHORITY_IMPERSONATION',
+  FINANCIAL_MANIPULATION: 'FINANCIAL_MANIPULATION',
+  CREDENTIAL_OTP_HARVESTING: 'CREDENTIAL_OTP_HARVESTING',
+  SUSPICIOUS_PAYMENT: 'SUSPICIOUS_PAYMENT',
+  UNREALISTIC_REWARD: 'UNREALISTIC_REWARD',
+  TECH_SUPPORT_REMOTE_ACCESS: 'TECH_SUPPORT_REMOTE_ACCESS',
+} as const;
+export type SocialEngineeringTactic = (typeof SocialEngineeringTacticEnum)[keyof typeof SocialEngineeringTacticEnum];
+
+export interface ISocialEngineeringFinding {
+  tactic: SocialEngineeringTactic;
+  severity: FindingSeverity;
+  title: string;
+  description: string;
+  matchedPatterns: string[];
+}
+
+export interface IExtractedIndicators {
+  urls: string[];
+  domains: string[];
+  emails: string[];
+  phones: string[];
+  wallets: Array<{ address: string; network: string }>;
+  paymentRefs: string[];
+  entities: string[];
+}
+
+export interface IThreatIntelMatch {
+  indicatorType: string;
+  indicatorValue: string;
+  matchSource: string;
+  severity: FindingSeverity;
+  details: string;
+}
+
+export interface IAIExplanation {
+  summary: string;
+  reasoning: string[];
+  precautions: string[];
+  limitations: string[];
+}
+
+export interface IMessageAnalysis {
+  _id: string;
+  messageHash: string;
+  channel: MessageChannel;
+  senderInfo?: string;
+  preview: string;
+  classification: Verdict;
+  riskScore: number;
+  confidence: number;
+  detectedPatterns: ISocialEngineeringFinding[];
+  extractedIndicators: IExtractedIndicators;
+  threatIntelMatches: IThreatIntelMatch[];
+  aiExplanation: IAIExplanation;
+  createdAt: string;
+}
+
+// ==========================================
+// Module B: Threat Correlation Types
+// ==========================================
+
+export const IndicatorTypeEnum = {
+  DOMAIN: 'DOMAIN',
+  IP: 'IP',
+  WALLET: 'WALLET',
+  EMAIL: 'EMAIL',
+  PHONE: 'PHONE',
+  URL_PATTERN: 'URL_PATTERN',
+  BRAND: 'BRAND',
+} as const;
+export type IndicatorType = (typeof IndicatorTypeEnum)[keyof typeof IndicatorTypeEnum];
+
+export interface IThreatIndicator {
+  _id: string;
+  type: IndicatorType;
+  value: string;
+  normalizedValue: string;
+  severity: FindingSeverity;
+  firstSeen: string;
+  lastSeen: string;
+  occurrences: number;
+  relatedScanIds: string[];
+  relatedMessageIds: string[];
+  relatedReportIds: string[];
+  tags: string[];
+}
+
+export interface IThreatCampaign {
+  _id: string;
+  campaignId: string;
+  name: string;
+  threatType: string;
+  confidence: number;
+  indicators: Array<{ type: IndicatorType; value: string }>;
+  relatedIncidents: Array<{
+    id: string;
+    target: string;
+    verdict: Verdict;
+    type: 'SCAN' | 'MESSAGE' | 'REPORT';
+    timestamp: string;
+  }>;
+  summary: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IRelatedThreats {
+  target: string;
+  indicatorMatches: IThreatIndicator[];
+  campaigns: IThreatCampaign[];
+  relatedScans: Array<{
+    _id: string;
+    submittedUrl: string;
+    verdict: Verdict;
+    riskScore: number;
+    createdAt: string;
+  }>;
+  relatedMessages: Array<{
+    _id: string;
+    preview: string;
+    classification: Verdict;
+    riskScore: number;
+    createdAt: string;
+  }>;
+}
+
+// ==========================================
+// Module C: Web3 Blockchain Registry Types
+// ==========================================
+
+export const BlockchainRecordStatusEnum = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  FAILED: 'FAILED',
+} as const;
+export type BlockchainRecordStatus = (typeof BlockchainRecordStatusEnum)[keyof typeof BlockchainRecordStatusEnum];
+
+export interface IBlockchainRecord {
+  _id: string;
+  reportId: string;
+  reportType: 'SCAN' | 'MESSAGE' | 'THREAT_REPORT';
+  target: string;
+  reportHash: string; // 0x-prefixed 32-byte hex hash
+  canonicalData: Record<string, unknown>;
+  txHash: string;
+  blockNumber: number;
+  blockTimestamp: number;
+  contractAddress: string;
+  chainId: number;
+  networkName: string;
+  reporterAddress: string;
+  status: BlockchainRecordStatus;
+  createdAt: string;
+}
+
+export interface IBlockchainVerification {
+  verified: boolean;
+  reportId: string;
+  calculatedHash: string;
+  onChainHash: string;
+  hashesMatch: boolean;
+  blockNumber?: number;
+  blockTimestamp?: number;
+  txHash?: string;
+  contractAddress?: string;
+  networkName?: string;
+  reporterAddress?: string;
+  category?: string;
+  severityScore?: number;
+  timestampDate?: string;
+  failureReason?: string;
+}
+

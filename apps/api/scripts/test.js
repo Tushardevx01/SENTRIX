@@ -11,6 +11,10 @@ const testFiles = [
   'src/test/realMongoConcurrency.test.ts',
   'src/test/orphanCleanup.test.ts',
   'src/test/indexMigration.test.ts',
+  'src/test/messageAnalysis.test.ts',
+  'src/test/correlation.test.ts',
+  'src/test/blockchain.test.ts',
+  'src/test/aiExplanation.test.ts',
 ];
 
 const result = spawnSync('npx', ['tsx', '--test', ...testFiles], {

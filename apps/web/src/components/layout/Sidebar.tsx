@@ -18,6 +18,9 @@ import {
   ShieldAlert,
   Server,
   Zap,
+  MessageSquareWarning,
+  Network,
+  Blocks,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -33,10 +36,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
   const mainNavigation = [
     { href: '/dashboard', label: 'Command Center', icon: LayoutDashboard },
     { href: '/scanner', label: 'URL Threat Scanner', icon: ShieldCheck },
+    { href: '/messages', label: 'Scam Message Analyzer', icon: MessageSquareWarning },
   ];
 
   const intelligenceNavigation = [
     { href: '/intelligence', label: 'Threat Intelligence', icon: Radio },
+    { href: '/correlations', label: 'Campaign Correlation', icon: Network },
+    { href: '/blockchain', label: 'Web3 Threat Registry', icon: Blocks },
     { href: '/certificates', label: 'Certificate Intel', icon: Lock },
     { href: '/assessment', label: 'Security Assessment', icon: Activity },
     { href: '/community', label: 'Community Feed', icon: Users },

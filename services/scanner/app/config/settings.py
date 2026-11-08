@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     SCANNER_API_SECRET: str
     GOOGLE_SAFE_BROWSING_API_KEY: Optional[str] = None
     URLHAUS_ENABLED: bool = True
+    URLHAUS_API_KEY: Optional[str] = None
     LLM_API_KEY: Optional[str] = None
 
     model_config = SettingsConfigDict(

@@ -309,3 +309,57 @@ async def test_reputation_analyzer_all_providers_succeed_clean():
         assert overall_status == "SUCCESS"
         assert meta["isComplete"] is True
         assert any("No Threat Intelligence Blacklist Matches" in f.title for f in findings)
+
+
+@pytest.mark.asyncio
+async def test_urlhaus_401_without_key_returns_skipped():
+    """When URLhaus returns HTTP 401 and no key is configured, feed is gracefully marked SKIPPED."""
+    with patch("app.intelligence.connectors.settings.URLHAUS_ENABLED", True), \
+         patch("app.intelligence.connectors.settings.URLHAUS_API_KEY", None):
+        client = ThreatIntelligenceClient()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 401
+
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_resp
+            res = await client.query_urlhaus("https://example.com")
+            assert res.status == "SKIPPED"
+            assert res.outcome == "SKIPPED"
+            assert "Auth-Key" in res.error_message
+
+
+@pytest.mark.asyncio
+async def test_urlhaus_401_with_key_returns_failed():
+    """When URLhaus returns HTTP 401 despite a key being configured, failure is reported."""
+    with patch("app.intelligence.connectors.settings.URLHAUS_ENABLED", True), \
+         patch("app.intelligence.connectors.settings.URLHAUS_API_KEY", "invalid-key"):
+        client = ThreatIntelligenceClient()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 401
+
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_resp
+            res = await client.query_urlhaus("https://example.com")
+            assert res.status == "FAILED"
+            assert res.outcome == "ERROR"
+            assert "authentication failed" in res.error_message
+
+
+@pytest.mark.asyncio
+async def test_urlhaus_passes_auth_key_header():
+    """When URLHAUS_API_KEY is configured, it is transmitted in the Auth-Key request header."""
+    with patch("app.intelligence.connectors.settings.URLHAUS_ENABLED", True), \
+         patch("app.intelligence.connectors.settings.URLHAUS_API_KEY", "test-auth-key-123"):
+        client = ThreatIntelligenceClient()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"query_status": "no_results"}
+
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_resp
+            res = await client.query_urlhaus("https://example.com")
+            assert res.status == "SUCCESS"
+            mock_post.assert_called_once()
+            _, kwargs = mock_post.call_args
+            assert kwargs.get("headers", {}).get("Auth-Key") == "test-auth-key-123"
+

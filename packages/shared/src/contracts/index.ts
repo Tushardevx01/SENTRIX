@@ -136,3 +136,50 @@ export interface ScannerAnalysisResponse {
     isTruncated?: boolean;
   };
 }
+
+// ==========================================
+// Message Analysis Request Contract
+// ==========================================
+
+export const MessageAnalyzeRequestSchema = z.object({
+  messageText: z
+    .string()
+    .trim()
+    .min(5, 'Message text must be at least 5 characters')
+    .max(50000, 'Message text exceeds maximum length of 50,000 characters'),
+  senderInfo: z.string().trim().max(256).optional(),
+  channel: z.enum(['SMS', 'WHATSAPP', 'EMAIL', 'TELEGRAM', 'SOCIAL_MEDIA', 'OTHER']).optional().default('OTHER'),
+});
+export type MessageAnalyzeRequest = z.infer<typeof MessageAnalyzeRequestSchema>;
+
+// ==========================================
+// Blockchain Threat Registry Contracts
+// ==========================================
+
+export const BlockchainRegisterRequestSchema = z.object({
+  reportId: z.string().trim().min(1, 'Report ID is required'),
+  reportType: z.enum(['SCAN', 'MESSAGE', 'THREAT_REPORT']).default('SCAN'),
+});
+export type BlockchainRegisterRequest = z.infer<typeof BlockchainRegisterRequestSchema>;
+
+export const BlockchainVerifyRequestSchema = z.object({
+  reportId: z.string().trim().min(1, 'Report ID is required'),
+  reportType: z.enum(['SCAN', 'MESSAGE', 'THREAT_REPORT']).optional().default('SCAN'),
+  reportHash: z.string().trim().regex(/^0x[a-fA-F0-9]{64}$/, 'Report hash must be a 32-byte hex string').optional(),
+});
+export type BlockchainVerifyRequest = z.infer<typeof BlockchainVerifyRequestSchema>;
+
+// ==========================================
+// AI Explanation Request Contract
+// ==========================================
+
+export const AIExplanationRequestSchema = z.object({
+  contextType: z.enum(['SCAN', 'MESSAGE', 'CERTIFICATE', 'CORRELATION']),
+  target: z.string().trim().min(1),
+  findingsSummary: z.array(z.string()).optional(),
+  riskScore: z.number().min(0).max(100).optional(),
+  verdict: z.string().optional(),
+  evidence: z.record(z.unknown()).optional(),
+});
+export type AIExplanationRequest = z.infer<typeof AIExplanationRequestSchema>;
+

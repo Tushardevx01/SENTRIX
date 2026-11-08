@@ -11,6 +11,7 @@ import {
   IOrphanCleanupOptions,
   IOrphanCleanupReport,
 } from './orphanCleanup.js';
+import { correlationService } from './correlationService.js';
 
 export const MAX_CONCURRENT_JOBS = 3;
 export const MAX_RETRIES = 3;
@@ -309,6 +310,11 @@ export class ScanWorkerService {
         { scanId, verdict: scanResult.verdict, score: scanResult.riskScore },
         'Scan completed successfully'
       );
+
+      // Ingest indicators into threat correlation engine
+      correlationService.ingestScan(scanId).catch((err) => {
+        this.logger?.warn({ scanId, error: err.message }, 'Non-fatal error updating threat correlations');
+      });
     } catch (error: any) {
       await this.handleJobError(scan, error);
     }

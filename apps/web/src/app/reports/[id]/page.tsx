@@ -21,16 +21,35 @@ import {
   Terminal,
   ExternalLink,
   ChevronRight,
+  Blocks,
+  Sparkles,
+  Network,
+  RefreshCw,
+  Lightbulb,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { fetchScanReport, fetchScanStatus } from '@/lib/api';
+import {
+  fetchScanReport,
+  fetchScanStatus,
+  fetchRelatedThreats,
+  registerOnBlockchain,
+  verifyOnBlockchain,
+  fetchAIExplanation,
+} from '@/lib/api';
 import { RiskScoreGauge } from '@/components/ui/RiskScoreGauge';
 import { RiskBadge } from '@/components/ui/RiskBadge';
 import { FindingCard } from '@/components/ui/FindingCard';
 import { CertificateCard } from '@/components/ui/CertificateCard';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { type ScanReportDetail, VerdictEnum } from '@sentrix/shared';
+import {
+  type ScanReportDetail,
+  VerdictEnum,
+  type IRelatedThreats,
+  type IBlockchainRecord,
+  type IBlockchainVerification,
+  type IAIExplanation,
+} from '@sentrix/shared';
 
 export default function SecurityReportPage() {
   const params = useParams();
@@ -40,6 +59,14 @@ export default function SecurityReportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Module Integrations: Correlation, Blockchain, AI
+  const [relatedThreats, setRelatedThreats] = useState<IRelatedThreats | null>(null);
+  const [blockchainRecord, setBlockchainRecord] = useState<IBlockchainRecord | null>(null);
+  const [blockchainVerification, setBlockchainVerification] = useState<IBlockchainVerification | null>(null);
+  const [aiExplanation, setAiExplanation] = useState<IAIExplanation | null>(null);
+  const [registeringChain, setRegisteringChain] = useState(false);
+  const [verifyingChain, setVerifyingChain] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -63,6 +90,31 @@ export default function SecurityReportPage() {
           if (!isMounted) return;
           setReport(fullReport);
           setLoading(false);
+
+          // Asynchronously load correlation graph, blockchain verification, and AI explanation
+          fetchRelatedThreats(fullReport.scan.normalizedDomain)
+            .then((r) => isMounted && setRelatedThreats(r))
+            .catch(() => {});
+
+          verifyOnBlockchain(id)
+            .then((v) => {
+              if (isMounted && v.verified) {
+                setBlockchainVerification(v);
+              }
+            })
+            .catch(() => {});
+
+          fetchAIExplanation({
+            contextType: 'SCAN',
+            scanId: id,
+            target: fullReport.scan.submittedUrl,
+            riskScore: fullReport.scan.riskScore,
+            verdict: fullReport.scan.verdict,
+            findingsSummary: fullReport.findings.map((f) => f.title),
+          })
+            .then((res) => isMounted && setAiExplanation(res.explanation))
+            .catch(() => {});
+
           return; // Stop polling on terminal COMPLETED
         }
 
@@ -138,6 +190,34 @@ export default function SecurityReportPage() {
       navigator.clipboard.writeText(window.location.href);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleRegisterOnChain = async () => {
+    if (!id || registeringChain) return;
+    setRegisteringChain(true);
+    try {
+      const rec = await registerOnBlockchain(id, 'SCAN');
+      setBlockchainRecord(rec);
+      const ver = await verifyOnBlockchain(id);
+      setBlockchainVerification(ver);
+    } catch {
+      // non-blocking
+    } finally {
+      setRegisteringChain(false);
+    }
+  };
+
+  const handleVerifyOnChain = async () => {
+    if (!id || verifyingChain) return;
+    setVerifyingChain(true);
+    try {
+      const ver = await verifyOnBlockchain(id);
+      setBlockchainVerification(ver);
+    } catch {
+      // non-blocking
+    } finally {
+      setVerifyingChain(false);
     }
   };
 
@@ -340,6 +420,21 @@ export default function SecurityReportPage() {
           <span>Back to Scanner</span>
         </Link>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleRegisterOnChain}
+            disabled={registeringChain || Boolean(blockchainVerification?.verified)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-theme-accent/30 bg-theme-accent/10 hover:bg-theme-accent/20 text-xs font-mono text-theme-accent transition-colors disabled:opacity-60"
+          >
+            <Blocks className="w-3.5 h-3.5" />
+            <span>
+              {registeringChain
+                ? 'Registering...'
+                : blockchainVerification?.verified
+                ? 'On-Chain Verified'
+                : 'Anchor to Blockchain'}
+            </span>
+          </button>
           <button
             onClick={handleShare}
             type="button"
@@ -621,6 +716,250 @@ export default function SecurityReportPage() {
             )}
           </ul>
         </div>
+      </section>
+
+      {/* Module D: Grounded AI Threat Explanation & Assessment */}
+      {aiExplanation && (
+        <section className="p-5 rounded-xl border border-theme-border bg-theme-card space-y-4 shadow-sm">
+          <div className="flex items-center justify-between border-b border-theme-border pb-3">
+            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-theme-text flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-theme-accent" />
+              <span>AI Grounded Forensic Analysis & Briefing</span>
+            </h4>
+            <span className="text-[10px] font-mono text-theme-muted">
+              Evidence-Backed • Strict Non-Hallucinatory Grounding
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-lg bg-theme-elevated/40 border border-theme-border text-xs text-theme-text font-mono leading-relaxed">
+            {aiExplanation.summary}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <span className="text-[11px] font-mono font-semibold text-theme-text flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                Forensic Reasoning & Anomaly Attribution
+              </span>
+              <ul className="space-y-1.5 text-xs text-theme-muted font-sans">
+                {aiExplanation.reasoning.map((r, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-theme-accent font-bold">•</span>
+                    <span>{r}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[11px] font-mono font-semibold text-theme-text flex items-center gap-1.5">
+                <Lightbulb className="w-3.5 h-3.5 text-emerald-500" />
+                Actionable Defensive Precautions
+              </span>
+              <ul className="space-y-1.5 text-xs text-theme-muted font-sans">
+                {aiExplanation.precautions.map((p, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Module B: Threat Correlation & Campaign Cluster */}
+      {relatedThreats && (
+        <section className="p-5 rounded-xl border border-theme-border bg-theme-card space-y-4 shadow-sm">
+          <div className="flex items-center justify-between border-b border-theme-border pb-3">
+            <div className="flex items-center gap-2">
+              <Network className="w-4 h-4 text-theme-accent" />
+              <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-theme-text">
+                Cross-Vector Threat Correlation Graph
+              </h4>
+            </div>
+            <Link
+              href="/correlations"
+              className="text-[11px] font-mono text-theme-accent hover:underline flex items-center gap-1"
+            >
+              Open Campaign Graph <ExternalLink className="w-3 h-3" />
+            </Link>
+          </div>
+
+          {relatedThreats.campaigns.length === 0 &&
+          relatedThreats.relatedScans.length <= 1 &&
+          relatedThreats.relatedMessages.length === 0 ? (
+            <p className="text-xs font-mono text-theme-muted py-2">
+              Isolated target: No persistent campaigns or recurring infrastructure patterns identified across previous scans.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {/* Linked Campaigns */}
+              {relatedThreats.campaigns.length > 0 && (
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-rose-400 font-bold block mb-1.5">
+                    Associated Threat Campaigns ({relatedThreats.campaigns.length}):
+                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {relatedThreats.campaigns.map((camp) => (
+                      <div
+                        key={camp._id}
+                        className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs font-mono space-y-1"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-rose-300">{camp.name}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">
+                            {camp.threatType}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-theme-muted line-clamp-2">{camp.summary}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Related Scans */}
+              {relatedThreats.relatedScans.filter((s) => s._id !== scan._id).length > 0 && (
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-theme-muted block mb-1.5">
+                    Linked Scans Sharing Domain / IP:
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {relatedThreats.relatedScans
+                      .filter((s) => s._id !== scan._id)
+                      .slice(0, 6)
+                      .map((rs) => (
+                        <Link
+                          key={rs._id}
+                          href={`/reports/${rs._id}`}
+                          className="p-2.5 rounded-lg bg-theme-base border border-theme-border hover:border-theme-accent transition-colors flex items-center justify-between text-xs font-mono"
+                        >
+                          <span className="truncate max-w-[150px] text-theme-text text-[11px]">
+                            {rs.submittedUrl}
+                          </span>
+                          <RiskBadge verdict={rs.verdict} size="sm" />
+                        </Link>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Related Messages */}
+              {relatedThreats.relatedMessages.length > 0 && (
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-theme-muted block mb-1.5">
+                    Linked Scam Messages Referencing Target:
+                  </span>
+                  <div className="space-y-1.5">
+                    {relatedThreats.relatedMessages.slice(0, 3).map((rm) => (
+                      <div
+                        key={rm._id}
+                        className="p-2.5 rounded-lg bg-theme-base border border-theme-border flex items-center justify-between text-xs font-mono"
+                      >
+                        <span className="truncate max-w-[320px] text-theme-muted text-[11px]">
+                          &quot;{rm.preview}&quot;
+                        </span>
+                        <RiskBadge verdict={rm.classification} size="sm" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Module C: Web3 Decentralized Threat Registry & Cryptographic Verification */}
+      <section className="p-5 rounded-xl border border-theme-border bg-theme-card space-y-4 shadow-sm">
+        <div className="flex items-center justify-between border-b border-theme-border pb-3">
+          <div className="flex items-center gap-2">
+            <Blocks className="w-4 h-4 text-theme-accent" />
+            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-theme-text">
+              Decentralized Threat Registry (Solidity 0.8.20 EVM)
+            </h4>
+          </div>
+          <Link
+            href="/blockchain"
+            className="text-[11px] font-mono text-theme-accent hover:underline flex items-center gap-1"
+          >
+            Ledger Explorer <ExternalLink className="w-3 h-3" />
+          </Link>
+        </div>
+
+        {blockchainVerification?.verified ? (
+          <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 space-y-3 font-mono text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                REPORT ANCHORED & CRYPTOGRAPHICALLY VERIFIED ON EVM
+              </span>
+              <button
+                type="button"
+                onClick={handleVerifyOnChain}
+                disabled={verifyingChain}
+                className="text-[11px] text-emerald-300 hover:underline flex items-center gap-1"
+              >
+                {verifyingChain ? <RefreshCw className="w-3 h-3 animate-spin" /> : null}
+                Re-verify Byte-for-Byte
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
+              <div>
+                <span className="text-theme-muted block">Canonical SHA-256 Hash:</span>
+                <code className="text-emerald-300 font-bold break-all block">
+                  {blockchainVerification.calculatedHash}
+                </code>
+              </div>
+              <div>
+                <span className="text-theme-muted block">Transaction Hash:</span>
+                <code className="text-theme-text break-all block">
+                  {blockchainVerification.txHash}
+                </code>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-emerald-500/20 text-[10px] text-theme-muted">
+              <div>
+                <span className="text-theme-text">Block:</span> #{blockchainVerification.blockNumber || 1}
+              </div>
+              <div>
+                <span className="text-theme-text">Contract:</span>{' '}
+                <span className="truncate inline-block max-w-[140px] align-bottom">
+                  {blockchainVerification.contractAddress}
+                </span>
+              </div>
+              <div>
+                <span className="text-theme-text">Network:</span> EVM Sepolia / Hardhat
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 rounded-lg bg-theme-base border border-theme-border space-y-3 font-mono text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-theme-text font-bold block">
+                  Immutable Threat Intelligence Commitment
+                </span>
+                <p className="text-[11px] text-theme-muted mt-0.5">
+                  Anchor this scan report to the blockchain to produce a cryptographic proof-of-threat that cannot be altered or deleted.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleRegisterOnChain}
+                disabled={registeringChain}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-theme-accent text-white font-mono text-xs font-semibold hover:bg-theme-accent/90 disabled:opacity-50 transition-all shrink-0 shadow-sm"
+              >
+                <Blocks className="w-3.5 h-3.5" />
+                {registeringChain ? 'Publishing to EVM...' : 'Anchor to ThreatRegistry.sol'}
+              </button>
+            </div>
+          </div>
+        )}
       </section>
     </motion.div>
   );

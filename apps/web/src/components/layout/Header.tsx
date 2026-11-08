@@ -39,8 +39,11 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileSidebar, isLanding
     if (pathname === '/') return 'Product Overview';
     if (pathname === '/dashboard') return 'Command Center';
     if (pathname === '/scanner') return 'URL Threat Scanner';
+    if (pathname === '/messages') return 'Scam Message Analyzer';
     if (pathname.startsWith('/reports')) return 'Investigation Report';
     if (pathname === '/intelligence') return 'Threat Intelligence';
+    if (pathname === '/correlations') return 'Threat Campaigns & Graph';
+    if (pathname === '/blockchain') return 'Web3 Threat Registry';
     if (pathname === '/certificates') return 'Certificate Intelligence';
     if (pathname === '/assessment') return 'Security Assessment';
     if (pathname === '/community') return 'Community Feed';

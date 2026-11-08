@@ -10,6 +10,10 @@ import { threatsRoutes } from './modules/threats/index.js';
 import { communityRoutes } from './modules/community/index.js';
 import { dashboardRoutes } from './modules/dashboard/index.js';
 import { authRoutes } from './modules/auth/index.js';
+import { messagesRoutes } from './modules/messages/index.js';
+import { correlationsRoutes } from './modules/correlations/index.js';
+import { blockchainRoutes } from './modules/blockchain/index.js';
+import { aiRoutes } from './modules/ai/index.js';
 import { scanWorker } from './services/scanWorker.js';
 
 export function buildServer(): FastifyInstance {
@@ -94,6 +98,10 @@ export function buildServer(): FastifyInstance {
   app.register(threatsRoutes, { prefix: '/api/v1/threats' });
   app.register(communityRoutes, { prefix: '/api/v1/community' });
   app.register(dashboardRoutes, { prefix: '/api/v1/dashboard' });
+  app.register(messagesRoutes, { prefix: '/api/v1/messages' });
+  app.register(correlationsRoutes, { prefix: '/api/v1/correlations' });
+  app.register(blockchainRoutes, { prefix: '/api/v1/blockchain' });
+  app.register(aiRoutes, { prefix: '/api/v1/ai' });
 
   return app;
 }

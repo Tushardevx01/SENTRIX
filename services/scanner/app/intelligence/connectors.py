@@ -23,6 +23,7 @@ class ThreatIntelligenceClient:
     def __init__(self):
         self.google_key = settings.GOOGLE_SAFE_BROWSING_API_KEY
         self.urlhaus_enabled = settings.URLHAUS_ENABLED
+        self.urlhaus_key = getattr(settings, "URLHAUS_API_KEY", None)
 
     async def query_urlhaus(self, target_url: str) -> ThreatProviderResult:
         """Queries the URLhaus API for verified malware and phishing distributions."""
@@ -38,8 +39,27 @@ class ThreatIntelligenceClient:
         try:
             async with httpx.AsyncClient(timeout=4.0) as client:
                 data = {"url": target_url}
-                resp = await client.post("https://urlhaus-api.abuse.ch/v1/url/", data=data)
+                headers = {}
+                if self.urlhaus_key:
+                    headers["Auth-Key"] = self.urlhaus_key
+                resp = await client.post("https://urlhaus-api.abuse.ch/v1/url/", data=data, headers=headers)
 
+                if resp.status_code in (401, 403):
+                    if not self.urlhaus_key:
+                        logger.info("URLhaus API requires authentication key; feed unconfigured")
+                        return ThreatProviderResult(
+                            provider="urlhaus",
+                            status="SKIPPED",
+                            outcome="SKIPPED",
+                            details=None,
+                            error_message="URLhaus requires an Auth-Key (unconfigured in settings)"
+                        )
+                    return ThreatProviderResult(
+                        provider="urlhaus",
+                        status="FAILED",
+                        outcome="ERROR",
+                        error_message="URLhaus authentication failed (HTTP 401/403)"
+                    )
                 if resp.status_code == 429:
                     return ThreatProviderResult(
                         provider="urlhaus",

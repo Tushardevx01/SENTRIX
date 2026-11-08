@@ -184,6 +184,86 @@ export const REQUIRED_INDEXES: IIndexSpec[] = [
     options: { name: 'email_1', unique: true, background: true },
     description: 'Unique email index for user accounts',
   },
+
+  // ---------------- Message Analyses Collection ----------------
+  {
+    collection: 'messageanalyses',
+    keys: { messageHash: 1 },
+    options: { name: 'messageHash_1', background: true },
+    description: 'Message hash index for fast content lookup and deduplication',
+  },
+  {
+    collection: 'messageanalyses',
+    keys: { createdAt: -1 },
+    options: { name: 'createdAt_-1', background: true },
+    description: 'Creation time descending index for recent message analysis queries',
+  },
+  {
+    collection: 'messageanalyses',
+    keys: { classification: 1, createdAt: -1 },
+    options: { name: 'classification_1_createdAt_-1', background: true },
+    description: 'Compound classification and time index for filtered queries',
+  },
+
+  // ---------------- Threat Indicators Collection ----------------
+  {
+    collection: 'threatindicators',
+    keys: { type: 1, normalizedValue: 1 },
+    options: { name: 'type_1_normalizedValue_1', unique: true, background: true },
+    description: 'Compound unique index for normalized atomic threat indicators',
+  },
+  {
+    collection: 'threatindicators',
+    keys: { occurrences: -1 },
+    options: { name: 'occurrences_-1', background: true },
+    description: 'Frequency index for top recurring threat indicators',
+  },
+  {
+    collection: 'threatindicators',
+    keys: { lastSeen: -1 },
+    options: { name: 'lastSeen_-1', background: true },
+    description: 'Recent activity index for live correlation lookups',
+  },
+
+  // ---------------- Threat Campaigns Collection ----------------
+  {
+    collection: 'threatcampaigns',
+    keys: { campaignId: 1 },
+    options: { name: 'campaignId_1', unique: true, background: true },
+    description: 'Unique identifier index for correlated threat campaigns',
+  },
+  {
+    collection: 'threatcampaigns',
+    keys: { updatedAt: -1 },
+    options: { name: 'updatedAt_-1', background: true },
+    description: 'Campaign activity descending index',
+  },
+
+  // ---------------- Blockchain Records Collection ----------------
+  {
+    collection: 'blockchainrecords',
+    keys: { reportId: 1 },
+    options: { name: 'reportId_1', background: true },
+    description: 'Report identifier index for on-chain registry lookups',
+  },
+  {
+    collection: 'blockchainrecords',
+    keys: { reportHash: 1 },
+    options: { name: 'reportHash_1', unique: true, background: true },
+    description: 'Cryptographic report commitment hash unique index',
+  },
+  {
+    collection: 'blockchainrecords',
+    keys: { txHash: 1 },
+    options: { name: 'txHash_1', unique: true, background: true },
+    description: 'Blockchain transaction hash unique index',
+  },
+  {
+    collection: 'blockchainrecords',
+    keys: { createdAt: -1 },
+    options: { name: 'createdAt_-1', background: true },
+    description: 'Descending timeline index for on-chain audits',
+  },
 ];
 
 /**
