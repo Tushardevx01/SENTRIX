@@ -1,5 +1,9 @@
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+try {
+  require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+} catch {
+  // Cloud providers (such as Vercel) inject process.env natively; dotenv is optional
+}
 
 const isDev = process.env.npm_lifecycle_event === 'dev' || (process.env.NODE_ENV === 'development' && !process.argv.includes('build'));
 
