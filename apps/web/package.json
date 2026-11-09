@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "NODE_OPTIONS='--max-old-space-size=450' next build",
+    "build": "NODE_ENV=production NODE_OPTIONS='--max-old-space-size=450' next build",
     "start": "next start -p 3000"
   },
   "dependencies": {
