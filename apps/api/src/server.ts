@@ -83,7 +83,24 @@ export function buildServer(): FastifyInstance {
     });
   });
 
-  // Health Check Endpoints
+  // Root & Health Check Endpoints
+  const rootHandler = async () => ({
+    name: 'SENTRIX Threat Intelligence Gateway',
+    version: '1.0.0',
+    status: 'operational',
+    documentation: '/api/v1',
+    endpoints: {
+      health: '/health',
+      scans: '/api/v1/scans',
+      messages: '/api/v1/messages/analyze',
+      correlations: '/api/v1/correlations',
+      blockchain: '/api/v1/blockchain',
+      intelligence: '/api/v1/threats',
+    },
+    timestamp: new Date().toISOString(),
+  });
+  app.get('/', rootHandler);
+
   const healthHandler = async () => {
     const dbState = mongoose.connection.readyState;
     const dbStatusMap: Record<number, string> = {
