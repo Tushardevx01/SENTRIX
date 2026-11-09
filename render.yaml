@@ -1,0 +1,58 @@
+services:
+  # ----------------------------------------------------------------------------
+  # Fastify 5 API Gateway & Scan Worker Service (Free Tier Web Service)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: sentrix-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build:shared && npm run build:api
+    startCommand: node apps/api/dist/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8000
+      - key: API_PORT
+        value: 8000
+      - key: CORS_ORIGIN
+        value: '*'
+      - key: MONGODB_URI
+        sync: false
+      - key: SCANNER_API_SECRET
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: BLOCKCHAIN_ENABLED
+        value: 'true'
+      - key: SCANNER_INTERNAL_URL
+        fromService:
+          type: web
+          name: sentrix-scanner
+          property: host
+
+  # ----------------------------------------------------------------------------
+  # Python Threat Scanner Service (Free Tier Web Service)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: sentrix-scanner
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./services/scanner/Dockerfile
+    dockerContext: ./services/scanner
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8001
+      - key: SCANNER_PORT
+        value: 8001
+      - key: URLHAUS_ENABLED
+        value: 'true'
+      - key: SCANNER_API_SECRET
+        fromService:
+          type: web
+          name: sentrix-api
+          envVarKey: SCANNER_API_SECRET
