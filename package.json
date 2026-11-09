@@ -13,6 +13,7 @@
     "dev:scanner": "cd services/scanner && .venv/bin/python -m uvicorn app.main:app --reload --port 8001",
     "build:shared": "npm --workspace=@sentrix/shared run build",
     "build:api": "npm --workspace=@sentrix/api run build",
+    "build:render": "npm run build:shared && npm run build:api",
     "build:web": "npm --workspace=@sentrix/web run build",
     "build": "npm run build:shared && npm run build:api && npm run build:web",
     "compile:contracts": "node contracts/compile.js",
