@@ -8,7 +8,17 @@ import { sanitizePagination } from '../../utils/sanitize.js';
 
 export const blockchainRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // POST /api/v1/blockchain/register - Register report cryptographic commitment on-chain
-  app.post('/register', async (request, reply) => {
+  app.post(
+    '/register',
+    {
+      config: {
+        rateLimit: {
+          max: 20,
+          timeWindow: '1 minute',
+        },
+      },
+    },
+    async (request, reply) => {
     const parseResult = BlockchainRegisterRequestSchema.safeParse(request.body);
     if (!parseResult.success) {
       return reply.status(400).send({

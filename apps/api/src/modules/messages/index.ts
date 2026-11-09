@@ -7,7 +7,17 @@ import { sanitizePagination } from '../../utils/sanitize.js';
 
 export const messagesRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // POST /api/v1/messages/analyze - Analyze suspicious message text
-  app.post('/analyze', async (request, reply) => {
+  app.post(
+    '/analyze',
+    {
+      config: {
+        rateLimit: {
+          max: 30,
+          timeWindow: '1 minute',
+        },
+      },
+    },
+    async (request, reply) => {
     const parseResult = MessageAnalyzeRequestSchema.safeParse(request.body);
     if (!parseResult.success) {
       return reply.status(400).send({

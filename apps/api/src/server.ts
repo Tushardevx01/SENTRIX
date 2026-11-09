@@ -52,6 +52,17 @@ export function buildServer(): FastifyInstance {
     }),
   });
 
+  // Production Security & Anti-Leakage Cache-Control Headers
+  app.addHook('onSend', async (_request, reply) => {
+    reply.header('X-Content-Type-Options', 'nosniff');
+    reply.header('X-Frame-Options', 'DENY');
+    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    if (!reply.hasHeader('Cache-Control')) {
+      reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    }
+  });
+
   // Centralized Error Handling (sanitized against information leakage)
   app.setErrorHandler((error: FastifyError, request, reply) => {
     app.log.error({ err: error, reqId: request.id }, 'Request handling error');

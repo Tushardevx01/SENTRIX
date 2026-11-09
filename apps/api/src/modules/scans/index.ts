@@ -10,7 +10,17 @@ import { escapeRegex, sanitizePagination } from '../../utils/sanitize.js';
 
 export const scansRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // POST /api/v1/scans - Queue URL threat scan for asynchronous background execution
-  app.post('/', async (request, reply) => {
+  app.post(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          max: 30,
+          timeWindow: '1 minute',
+        },
+      },
+    },
+    async (request, reply) => {
     const parseResult = UrlScanRequestSchema.safeParse(request.body);
     if (!parseResult.success) {
       return reply.status(400).send({

@@ -4,7 +4,17 @@ import { aiService } from '../../services/aiService.js';
 
 export const aiRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // POST /api/v1/ai/explain - Generate grounded cybersecurity explanations
-  app.post('/explain', async (request, reply) => {
+  app.post(
+    '/explain',
+    {
+      config: {
+        rateLimit: {
+          max: 30,
+          timeWindow: '1 minute',
+        },
+      },
+    },
+    async (request, reply) => {
     const parseResult = AIExplanationRequestSchema.safeParse(request.body);
     if (!parseResult.success) {
       return reply.status(400).send({
