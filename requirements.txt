@@ -1,0 +1,1 @@
+-r services/scanner/requirements.txt
