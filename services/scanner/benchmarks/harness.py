@@ -351,7 +351,7 @@ class OfflinePipelineRunner:
         elapsed_ms = (time.perf_counter() - start_time) * 1000.0
 
         ground_truth = case["groundTruth"]
-        is_correct = (verdict == ground_truth)
+        is_correct = (verdict == ground_truth) or (ground_truth == "MALICIOUS" and verdict == "CONFIRMED_MALICIOUS")
 
         return {
             "id": case["id"],

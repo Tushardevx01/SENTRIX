@@ -100,9 +100,9 @@ def test_partial_scan_with_critical_finding_yields_malicious():
         findings, statuses
     )
 
-    # Real threat signals must still trigger MALICIOUS verdict even if other analyzers failed
+    # Real threat signals must still trigger MALICIOUS / CONFIRMED_MALICIOUS verdict even if other analyzers failed
     assert score >= 70
-    assert verdict == "MALICIOUS"
+    assert verdict in ("MALICIOUS", "CONFIRMED_MALICIOUS")
     assert status == "PARTIAL"
     assert is_complete is False
     # Confidence should still suffer penalty from incomplete execution
@@ -192,3 +192,114 @@ def test_missing_analyzer_entries_treated_as_incomplete():
     assert status == "PARTIAL"
     assert is_complete is False
     assert any("MISSING" in r for r in reasons)
+
+
+def test_five_verdict_tiers_canonical_coverage():
+    """Validates full coverage of the five canonical verdict tiers."""
+    engine = RiskAggregationEngine()
+    complete_statuses = {
+        "urlAnalyzer": "SUCCESS",
+        "domainAnalyzer": "SUCCESS",
+        "tlsAnalyzer": "SUCCESS",
+        "webSecurityAnalyzer": "SUCCESS",
+        "reputationAnalyzer": "SUCCESS",
+    }
+
+    # 1. BENIGN: Low score (<26), complete analysis
+    score_b, verdict_b, _, _, _, _, _, _ = engine.evaluate([], complete_statuses)
+    assert verdict_b == "BENIGN"
+    assert score_b < 26
+
+    # 2. SUSPICIOUS: Score in [26, 69]
+    suspicious_finding = [
+        RawFinding(
+            category="URL_ANOMALY",
+            severity="HIGH",
+            title="Suspicious Typosquatting Pattern",
+            description="High risk naming",
+            confidence=85.0,
+            evidence={},
+        ),
+        RawFinding(
+            category="DOMAIN_REPUTATION",
+            severity="MEDIUM",
+            title="Newly Registered Domain (<7 days)",
+            description="New registration",
+            confidence=80.0,
+            evidence={},
+        ),
+    ]
+    score_s, verdict_s, _, _, _, _, _, _ = engine.evaluate(suspicious_finding, complete_statuses)
+    assert 26 <= score_s < 70
+    assert verdict_s == "SUSPICIOUS"
+
+    # 3. MALICIOUS: Heuristic high risk [70, 84] without confirmed threat feed
+    malicious_finding = [
+        RawFinding(
+            category="WEB_SECURITY",
+            severity="CRITICAL",
+            title="Suspicious Script Injection Pattern",
+            description="Obfuscated code",
+            confidence=80.0,
+            evidence={},
+        ),
+        RawFinding(
+            category="DOMAIN_REPUTATION",
+            severity="HIGH",
+            title="Flagged External Registrar",
+            description="Suspicious registrar",
+            confidence=80.0,
+            evidence={},
+        ),
+        RawFinding(
+            category="WEB_SECURITY",
+            severity="MEDIUM",
+            title="Iframe Overlay Technique",
+            description="Clickjacking overlay",
+            confidence=75.0,
+            evidence={},
+        ),
+    ]
+    score_m, verdict_m, _, _, _, _, _, _ = engine.evaluate(malicious_finding, complete_statuses)
+    assert 70 <= score_m < 85
+    assert verdict_m == "MALICIOUS"
+
+    # 4. CONFIRMED_MALICIOUS: Verified threat feed hit or score >= 85
+    confirmed_finding = [
+        RawFinding(
+            category="BLACKLIST",
+            severity="CRITICAL",
+            title="Threat Intelligence Blacklist Match: URLhaus Online Threat",
+            description="Active verified malware payload",
+            confidence=99.0,
+            evidence={"provider": "urlhaus"},
+        ),
+        RawFinding(
+            category="WEB_SECURITY",
+            severity="CRITICAL",
+            title="Active Web3 Wallet Drainer Script",
+            description="Intercepts eth_sendTransaction",
+            confidence=98.0,
+            evidence={},
+        ),
+        RawFinding(
+            category="PHISHING_INDICATOR",
+            severity="CRITICAL",
+            title="Bank Credential Harvesting Form",
+            description="Exfiltrates passwords",
+            confidence=95.0,
+            evidence={},
+        ),
+    ]
+    score_cm, verdict_cm, _, _, _, _, _, _ = engine.evaluate(confirmed_finding, complete_statuses)
+    assert score_cm >= 85
+    assert verdict_cm == "CONFIRMED_MALICIOUS"
+
+    # 5. INCONCLUSIVE: Incomplete analyzer execution or total failure
+    partial_statuses = dict(complete_statuses)
+    partial_statuses["webSecurityAnalyzer"] = "FAILED"
+    partial_statuses["tlsAnalyzer"] = "TIMEOUT"
+    score_i, verdict_i, _, status_i, complete_i, _, _, _ = engine.evaluate([], partial_statuses)
+    assert verdict_i == "INCONCLUSIVE"
+    assert not complete_i
+

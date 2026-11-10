@@ -17,7 +17,10 @@ export const dashboardRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
       recentScans,
     ] = await Promise.all([
       ScanModel.countDocuments(),
-      ScanModel.countDocuments({ status: 'COMPLETED', verdict: VerdictEnum.MALICIOUS }),
+      ScanModel.countDocuments({
+        status: 'COMPLETED',
+        verdict: { $in: [VerdictEnum.MALICIOUS, VerdictEnum.CONFIRMED_MALICIOUS] },
+      }),
       ScanModel.countDocuments({ status: 'COMPLETED', verdict: VerdictEnum.SUSPICIOUS }),
       ScanModel.countDocuments({ status: 'COMPLETED', verdict: VerdictEnum.BENIGN }),
       ScanModel.countDocuments({ status: 'COMPLETED', verdict: VerdictEnum.UNVERIFIED_INFRASTRUCTURE }),

@@ -4,7 +4,8 @@ import statistics
 
 CLASSES = ["BENIGN", "SUSPICIOUS", "MALICIOUS"]
 FOUR_CLASSES = ["BENIGN", "UNVERIFIED_INFRASTRUCTURE", "SUSPICIOUS", "MALICIOUS"]
-ALL_PRED_CLASSES = ["BENIGN", "SUSPICIOUS", "MALICIOUS", "UNVERIFIED_INFRASTRUCTURE", "INCONCLUSIVE"]
+FIVE_CLASSES = ["BENIGN", "SUSPICIOUS", "MALICIOUS", "CONFIRMED_MALICIOUS", "INCONCLUSIVE"]
+ALL_PRED_CLASSES = ["BENIGN", "SUSPICIOUS", "MALICIOUS", "CONFIRMED_MALICIOUS", "UNVERIFIED_INFRASTRUCTURE", "INCONCLUSIVE"]
 
 
 def calculate_three_class_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -23,10 +24,11 @@ def calculate_three_class_metrics(results: List[Dict[str, Any]]) -> Dict[str, An
     for r in results:
         actual = r["groundTruth"]
         pred = r["predictedVerdict"]
+        norm_pred = "MALICIOUS" if pred == "CONFIRMED_MALICIOUS" else pred
         if actual in matrix:
-            if pred not in matrix[actual]:
-                matrix[actual][pred] = 0
-            matrix[actual][pred] += 1
+            if norm_pred not in matrix[actual]:
+                matrix[actual][norm_pred] = 0
+            matrix[actual][norm_pred] += 1
 
     total_samples = len(results)
     correct_samples = sum(matrix[c].get(c, 0) for c in CLASSES)
@@ -111,10 +113,11 @@ def calculate_four_class_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any
     for r in results:
         actual = r["groundTruth"]
         pred = r["predictedVerdict"]
+        norm_pred = "MALICIOUS" if pred == "CONFIRMED_MALICIOUS" else pred
         if actual in matrix:
-            if pred not in matrix[actual]:
-                matrix[actual][pred] = 0
-            matrix[actual][pred] += 1
+            if norm_pred not in matrix[actual]:
+                matrix[actual][norm_pred] = 0
+            matrix[actual][norm_pred] += 1
 
     total_samples = len(results)
     correct_samples = sum(matrix[c].get(c, 0) for c in FOUR_CLASSES)

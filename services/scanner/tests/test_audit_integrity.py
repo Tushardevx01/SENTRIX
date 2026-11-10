@@ -312,7 +312,7 @@ def test_parked_page_with_threat_intel_match_is_malicious(risk_engine):
         ),
     ]
     score, verdict, conf, status, complete, threats, factors, reasons = risk_engine.evaluate(findings, statuses)
-    assert verdict == "MALICIOUS"
+    assert verdict in ("MALICIOUS", "CONFIRMED_MALICIOUS")
     assert score >= 70
 
 

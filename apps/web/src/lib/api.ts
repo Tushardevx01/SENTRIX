@@ -30,6 +30,31 @@ export interface ScanStatusResponse {
   createdAt?: string;
 }
 
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs: number = 25000
+): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: options.signal || controller.signal,
+    });
+    return res;
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      throw new Error(
+        `Request timed out after ${Math.round(timeoutMs / 1000)}s. The security gateway or scanner engine may be waking up (cold boot). Please retry.`
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let errorMessage = `Request failed with status ${res.status}`;
@@ -50,21 +75,29 @@ export async function submitUrlScan(
   url: string,
   deepScan: boolean = false
 ): Promise<{ scanId: string; [key: string]: any }> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/scans`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url, deepScan }),
-  });
+  const res = await fetchWithTimeout(
+    `${API_BASE_URL}/api/v1/scans`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, deepScan }),
+    },
+    35000
+  );
   return handleResponse(res);
 }
 
 export async function fetchScanReport(id: string): Promise<ScanReportDetail> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/reports/${encodeURIComponent(id)}`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/reports/${encodeURIComponent(id)}`);
   return handleResponse(res);
 }
 
 export async function fetchScanStatus(id: string): Promise<ScanStatusResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/scans/${encodeURIComponent(id)}/results`);
+  const res = await fetchWithTimeout(
+    `${API_BASE_URL}/api/v1/scans/${encodeURIComponent(id)}/results`,
+    {},
+    15000
+  );
   return handleResponse(res);
 }
 
@@ -79,7 +112,7 @@ export async function fetchScanHistory(
   if (domain) {
     params.set('domain', domain);
   }
-  const res = await fetch(`${API_BASE_URL}/api/v1/scans?${params.toString()}`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/scans?${params.toString()}`);
   return handleResponse(res);
 }
 
@@ -95,12 +128,12 @@ export async function fetchThreats(
     params.set('limit', String(limit));
   }
   const queryString = params.toString() ? `?${params.toString()}` : '';
-  const res = await fetch(`${API_BASE_URL}/api/v1/threats${queryString}`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/threats${queryString}`);
   return handleResponse(res);
 }
 
 export async function fetchCommunityReports(): Promise<{ reports: IThreatReport[] }> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/community/reports`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/community/reports`);
   return handleResponse(res);
 }
 
@@ -110,7 +143,7 @@ export async function submitCommunityReport(payload: {
   description: string;
   submitterEmail?: string;
 }): Promise<{ report: IThreatReport; message: string }> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/community/reports`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/community/reports`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -122,16 +155,19 @@ export async function voteCommunityReport(
   reportId: string,
   vote: 'UPVOTE' | 'DOWNVOTE' | VoteType
 ): Promise<{ message: string; vote: string }> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/community/reports/${encodeURIComponent(reportId)}/vote`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ vote }),
-  });
+  const res = await fetchWithTimeout(
+    `${API_BASE_URL}/api/v1/community/reports/${encodeURIComponent(reportId)}/vote`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vote }),
+    }
+  );
   return handleResponse(res);
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/dashboard/stats`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/dashboard/stats`);
   return handleResponse(res);
 }
 
@@ -145,7 +181,7 @@ export async function analyzeMessage(payload: {
   sender?: string;
   metadata?: Record<string, any>;
 }): Promise<IMessageAnalysis> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/messages/analyze`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/messages/analyze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -154,7 +190,7 @@ export async function analyzeMessage(payload: {
 }
 
 export async function fetchMessageAnalysis(id: string): Promise<IMessageAnalysis> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/messages/${encodeURIComponent(id)}`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/messages/${encodeURIComponent(id)}`);
   return handleResponse(res);
 }
 
@@ -165,7 +201,7 @@ export async function fetchMessageAnalyses(
   const params = new URLSearchParams();
   params.set('limit', String(limit));
   params.set('skip', String(skip));
-  const res = await fetch(`${API_BASE_URL}/api/v1/messages?${params.toString()}`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/messages?${params.toString()}`);
   return handleResponse(res);
 }
 
@@ -174,17 +210,17 @@ export async function fetchMessageAnalyses(
 // ==========================================
 
 export async function fetchRelatedThreats(target: string): Promise<IRelatedThreats> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/correlations/related/${encodeURIComponent(target)}`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/correlations/related/${encodeURIComponent(target)}`);
   return handleResponse(res);
 }
 
 export async function fetchThreatCampaigns(): Promise<{ total: number; campaigns: IThreatCampaign[] }> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/correlations/campaigns`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/correlations/campaigns`);
   return handleResponse(res);
 }
 
 export async function fetchThreatCampaign(id: string): Promise<IThreatCampaign> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/correlations/campaigns/${encodeURIComponent(id)}`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/correlations/campaigns/${encodeURIComponent(id)}`);
   return handleResponse(res);
 }
 
@@ -195,7 +231,7 @@ export async function fetchThreatIndicators(
   const params = new URLSearchParams();
   if (type) params.set('type', type);
   params.set('limit', String(limit));
-  const res = await fetch(`${API_BASE_URL}/api/v1/correlations/indicators?${params.toString()}`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/correlations/indicators?${params.toString()}`);
   return handleResponse(res);
 }
 
@@ -207,7 +243,7 @@ export async function registerOnBlockchain(
   reportId: string,
   reportType: 'SCAN' | 'MESSAGE' | 'THREAT_REPORT' = 'SCAN'
 ): Promise<IBlockchainRecord> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/blockchain/register`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/blockchain/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ reportId, reportType }),
@@ -216,7 +252,7 @@ export async function registerOnBlockchain(
 }
 
 export async function verifyOnBlockchain(reportId: string): Promise<IBlockchainVerification> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/blockchain/verify/${encodeURIComponent(reportId)}`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/blockchain/verify/${encodeURIComponent(reportId)}`);
   return handleResponse(res);
 }
 
@@ -227,7 +263,7 @@ export async function fetchBlockchainRecords(
   const params = new URLSearchParams();
   params.set('limit', String(limit));
   params.set('skip', String(skip));
-  const res = await fetch(`${API_BASE_URL}/api/v1/blockchain/records?${params.toString()}`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/blockchain/records?${params.toString()}`);
   return handleResponse(res);
 }
 
@@ -238,7 +274,7 @@ export async function fetchBlockchainConfig(): Promise<{
   contractAddress?: string;
   isSimulated: boolean;
 }> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/blockchain/config`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/blockchain/config`);
   return handleResponse(res);
 }
 
@@ -256,7 +292,7 @@ export async function fetchAIExplanation(payload: {
   findingsSummary?: string[];
   indicators?: Record<string, any>;
 }): Promise<{ explanation: IAIExplanation; modelUsed: string; groundedFindings: string[] }> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/ai/explain`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/v1/ai/explain`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

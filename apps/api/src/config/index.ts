@@ -6,13 +6,24 @@ import { z } from 'zod';
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
+const isTestEnv = process.env.NODE_ENV === 'test';
+
 const EnvSchema = z
   .object({
     PORT: z.coerce.number().default(8000),
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-    MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
-    SCANNER_INTERNAL_URL: z.string().url('SCANNER_INTERNAL_URL must be a valid URL'),
-    SCANNER_API_SECRET: z.string().min(16, 'SCANNER_API_SECRET must be at least 16 characters'),
+    MONGODB_URI: z
+      .string()
+      .min(1, 'MONGODB_URI is required')
+      .default(isTestEnv ? 'mongodb://127.0.0.1:27017/sentrix_test' : (undefined as any)),
+    SCANNER_INTERNAL_URL: z
+      .string()
+      .url('SCANNER_INTERNAL_URL must be a valid URL')
+      .default(isTestEnv ? 'http://127.0.0.1:8001' : (undefined as any)),
+    SCANNER_API_SECRET: z
+      .string()
+      .min(16, 'SCANNER_API_SECRET must be at least 16 characters')
+      .default(isTestEnv ? 'sentrix-test-scanner-secret-min16chars!' : (undefined as any)),
     CORS_ORIGIN: z.string().default('http://localhost:3000'),
     JWT_SECRET: z
       .string()
@@ -45,9 +56,15 @@ const EnvSchema = z
 const rawConfig = {
   PORT: process.env.API_PORT || (process.env.PORT && process.env.PORT !== '3000' ? process.env.PORT : 8000),
   NODE_ENV: process.env.NODE_ENV,
-  MONGODB_URI: process.env.MONGODB_URI,
-  SCANNER_INTERNAL_URL: process.env.SCANNER_INTERNAL_URL,
-  SCANNER_API_SECRET: process.env.SCANNER_API_SECRET,
+  MONGODB_URI:
+    process.env.TEST_MONGODB_URI ||
+    process.env.MONGODB_URI ||
+    (isTestEnv ? 'mongodb://127.0.0.1:27017/sentrix_test' : undefined),
+  SCANNER_INTERNAL_URL:
+    process.env.SCANNER_INTERNAL_URL || (isTestEnv ? 'http://127.0.0.1:8001' : undefined),
+  SCANNER_API_SECRET:
+    process.env.SCANNER_API_SECRET ||
+    (isTestEnv ? 'sentrix-test-scanner-secret-min16chars!' : undefined),
   CORS_ORIGIN: process.env.CORS_ORIGIN,
   JWT_SECRET: process.env.JWT_SECRET || process.env.SCANNER_API_SECRET || 'sentrix-default-jwt-secret-key-32chars!!',
   LLM_API_KEY: process.env.LLM_API_KEY,

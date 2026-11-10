@@ -188,7 +188,7 @@ def test_malicious_content_on_popular_domain_unsuppressed():
         },
     )
 
-    assert verdict == "MALICIOUS", "Compromised popular domain with active phishing must be classified as MALICIOUS"
+    assert verdict in ("MALICIOUS", "CONFIRMED_MALICIOUS"), "Compromised popular domain with active phishing must be classified as MALICIOUS or CONFIRMED_MALICIOUS"
     assert score >= 70, f"Expected riskScore >= 70, got {score}"
 
 

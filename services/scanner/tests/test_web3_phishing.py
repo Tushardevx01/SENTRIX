@@ -211,7 +211,7 @@ async def test_brand_impersonation_combined_with_seed_phrase(web_analyzer, domai
         findings=all_findings,
         analyzer_statuses={"domainAnalyzer": "SUCCESS", "webSecurityAnalyzer": "SUCCESS"}
     )
-    assert verdict == "MALICIOUS"
+    assert verdict in ("MALICIOUS", "CONFIRMED_MALICIOUS")
     assert score >= 70
 
 
@@ -452,7 +452,7 @@ async def test_popular_tranco_domain_with_malicious_seed_phrase_collection(web_a
         findings=findings,
         analyzer_statuses={"webSecurityAnalyzer": "SUCCESS"}
     )
-    assert verdict == "MALICIOUS"
+    assert verdict in ("MALICIOUS", "CONFIRMED_MALICIOUS")
     assert score >= 70
 
 

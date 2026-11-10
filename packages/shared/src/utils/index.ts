@@ -29,11 +29,12 @@ export function normalizeUrl(rawUrl: string): { normalizedUrl: string; normalize
 }
 
 /**
- * Derives verdict from risk score
+ * Derives verdict from risk score and analysis state
  */
 export function getVerdictFromScore(score: number, isComplete: boolean = true): Verdict {
+  if (!isComplete) return VerdictEnum.INCONCLUSIVE;
+  if (score >= RiskThresholds.CONFIRMED_MALICIOUS_MIN) return VerdictEnum.CONFIRMED_MALICIOUS;
   if (score >= RiskThresholds.MALICIOUS_MIN) return VerdictEnum.MALICIOUS;
   if (score > RiskThresholds.BENIGN_MAX) return VerdictEnum.SUSPICIOUS;
-  if (!isComplete) return VerdictEnum.INCONCLUSIVE;
   return VerdictEnum.BENIGN;
 }

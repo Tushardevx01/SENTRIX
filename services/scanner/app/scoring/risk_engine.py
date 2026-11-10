@@ -160,13 +160,32 @@ class RiskAggregationEngine:
             for f in findings
         )
 
-        # Assign Verdict (Zero-Trust Rules: Incomplete results must NEVER be classified as confidently BENIGN)
-        if risk_score >= 70:
+        # Determine if confirmed malicious intelligence or weaponized payload is present
+        has_verified_threat_intel = any(
+            f.category == "BLACKLIST" or
+            "URLhaus" in f.title or
+            "Google Safe Browsing" in f.title or
+            (f.severity == "CRITICAL" and f.confidence >= 95.0 and f.category in {"PHISHING_INDICATOR", "WEB_SECURITY"})
+            for f in findings
+        )
+
+        # Assign Verdict across the five canonical tiers:
+        # CONFIRMED_MALICIOUS, MALICIOUS, SUSPICIOUS, INCONCLUSIVE, BENIGN
+        # (with UNVERIFIED_INFRASTRUCTURE preserved for parked/placeholder pages)
+        if analysis_status == "FAILED":
+            verdict = "INCONCLUSIVE"
+            inconclusive_reasons.append("Critical failure: All network security analyzers failed or were unreachable.")
+        elif risk_score >= 85 or (risk_score >= 70 and has_verified_threat_intel):
+            verdict = "CONFIRMED_MALICIOUS"
+        elif risk_score >= 70:
             verdict = "MALICIOUS"
+        elif analysis_status != "COMPLETE" and risk_score < 40:
+            verdict = "INCONCLUSIVE"
+            inconclusive_reasons.append("Low or ambiguous risk score cannot be confirmed due to incomplete analyzer execution.")
         elif risk_score >= 26:
             verdict = "SUSPICIOUS"
         elif analysis_status != "COMPLETE":
-            # Missing or failed analyzer results must NEVER be taken as proof of safety or verified infrastructure!
+            # Missing or failed analyzer results must NEVER be taken as proof of safety!
             verdict = "INCONCLUSIVE"
             inconclusive_reasons.append("Low risk score cannot be confirmed due to incomplete analyzer execution.")
         elif has_unverified_infra_signal:

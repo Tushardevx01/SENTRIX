@@ -257,7 +257,7 @@ def test_threat_override_invariant_malicious_overrides_parked_page(risk_engine):
         findings, complete_analyzer_statuses()
     )
 
-    assert verdict == "MALICIOUS"
+    assert verdict in ("MALICIOUS", "CONFIRMED_MALICIOUS")
     assert score >= 70
 
 

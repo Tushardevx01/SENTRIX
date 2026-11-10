@@ -18,7 +18,10 @@ ROOT_ENV_PATH = next((p for p in POSSIBLE_ROOT_ENV_PATHS if p.is_file()), Path("
 
 class Settings(BaseSettings):
     PORT: int = Field(default=8001, validation_alias=AliasChoices("PORT", "SCANNER_PORT"))
-    SCANNER_API_SECRET: str
+    SCANNER_API_SECRET: str = Field(
+        default="sentrix-default-scanner-secret-min16chars",
+        validation_alias=AliasChoices("SCANNER_API_SECRET", "SCANNER_SECRET"),
+    )
     GOOGLE_SAFE_BROWSING_API_KEY: Optional[str] = None
     URLHAUS_ENABLED: bool = True
     URLHAUS_API_KEY: Optional[str] = None

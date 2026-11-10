@@ -435,7 +435,7 @@ export default function SecurityReportPage() {
 
   // Determine MITRE ATT&CK Tactics
   const mitreTactics = [];
-  if (scan.verdict === VerdictEnum.MALICIOUS || scan.riskScore >= 70) {
+  if (scan.verdict === VerdictEnum.CONFIRMED_MALICIOUS || scan.verdict === VerdictEnum.MALICIOUS || scan.riskScore >= 70) {
     mitreTactics.push({ id: 'T1566.002', name: 'Phishing: Spearphishing Link' });
     mitreTactics.push({ id: 'T1056.003', name: 'Credential Harvesting: Web Form' });
   } else if (scan.verdict === VerdictEnum.SUSPICIOUS) {
@@ -469,10 +469,10 @@ export default function SecurityReportPage() {
             <span>
               {registeringChain
                 ? 'Registering...'
-                : blockchainVerification?.verified
-                ? (blockchainVerification.isSimulated || blockchainVerification.mode === 'SIMULATED'
-                    ? 'Ledger Verified (Offline)'
-                    : 'On-Chain Verified (EVM)')
+                : blockchainVerification?.verified && !blockchainVerification?.isSimulated
+                ? 'On-Chain Verified (EVM)'
+                : blockchainVerification?.isSimulated
+                ? 'Offline Ledger (Unverified On-Chain)'
                 : 'Anchor to Blockchain'}
             </span>
           </button>
@@ -724,7 +724,7 @@ export default function SecurityReportPage() {
             <span>RECOMMENDED MITIGATION ACTIONS</span>
           </h4>
           <ul className="text-xs font-mono text-theme-muted space-y-2">
-            {scan.verdict === VerdictEnum.MALICIOUS ? (
+            {scan.verdict === VerdictEnum.CONFIRMED_MALICIOUS || scan.verdict === VerdictEnum.MALICIOUS ? (
               <>
                 <li className="flex items-center gap-2 text-theme-danger">
                   <XCircle className="w-3.5 h-3.5 shrink-0" />

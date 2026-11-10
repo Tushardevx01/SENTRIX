@@ -100,4 +100,54 @@ export const blockchainRoutes: FastifyPluginAsync = async (app: FastifyInstance)
     const config = await blockchainService.getConfig();
     return reply.send(config);
   });
+
+  // POST /api/v1/blockchain/dispute - Submit formal dispute against registered threat record
+  app.post('/dispute', async (request, reply) => {
+    const body = request.body as { reportId?: string; reason?: string };
+    if (!body?.reportId || !body?.reason) {
+      return reply.status(400).send({
+        error: 'VALIDATION_ERROR',
+        message: 'Missing reportId or dispute reason',
+      });
+    }
+
+    try {
+      const result = await blockchainService.disputeReport(body.reportId, body.reason);
+      return reply.send(result);
+    } catch (err: any) {
+      return reply.status(500).send({
+        error: 'DISPUTE_ERROR',
+        message: err.message,
+      });
+    }
+  });
+
+  // POST /api/v1/blockchain/revise - Revise threat record with new severity score and evidence
+  app.post('/revise', async (request, reply) => {
+    const body = request.body as {
+      reportId?: string;
+      newSeverityScore?: number;
+      newEvidenceData?: Record<string, any>;
+    };
+    if (!body?.reportId || body?.newSeverityScore === undefined) {
+      return reply.status(400).send({
+        error: 'VALIDATION_ERROR',
+        message: 'Missing reportId or newSeverityScore',
+      });
+    }
+
+    try {
+      const result = await blockchainService.reviseReport(
+        body.reportId,
+        body.newSeverityScore,
+        body.newEvidenceData || {}
+      );
+      return reply.send(result);
+    } catch (err: any) {
+      return reply.status(500).send({
+        error: 'REVISION_ERROR',
+        message: err.message,
+      });
+    }
+  });
 };

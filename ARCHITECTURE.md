@@ -15,13 +15,13 @@ The modern web attack surface is dominated by rapid-cycle phishing infrastructur
 - **Heuristic Phishing & Impersonation Detection:** Lexical analysis, homoglyph/punycode (`xn--`) detection, excessive subdomain stacking, and brand typosquatting.
 - **AI-Powered Scam & Message Analysis (Module A):** Deep multi-channel inspection (SMS, WhatsApp, Email, Telegram, Social Media) extracting IOCs (URLs, emails, phones, crypto wallets, payment references, impersonated entities) and detecting 7 social engineering manipulation tactics.
 - **Intelligent Threat Correlation & Campaign Clustering (Module B):** Automated IOC linkage (shared domains, IPs, wallets, emails, phone numbers) across independent scans and scam messages into attributed campaigns.
-- **Web3 Decentralized Threat Registry (Module C):** Solidity 0.8.20 smart contract (`ThreatRegistry.sol`) anchoring immutable, canonical SHA-256 threat commitments to EVM blockchains with independent byte-for-byte verification.
+- **Web3 Decentralized Threat Registry (Module C):** Solidity 0.8.20 smart contract (`ThreatRegistry.sol`) anchoring immutable, canonical SHA-256 threat commitments to EVM blockchains with independent byte-for-byte verification, non-identifying URI enforcement, and transparent dispute/revision lifecycle.
 - **Grounded AI Explanation & Threat Briefing (Module D):** Zero-hallucination cybersecurity briefing strictly grounded in observed evidence with deterministic fallback engine.
 - **Cryptographic & TLS Auditing:** Direct SSL/TLS handshakes, certificate chain inspection, validity checks, SHA-256 fingerprinting, and hostname match validation.
 - **Web Security Misconfiguration Assessment:** HTTP response header checks (`HSTS`, `CSP`, `X-Frame-Options`, `nosniff`), form target auditing, and hidden iframe discovery.
 - **SSRF Perimeter Defense:** Pre-flight DNS resolution and IP address validation rejecting RFC 1918 private subnets, loopback interfaces, and cloud instance metadata.
 - **Crowdsourced Threat Consensus:** Community-reported threat feed with voting mechanisms.
-- **Explainable Threat Scoring:** Multi-vector weighted score (0–100) mapping to `BENIGN`, `SUSPICIOUS`, or `MALICIOUS` with associated MITRE ATT&CK tactics.
+- **Explainable Five-Tier Threat Scoring:** Multi-vector weighted score (0–100) mapping to five canonical verdict tiers (`BENIGN`, `SUSPICIOUS`, `MALICIOUS`, `CONFIRMED_MALICIOUS`, `INCONCLUSIVE`) with associated MITRE ATT&CK tactics and calibrated risk thresholds.
 
 ### 1.3 Technology Stack
 - **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS (minimal monochrome industrial design system), Typography (Silkscreen Pixel Geist, Instrument Serif, Geist Mono, Geist Sans), Lucide Icons, Recharts.
@@ -319,13 +319,18 @@ sequenceDiagram
     API-->>Analyst: 200 OK (IBlockchainVerification: { verified: true, hashesMatch: true })
 ```
 
-- **Smart Contract (`ThreatRegistry.sol`):** Solidity 0.8.20 EVM contract maintaining an immutable threat registry:
+- **Smart Contract (`ThreatRegistry.sol`):** Solidity 0.8.20 EVM contract maintaining an immutable threat registry with dispute and revision lifecycle:
   - `registerThreat(bytes32 reportHash, string calldata category, uint8 severityScore, string calldata metadataUri) external returns (uint256 reportId)`
-  - `verifyThreat(bytes32 reportHash) external view returns (bool exists, address reporter, uint256 timestamp, string memory category, uint8 severityScore, string memory metadataUri)`
+  - `disputeThreat(bytes32 reportHash, string calldata disputeReason) external`
+  - `reviseThreat(bytes32 reportHash, bytes32 newReportHash, uint8 newSeverityScore, string calldata reason) external`
+  - `resolveDispute(bytes32 reportHash, bool upholdThreat) external`
+  - `verifyThreat(bytes32 reportHash) external view returns (bool exists, address reporter, uint256 timestamp, string memory category, uint8 severityScore, string memory metadataUri, RecordStatus status, bytes32 revisionHash, uint256 disputeCount)`
   - `getRecordCount() external view returns (uint256)`
-- **Dual-Mode Cryptographic Integrity Architecture:**
-  - **On-Chain EVM Mode:** When connected to an active EVM node (Hardhat port 8545 or Sepolia), transactions are mined on-chain using an automated `NonceManager` with live contract deployment. Emits `ThreatRegistered` events and returns mined `txHash` and `blockNumber`.
-  - **Simulated Ledger Mode:** When EVM RPC is unreachable or during offline development, the service falls back to a verifiable SHA-256 ledger tagged with `status: 'SIMULATED'`, `isSimulated: true`, and transaction reference `simulated-<sha256>`. Simulated records are never misrepresented as on-chain transactions.
+- **Strictly Non-Identifying Metadata Enforcement:**
+  - `metadataUri` must adhere to canonical URI schemes (e.g. `sentrix://threat-commitment/<hash>`), limited to 128 characters, and strictly forbids raw IP/domain targets, email addresses (`@`), or cleartext protocol strings (`http://`, `https://`) on-chain.
+- **Dual-Mode Cryptographic Integrity & Loudly Gated Simulation:**
+  - **On-Chain EVM Mode:** When connected to an active EVM node (Hardhat port 8545 or Sepolia), transactions are mined on-chain using an automated `NonceManager` with live contract deployment. Emits `ThreatRegistered`, `ThreatDisputed`, and `ThreatRevised` events and returns mined `txHash` and `blockNumber`. Only real on-chain confirmations produce `verified: true` with the green on-chain verification badge.
+  - **Loudly Gated Simulated Ledger Mode:** When EVM RPC is unreachable or during offline development, the service records commitments to a local ledger tagged with `status: 'SIMULATED'`, `isSimulated: true`, and transaction reference `simulated-offline-record-...`. The verification endpoint loudly gates simulated records with `verified: false` and `failureReason` explaining offline simulation. The frontend displays a prominent amber warning banner: "SIMULATED OFFLINE LEDGER RECORD (NOT VERIFIED ON-CHAIN)" ensuring zero ambiguity between on-chain proof and local simulation.
 - **Canonical Commitment:** Deterministic JSON serialization with alphabetically sorted keys guarantees identical SHA-256 computation across all nodes.
 - **Zero Sensitive Data On-Chain:** Only cryptographic commitments (`bytes32` SHA-256), severity scores, and target identifiers are stored on-chain; private user data is never submitted to the blockchain.
 

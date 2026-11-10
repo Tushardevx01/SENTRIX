@@ -184,18 +184,34 @@ export default function BlockchainRegistryPage() {
         )}
 
         {verificationResult && (
-          <div className="p-4 rounded-xl border border-emerald-300 dark:border-emerald-900 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-2">
-            <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>COMMITMENT VERIFIED BYTE-FOR-BYTE (100% MATCH)</span>
-            </div>
+          <div className={`p-4 rounded-xl border ${
+            verificationResult.verified && !verificationResult.isSimulated && verificationResult.mode === 'ON_CHAIN'
+              ? 'border-emerald-300 dark:border-emerald-900 bg-emerald-50/40 dark:bg-emerald-950/20'
+              : 'border-amber-300 dark:border-amber-900 bg-amber-50/40 dark:bg-amber-950/20'
+          } space-y-2`}>
+            {verificationResult.verified && !verificationResult.isSimulated && verificationResult.mode === 'ON_CHAIN' ? (
+              <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>ON-CHAIN COMMITMENT VERIFIED BYTE-FOR-BYTE (100% EVM CONSENSUS MATCH)</span>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span>SIMULATED OFFLINE LEDGER RECORD (NOT VERIFIED ON-CHAIN)</span>
+                </div>
+                <p className="text-[11px] text-amber-700 dark:text-amber-400 font-mono">
+                  {verificationResult.failureReason || 'Loud gate: This commitment exists only in local offline simulation mode. A VERIFIED badge strictly requires live cryptographic consensus on an EVM smart contract.'}
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 text-[11px] font-mono">
               <div>
                 <span className="text-neutral-500 block">Calculated SHA-256:</span>
                 <span className="truncate text-black dark:text-white block">{verificationResult.calculatedHash}</span>
               </div>
               <div>
-                <span className="text-neutral-500 block">On-Chain Registered Commitment:</span>
+                <span className="text-neutral-500 block">Ledger Registered Commitment:</span>
                 <span className="truncate text-black dark:text-white block">{verificationResult.onChainHash}</span>
               </div>
             </div>
@@ -246,10 +262,11 @@ export default function BlockchainRegistryPage() {
                     </td>
                     <td className="py-2.5 px-3 text-center">
                       <span className={`text-[9px] font-pixel px-1.5 py-0.5 rounded ${
-                        rec.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
-                        'bg-neutral-200 text-neutral-700 dark:bg-[#27272a] dark:text-neutral-300'
+                        rec.status === 'CONFIRMED' && !rec.isSimulated
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                          : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
                       }`}>
-                        {rec.status}
+                        {rec.isSimulated || rec.status === 'SIMULATED' ? 'OFFLINE SIMULATED' : rec.status}
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-right">

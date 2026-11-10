@@ -122,9 +122,16 @@ def test_dns_resolution_failure_fails_closed():
 
 
 def test_allows_valid_public_domain():
-    host, ips = validate_url_safety("https://example.com")
-    assert host == "example.com"
-    assert len(ips) > 0
-    for ip in ips:
-        forbidden, reason = is_ip_forbidden(ip)
-        assert forbidden is False
+    from unittest.mock import patch
+    import socket
+    # Mock DNS resolution so test runs reliably in offline sandbox environments
+    mock_addrinfo = [
+        (socket.AF_INET, socket.SocketKind.SOCK_STREAM, 6, "", ("93.184.216.34", 443))
+    ]
+    with patch("socket.getaddrinfo", return_value=mock_addrinfo):
+        host, ips = validate_url_safety("https://example.com")
+        assert host == "example.com"
+        assert len(ips) > 0
+        for ip in ips:
+            forbidden, reason = is_ip_forbidden(ip)
+            assert forbidden is False

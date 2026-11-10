@@ -35,6 +35,12 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({ verdict, severity, size = 
           'bg-rose-50 text-rose-700 border-rose-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-800/60',
         icon: ShieldAlert,
       },
+      [VerdictEnum.CONFIRMED_MALICIOUS]: {
+        label: 'CONFIRMED MALICIOUS / ACTIVE THREAT',
+        style:
+          'bg-red-600 text-white border-red-700 dark:bg-red-950 dark:text-red-200 dark:border-red-600 shadow-sm',
+        icon: ShieldAlert,
+      },
       [VerdictEnum.INCONCLUSIVE]: {
         label: 'INCONCLUSIVE / PARTIAL',
         style:

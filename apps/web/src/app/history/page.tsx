@@ -139,7 +139,7 @@ export default function HistoryPage() {
         <span className="text-neutral-500 flex items-center gap-1 mr-1">
           <Filter className="w-3.5 h-3.5" /> Filter Verdict:
         </span>
-        {['ALL', VerdictEnum.MALICIOUS, VerdictEnum.SUSPICIOUS, VerdictEnum.BENIGN, VerdictEnum.INCONCLUSIVE, VerdictEnum.UNVERIFIED_INFRASTRUCTURE].map(
+        {['ALL', VerdictEnum.CONFIRMED_MALICIOUS, VerdictEnum.MALICIOUS, VerdictEnum.SUSPICIOUS, VerdictEnum.BENIGN, VerdictEnum.INCONCLUSIVE, VerdictEnum.UNVERIFIED_INFRASTRUCTURE].map(
           (tab) => {
             const isSelected = verdictFilter === tab;
             return (

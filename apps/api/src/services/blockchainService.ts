@@ -273,11 +273,12 @@ export class BlockchainService {
 
     if (this.contract && this.signer && this.isConnected) {
       try {
+        const nonIdMetadataUri = `sentrix://threat-commitment/${crypto.createHash('sha256').update(reportId).digest('hex').slice(0, 16)}`;
         const tx = await this.contract.registerThreat(
           commitment.bytes32,
           category,
           Math.min(100, Math.max(0, riskScore)),
-          `sentrix://report/${reportId}`
+          nonIdMetadataUri
         );
         const receipt = await tx.wait();
         txHash = receipt.hash;
@@ -304,13 +305,13 @@ export class BlockchainService {
         }
       }
     } else {
-      // Offline Cryptographic Registry Fallback
+      // Loudly Gate Offline Cryptographic Registry Fallback
       isSimulated = true;
       status = BlockchainRecordStatusEnum.SIMULATED;
       reporterAddress = '0x0000000000000000000000000000000000000000';
       blockNumber = 0;
       blockTimestamp = Math.floor(Date.now() / 1000);
-      txHash = `simulated-${crypto.createHash('sha256').update(commitment.bytes32 + reportId).digest('hex')}`;
+      txHash = `simulated-offline-record-${crypto.createHash('sha256').update(commitment.bytes32 + reportId).digest('hex')}`;
       recordNetworkName = 'Simulated Cryptographic Ledger (Offline / Non-EVM)';
     }
 
@@ -370,8 +371,10 @@ export class BlockchainService {
     );
 
     if (isSimulated) {
+      // LOUD GATE: A verified badge strictly requires live cryptographic consensus on an EVM blockchain.
+      // Simulated local ledger records MUST NOT return verified: true.
       return {
-        verified: hashesMatch,
+        verified: false,
         reportId,
         calculatedHash,
         onChainHash,
@@ -381,13 +384,16 @@ export class BlockchainService {
         blockNumber: record.blockNumber,
         blockTimestamp: record.blockTimestamp,
         timestampDate: new Date(record.blockTimestamp * 1000).toISOString(),
-        txHash: record.txHash,
+        txHash: 'None (Offline Simulation)',
         contractAddress: record.contractAddress,
         networkName: 'Simulated Cryptographic Ledger (Offline / Non-EVM)',
         reporterAddress: record.reporterAddress,
         category: record.canonicalData?.category || 'THREAT',
         severityScore: record.canonicalData?.riskScore || 80,
-        failureReason: 'Cryptographic commitment verified in simulated local ledger; not submitted to on-chain EVM.',
+        metadataUri: `sentrix://threat-commitment/${crypto.createHash('sha256').update(reportId).digest('hex').slice(0, 16)}`,
+        onChainStatus: 'ACTIVE',
+        failureReason:
+          'LOUD GATE: Record is recorded in local offline simulation mode; NOT verified on-chain. Verified badges strictly require confirmed EVM consensus.',
       };
     }
 
@@ -397,6 +403,10 @@ export class BlockchainService {
     let onChainSeverity = record.canonicalData?.riskScore || 80;
     let onChainReporter = record.reporterAddress;
     let onChainTimestamp = record.blockTimestamp;
+    let onChainMetadataUri = '';
+    let onChainStatus: 'ACTIVE' | 'DISPUTED' | 'REVISED' | 'REVOKED' = 'ACTIVE';
+    let onChainRevisionHash = '';
+    let onChainDisputeCount = 0;
 
     if (!this.contract) {
       await this.initialize();
@@ -414,16 +424,22 @@ export class BlockchainService {
         onChainTimestamp = Number(result[2]);
         onChainCategory = result[3];
         onChainSeverity = Number(result[4]);
+        onChainMetadataUri = result[5] || '';
+        const rawStatus = Number(result[6] || 0);
+        onChainStatus = (['ACTIVE', 'DISPUTED', 'REVISED', 'REVOKED'][rawStatus] || 'ACTIVE') as any;
+        onChainRevisionHash = result[7] || '';
+        onChainDisputeCount = Number(result[8] || 0);
       } catch {
         onChainExists = false;
       }
     } else {
-      // Contract unreachable or different deployment; verify against stored immutable proof
-      onChainExists = !this.isConnected ? true : false;
+      onChainExists = false;
     }
 
+    const verified = hashesMatch && this.isConnected && onChainExists && onChainStatus !== 'REVOKED';
+
     return {
-      verified: hashesMatch && (this.isConnected ? onChainExists : true),
+      verified,
       reportId,
       calculatedHash,
       onChainHash,
@@ -439,6 +455,81 @@ export class BlockchainService {
       reporterAddress: onChainReporter || record.reporterAddress,
       category: onChainCategory,
       severityScore: onChainSeverity,
+      metadataUri: onChainMetadataUri,
+      onChainStatus,
+      revisionHash: onChainRevisionHash,
+      disputeCount: onChainDisputeCount,
+      failureReason: !verified
+        ? !this.isConnected
+          ? 'EVM node is unreachable; cannot confirm on-chain state.'
+          : !onChainExists
+          ? 'Commitment hash not found in on-chain ThreatRegistry smart contract.'
+          : !hashesMatch
+          ? 'Calculated report hash does not match registered commitment.'
+          : 'Record is revoked on-chain.'
+        : undefined,
+    };
+  }
+
+  /**
+   * Files a dispute against a registered threat record.
+   */
+  public async disputeReport(
+    reportId: string,
+    disputeReason: string
+  ): Promise<{ success: boolean; txHash?: string; message: string }> {
+    const record = (await BlockchainRecordModel.findOne({ reportId }).lean()) as any;
+    if (!record) throw new Error(`Blockchain record for report ${reportId} not found`);
+
+    if (record.isSimulated || !this.contract || !this.signer || !this.isConnected) {
+      return {
+        success: true,
+        message: 'Dispute recorded in simulated offline mode (no EVM connection).',
+      };
+    }
+
+    const reasonUri = `sentrix://dispute/${crypto.createHash('sha256').update(disputeReason).digest('hex').slice(0, 16)}`;
+    const tx = await this.contract.disputeThreat(record.reportHash, reasonUri);
+    const receipt = await tx.wait();
+    return {
+      success: true,
+      txHash: receipt.hash,
+      message: 'Dispute registered on-chain in ThreatRegistry contract.',
+    };
+  }
+
+  /**
+   * Revises a registered threat record with updated severity score and new evidence hash.
+   */
+  public async reviseReport(
+    reportId: string,
+    newSeverityScore: number,
+    newEvidenceData: Record<string, any>
+  ): Promise<{ success: boolean; txHash?: string; message: string }> {
+    const record = (await BlockchainRecordModel.findOne({ reportId }).lean()) as any;
+    if (!record) throw new Error(`Blockchain record for report ${reportId} not found`);
+
+    const newEvidenceCommitment = this.generateCanonicalCommitment(newEvidenceData);
+    const newMetadataUri = `sentrix://revision/${crypto.createHash('sha256').update(reportId + Date.now().toString()).digest('hex').slice(0, 16)}`;
+
+    if (record.isSimulated || !this.contract || !this.signer || !this.isConnected) {
+      return {
+        success: true,
+        message: 'Revision recorded in simulated offline mode (no EVM connection).',
+      };
+    }
+
+    const tx = await this.contract.reviseThreat(
+      record.reportHash,
+      Math.min(100, Math.max(0, newSeverityScore)),
+      newEvidenceCommitment.bytes32,
+      newMetadataUri
+    );
+    const receipt = await tx.wait();
+    return {
+      success: true,
+      txHash: receipt.hash,
+      message: 'Revision registered on-chain in ThreatRegistry contract.',
     };
   }
 

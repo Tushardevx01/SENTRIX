@@ -17,6 +17,7 @@ export const VerdictEnum = {
   BENIGN: 'BENIGN',
   SUSPICIOUS: 'SUSPICIOUS',
   MALICIOUS: 'MALICIOUS',
+  CONFIRMED_MALICIOUS: 'CONFIRMED_MALICIOUS',
   INCONCLUSIVE: 'INCONCLUSIVE',
   UNVERIFIED_INFRASTRUCTURE: 'UNVERIFIED_INFRASTRUCTURE',
 } as const;
@@ -76,6 +77,7 @@ export const RiskThresholds = {
   BENIGN_MAX: 25,
   SUSPICIOUS_MAX: 69,
   MALICIOUS_MIN: 70,
+  CONFIRMED_MALICIOUS_MIN: 85,
 } as const;
 
 // ==========================================
@@ -368,6 +370,14 @@ export const BlockchainRecordStatusEnum = {
 } as const;
 export type BlockchainRecordStatus = (typeof BlockchainRecordStatusEnum)[keyof typeof BlockchainRecordStatusEnum];
 
+export const OnChainRecordStatusEnum = {
+  ACTIVE: 'ACTIVE',
+  DISPUTED: 'DISPUTED',
+  REVISED: 'REVISED',
+  REVOKED: 'REVOKED',
+} as const;
+export type OnChainRecordStatus = (typeof OnChainRecordStatusEnum)[keyof typeof OnChainRecordStatusEnum];
+
 export interface IBlockchainRecord {
   _id: string;
   reportId: string;
@@ -384,6 +394,10 @@ export interface IBlockchainRecord {
   reporterAddress: string;
   status: BlockchainRecordStatus;
   isSimulated?: boolean;
+  metadataUri?: string;
+  onChainStatus?: OnChainRecordStatus;
+  revisionHash?: string;
+  disputeCount?: number;
   createdAt: string;
 }
 
@@ -403,6 +417,10 @@ export interface IBlockchainVerification {
   reporterAddress?: string;
   category?: string;
   severityScore?: number;
+  metadataUri?: string;
+  onChainStatus?: OnChainRecordStatus;
+  revisionHash?: string;
+  disputeCount?: number;
   timestampDate?: string;
   failureReason?: string;
 }

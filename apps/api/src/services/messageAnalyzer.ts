@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import mongoose from 'mongoose';
 import {
   VerdictEnum,
   SocialEngineeringTacticEnum,
@@ -360,28 +361,30 @@ export class MessageAnalyzerService {
 
     // --- Threat Intelligence Cross-Correlation ---
     for (const domain of uniqueDomains) {
-      try {
-        const matchingScans = await ScanModel.find({
-          normalizedDomain: domain,
-          verdict: { $in: ['MALICIOUS', 'SUSPICIOUS'] },
-        })
-          .sort({ createdAt: -1 })
-          .limit(1)
-          .lean();
+      if (mongoose.connection.readyState === 1) {
+        try {
+          const matchingScans = await ScanModel.find({
+            normalizedDomain: domain,
+            verdict: { $in: ['MALICIOUS', 'CONFIRMED_MALICIOUS', 'SUSPICIOUS'] },
+          })
+            .sort({ createdAt: -1 })
+            .limit(1)
+            .lean();
 
-        if (matchingScans.length > 0) {
-          const matchedScan = matchingScans[0];
-          threatIntelMatches.push({
-            indicatorType: 'DOMAIN',
-            indicatorValue: domain,
-            matchSource: 'SENTRIX Internal Threat Registry',
-            severity: matchedScan.verdict === 'MALICIOUS' ? 'CRITICAL' : 'HIGH',
-            details: `Extracted domain was previously verified as ${matchedScan.verdict} (Risk Score: ${matchedScan.riskScore}) in scan ${matchedScan._id}.`,
-          });
-          rawScore += matchedScan.verdict === 'MALICIOUS' ? 35 : 20;
+          if (matchingScans.length > 0) {
+            const matchedScan = matchingScans[0];
+            threatIntelMatches.push({
+              indicatorType: 'DOMAIN',
+              indicatorValue: domain,
+              matchSource: 'SENTRIX Internal Threat Registry',
+              severity: matchedScan.verdict === 'MALICIOUS' || matchedScan.verdict === 'CONFIRMED_MALICIOUS' ? 'CRITICAL' : 'HIGH',
+              details: `Extracted domain was previously verified as ${matchedScan.verdict} (Risk Score: ${matchedScan.riskScore}) in scan ${matchedScan._id}.`,
+            });
+            rawScore += matchedScan.verdict === 'MALICIOUS' || matchedScan.verdict === 'CONFIRMED_MALICIOUS' ? 35 : 20;
+          }
+        } catch {
+          // Fallback gracefully if database read encounters transient issue
         }
-      } catch {
-        // Fallback gracefully if database read encounters transient issue
       }
 
       // Check high-risk TLDs
@@ -400,7 +403,9 @@ export class MessageAnalyzerService {
     // --- Final Classification & Confidence ---
     const riskScore = Math.min(100, Math.max(0, rawScore));
     let classification: Verdict;
-    if (riskScore >= 70) {
+    if (riskScore >= 85 || (riskScore >= 70 && threatIntelMatches.length > 0)) {
+      classification = VerdictEnum.CONFIRMED_MALICIOUS;
+    } else if (riskScore >= 70) {
       classification = VerdictEnum.MALICIOUS;
     } else if (riskScore >= 26) {
       classification = VerdictEnum.SUSPICIOUS;
@@ -445,7 +450,7 @@ export class MessageAnalyzerService {
       'Always confirm communication independently through official phone numbers listed on the back of credit cards or company websites.',
     ];
 
-    if (classification === VerdictEnum.MALICIOUS) {
+    if (classification === VerdictEnum.CONFIRMED_MALICIOUS || classification === VerdictEnum.MALICIOUS) {
       findings.forEach((f) => {
         reasoning.push(`${f.title}: ${f.description}`);
       });
@@ -473,7 +478,9 @@ export class MessageAnalyzerService {
     }
 
     const summary =
-      classification === VerdictEnum.MALICIOUS
+      classification === VerdictEnum.CONFIRMED_MALICIOUS
+        ? `Confirmed malicious social engineering attack detected (Risk Score: ${riskScore}/100). The message exhibits predatory techniques including ${findings.map((f) => f.title.toLowerCase()).join(', ')}.`
+        : classification === VerdictEnum.MALICIOUS
         ? `High-risk social engineering attack detected (Risk Score: ${riskScore}/100). The message exhibits predatory techniques including ${findings.map((f) => f.title.toLowerCase()).join(', ')}.`
         : classification === VerdictEnum.SUSPICIOUS
         ? `Suspicious message characteristics identified (Risk Score: ${riskScore}/100). Exercise caution before interacting with included links or contacts.`
